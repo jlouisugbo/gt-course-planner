@@ -41,7 +41,7 @@ export function LoginForm({
                 placeholder="gpburdell3@example.com"
                 required
                 />
-                <Label htmlFor="password">Passowrd</Label>
+                <Label htmlFor="password">Password</Label>
                 <Input
                 id="password"
                 type="password"
