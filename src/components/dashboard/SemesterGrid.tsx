@@ -26,12 +26,7 @@ export function SemesterGrid({ year, yearSemesters, items, allSemesters }: Semes
                         const containerItems: Course[] = items[containerIndex.toString()] || [];
                         
                         return (
-                            <Semesters 
-                                key={semester} 
-                                semester={semester} 
-                                courses={containerItems} 
-                                containerId={containerIndex.toString()}  
-                            />
+                            <Semesters key={semester} semester={semester} courses={containerItems} containerId={containerIndex.toString()} />
                         );
                     })}
                 </div>

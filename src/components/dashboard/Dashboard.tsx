@@ -5,6 +5,7 @@ import { DndContext, DragEndEvent, DragOverEvent } from '@dnd-kit/core';
 import { SemesterGrid } from "./SemesterGrid";
 import { Draggable } from '../dnd/Draggable';
 import { Droppable } from '../dnd/Droppable';
+import { GTScrapper } from "@/lib/scrapper/GTScrapper";
 
 interface Course {
   id: string;

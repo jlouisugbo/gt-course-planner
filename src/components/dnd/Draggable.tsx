@@ -25,7 +25,6 @@ export function Draggable({ id, children }: DraggableProps) {
     borderRadius: '15px',
     display: 'inline-block',
     userSelect: 'none' as const,
-
     zIndex: 9999,
   };
     return (

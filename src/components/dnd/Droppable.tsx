@@ -23,6 +23,7 @@ export function Droppable({ id, children, backgroundColor = '#f0f0f0', title }: 
     minWidth: '200px',
     margin: '10px',
     transition: 'all 0.2s ease',
+    zIndex: 1,
   };
 
   return (

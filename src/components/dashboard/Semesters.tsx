@@ -1,5 +1,6 @@
 'use client';
 
+import { CourseCard } from '../course/CourseCard';
 import { Draggable } from '../dnd/Draggable';
 import { Droppable } from '../dnd/Droppable';
 
@@ -14,14 +15,15 @@ type SemesterType = 'Fall' | 'Spring' | 'Summer';
 interface SemestersProps {
   semester: string;
   courses: Course[];
-  containerId: string; // Add this for the Droppable id
+  containerId: string; 
 }
 
 export function Semesters({ semester, courses, containerId }: SemestersProps) {
   const hasItems = courses.length > 0;
 
   return (
-    <Droppable id={containerId} className={`${getSemesterColorClass(semester, hasItems)} border-2 border-dashed rounded-lg p-4 min-h-[140px] transition-all duration-200 ${hasItems ? 'shadow-lg' : 'hover:bg-gray-100'}`}>
+    <Droppable id={containerId}>
+      <div className={`${getSemesterColorClass(semester, hasItems)} border-2 border-dashed rounded-lg p-4 min-h-[140px] transition-all duration-200 ${hasItems ? 'shadow-lg' : 'hover:bg-gray-100'}`}>
         <div className="flex items-center gap-2 mb-3">
             <span className="text-lg">{getSemesterIcon(semester)}</span>
             <h4 className={`font-medium ${getSemesterHeaderClass(semester, hasItems)}`}>
@@ -34,26 +36,19 @@ export function Semesters({ semester, courses, containerId }: SemestersProps) {
             )}
         </div>
 
-    <div className="space-y-2">
-        {courses.length === 0 ? (
-            <div className="text-center py-6">
-            <div className="text-2xl mb-2">📋</div>
-            <p className="text-gray-500 text-sm">
-                Drop courses here
-            </p>
-            </div>
-        ) : (
-            courses.map((course: Course) => (
-            <Draggable key={course.id} id={course.id}>
-                <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing">
-                <div className="font-medium text-gray-900 text-sm leading-tight">
-                    {course.name}
-                </div>
-                </div>
-            </Draggable>
-            ))
-        )}
+        <div className="space-y-2">
+            {courses.length === 0 ? (
+                <div className="text-center py-6">
+                    <div className="text-2xl mb-2">📋</div>
+                        <p className="text-gray-500 text-sm">
+                            Drop courses here
+                        </p>
+                    </div>
+            ) : (
+                <CourseCard courses={courses} />
+            )}
         </div>
+      </div>
     </Droppable>
     );
 }
@@ -85,10 +80,10 @@ function getSemesterColorClass(semester: string, hasItems: boolean): string {
 function getSemesterIcon(semester: string): string {
     const type: SemesterType = getSemesterType(semester);
     switch (type) {
-    case 'Fall': return '🍂';
-    case 'Spring': return '🌸';
-    case 'Summer': return '☀️';
-    default: return '📅';
+        case 'Fall': return '🍂';
+        case 'Spring': return '🌸';
+        case 'Summer': return '☀️';
+        default: return '📅';
     }
 }
 

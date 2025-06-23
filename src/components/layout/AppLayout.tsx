@@ -1,1 +1,1 @@
-//Header + Navigation + Sidebar + Footer
+//Header + Navigation + Footer
