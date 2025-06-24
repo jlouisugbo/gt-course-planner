@@ -2,8 +2,9 @@ import { GalleryVerticalEnd } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components
+import { Label } from "@/components/ui/label"
 import { supabase } from "@/lib/supabase"
+import Link from "next/link"
 
 export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
     return (
@@ -20,7 +21,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
                 <h1 className="text-4xl font-bold">Welcome to GT Planner!</h1>
                 <div className="text-center text-sm">
                     Don&apos;t have an account?{" "}
-                    <a href="#" className="underline underline-offset-4"> Sign up </a>
+                    <Link href="/signup" className="underline underline-offset-4"> Sign up </Link>
                 </div>
             </div>
             <div className="flex flex-col gap-6">

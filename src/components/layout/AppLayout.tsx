@@ -13,18 +13,24 @@ export function Navbar() {
                     <input className="py-1.5 w-full bg-transparent outline-none placeholder-gray-500" type="text" placeholder="Search Courses..." />
                 </div>
 
-                <button className="cursor-pointer px-8 py-2 bg-amber-500 hover:bg-amber-600 transition text-white rounded-full">
-                    Login
-                </button>
+                <Link href="/login">
+                    <button className="cursor-pointer px-8 py-2 bg-amber-500 hover:bg-amber-600 transition text-white rounded-full">
+                        Login
+                    </button>
+                </Link>
+                
             </div>
 
             <div className="flex top-[-10px] left-0 w-full bg-white shadow-md py-4 flex-row items-center gap-2 px-5 text-sm md:hidden">
                 <Link href="/">Home</Link>
                 <Link href="/test">Planner</Link>
                 <Link href="/">About</Link>
-                <button className="cursor-pointer px-6 py-2 mt-2 bg-amber-500 hover:bg-amber-600 transition text-white rounded-full text-sm">
-                    Login
-                </button>
+
+                <Link href="/login">
+                    <button className="cursor-pointer px-6 py-2 mt-2 bg-amber-500 hover:bg-amber-600 transition text-white rounded-full text-sm">
+                        Login
+                    </button>
+                </Link>
             </div>
         </nav>
     )
