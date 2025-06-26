@@ -9,13 +9,9 @@ export function Navbar() {
                 <Link className="hover:underline" href="/test">Planner</Link>
                 <Link className="hover:underline" href="/">About</Link>
 
-                <div className="hidden lg:flex items-center text-sm gap-2 border border-gray-300 px-3 rounded-full">
-                    <input className="py-1.5 w-full bg-transparent outline-none placeholder-gray-500" type="text" placeholder="Search Courses..." />
-                </div>
-
                 <Link href="/login">
                     <button className="cursor-pointer px-8 py-2 bg-amber-500 hover:bg-amber-600 transition text-white rounded-full">
-                        Login
+                        <b>Login</b>
                     </button>
                 </Link>
                 

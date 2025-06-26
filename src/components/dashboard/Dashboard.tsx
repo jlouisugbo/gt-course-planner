@@ -107,47 +107,56 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="flex flex-row mx-auto px-6 py-8">
         <DndContext onDragEnd={handleDragEnd} onDragOver={handleDragOver}>
           
           {/* Course Inventory - Full Width Top Section */}
-          <div className="mb-8">
-            <Droppable id="course-inventory" className="bg-indigo-50 border-2 border-indigo-200 rounded-xl p-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                  📚
-                </div>
-                <h2 className="text-xl font-semibold text-indigo-800">
-                  Available Courses
-                </h2>
-                <span className="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full text-sm font-medium">
-                  {items['course-inventory'].length} courses
-                </span>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {items['course-inventory'].length === 0 ? (
-                  <div className="col-span-full text-center py-8">
-                    <div className="text-4xl mb-2">🎉</div>
-                    <p className="text-gray-500 text-lg">All courses have been scheduled!</p>
+          <div className="w-auto">
+            <div className="mb-8 w-auto sticky top-0 flex items-start justify-center">
+              <Droppable id="course-inventory" className="bg-indigo-50 border-2 border-indigo-200 rounded-xl p-6 shadow-sm">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                    📚
                   </div>
-                ) : (
-                  items['course-inventory'].map((course: Course) => (
-                    <Draggable key={course.id} id={course.id}>
-                      <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing">
-                        <div className="font-medium text-gray-900 text-sm leading-tight">
-                          {course.name}
+                  <h2 className="text-xl font-semibold text-indigo-800">
+                    Available Courses
+                  </h2>
+                  <span className="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full text-sm font-medium text-center">
+                    {items['course-inventory'].length} courses
+                  </span>
+                  {items['course-inventory'].length === 0 ? (
+                    null
+                  ) : (
+                    <div className="hidden lg:flex items-center text-sm gap-2 border border-gray-300 px-3 rounded-full">
+                      <input className="py-1.5 w-full bg-transparent outline-none placeholder-gray-500" type="text" placeholder="Search Courses..." />
+                    </div>
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 overflow-x-hidden overflow-y-auto max-h-[75vh]">
+                  {items['course-inventory'].length === 0 ? (
+                    <div className="col-span-full text-center py-8">
+                      <div className="text-4xl mb-2">🎉</div>
+                      <p className="text-gray-500 text-lg">All courses have been scheduled!</p>
+                    </div>
+                  ) : (
+                    items['course-inventory'].map((course: Course) => (
+                      <Draggable key={course.id} id={course.id}>
+                        <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing">
+                          <div className="font-medium text-gray-900 text-sm leading-tight">
+                            {course.name}
+                          </div>
                         </div>
-                      </div>
-                    </Draggable>
-                  ))
-                )}
-              </div>
-            </Droppable>
+                      </Draggable>
+                    ))
+                  )}
+                </div>
+              </Droppable>
+            </div>
           </div>
 
           {/* Academic Years Layout */}
-          <div className="space-y-8">
+          <div className="w-screen space-y-8">
             {/* Group semesters by academic year */}
             {[2025, 2026, 2027, 2028, 2029].map((year: number) => {
               const yearSemesters: string[] = semesters.filter((sem: string) => sem.includes(year.toString()));
