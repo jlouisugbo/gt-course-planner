@@ -44,6 +44,9 @@ export function Dashboard() {
     }, {})
   });
 
+  // Search to filter the courses
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
   function handleDragEnd(event: DragEndEvent): void {
     const { active, over } = event;
     
@@ -107,14 +110,14 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div className="flex flex-row mx-auto px-6 py-8">
+      <div className="flex flex-row mx-auto px-6 py-8 gap-3">
         <DndContext onDragEnd={handleDragEnd} onDragOver={handleDragOver}>
           
           {/* Course Inventory - Full Width Top Section */}
-          <div className="w-auto">
+          <div className="w-100">
             <div className="mb-8 w-auto sticky top-0 flex items-start justify-center">
               <Droppable id="course-inventory" className="bg-indigo-50 border-2 border-indigo-200 rounded-xl p-6 shadow-sm">
-                <div className="flex items-center gap-3 mb-6">
+                <div className="flex flex-wrap items-center gap-3 mb-6">
                   <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
                     📚
                   </div>
@@ -127,13 +130,13 @@ export function Dashboard() {
                   {items['course-inventory'].length === 0 ? (
                     null
                   ) : (
-                    <div className="hidden lg:flex items-center text-sm gap-2 border border-gray-300 px-3 rounded-full">
-                      <input className="py-1.5 w-full bg-transparent outline-none placeholder-gray-500" type="text" placeholder="Search Courses..." />
+                    <div className="lg:flex items-center text-sm gap-2 border border-gray-300 px-3 rounded-full">
+                      <input className="py-1.5 w-full bg-transparent outline-none placeholder-gray-500" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} type="text" placeholder="Search Courses..." />
                     </div>
                   )}
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 overflow-x-hidden overflow-y-auto max-h-[75vh]">
+                <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-3 overflow-x-hidden overflow-y-auto max-h-[75vh]">
                   {items['course-inventory'].length === 0 ? (
                     <div className="col-span-full text-center py-8">
                       <div className="text-4xl mb-2">🎉</div>
