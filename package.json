@@ -2,11 +2,20 @@
   "name": "gt-course-planner",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "crawler:setup": "cd crawler && npm install",
+    "crawler:run": "cd crawler && npm run start",
+    "crawler:build": "cd crawler && npm run build",
+    "crawler:deploy": "cd crawler && npm run deploy",
+    "crawler:import": "ts-node lib/import-courses.ts",
+    "crawler:export": "ts-node lib/export-courses.ts",
+    "data:refresh": "npm run crawler:run && npm run crawler:import",
+    "data:seed": "ts-node lib/seed-sample-data.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -40,10 +49,13 @@
     "@radix-ui/react-toggle-group": "^1.1.10",
     "@radix-ui/react-tooltip": "^1.2.7",
     "@supabase/supabase-js": "^2.50.0",
+    "axios": "^1.10.0",
+    "cheerio": "^1.1.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
+    "dotenv": "^16.5.0",
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.513.0",
@@ -58,17 +70,20 @@
     "sonner": "^2.0.5",
     "tailwind-merge": "^3.3.0",
     "vaul": "^1.1.2",
-    "zod": "^3.25.56"
+    "zod": "^3.25.56",
+    "zustand": "^5.0.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^20.19.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "autoprefixer": "^10.4.20",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.0",
     "tw-animate-css": "^1.3.4",
     "typescript": "^5"
   }
