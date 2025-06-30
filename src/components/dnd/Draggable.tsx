@@ -1,5 +1,6 @@
+'use client';
 import React from 'react';
-import {useDraggable} from '@dnd-kit/core';
+import { useDraggable } from '@dnd-kit/core';
 
 interface DraggableProps {
   id: string;
@@ -11,25 +12,15 @@ export function Draggable({ id, children }: DraggableProps) {
     id: id,
   });
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-    cursor: 'pointer',
     opacity: isDragging ? 0.5 : 1,
-    padding: '8px 10px',
-    margin: '5px',
-    backgroundColor: '#FFD700',
-    backgroundImage: 'linear-gradient(45deg, #FFD700, #FF8C00)',
-    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.3)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '15px',
-    display: 'inline-block',
-    userSelect: 'none' as const,
-    zIndex: 9999,
+    zIndex: isDragging ? 9999 : 1,
   };
-    return (
-        <button ref={setNodeRef} style={style} {...listeners} {...attributes}>
-        {children}
-        </button>
-    );
-    }
+
+  return (
+    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
+      {children}
+    </div>
+  );
+}

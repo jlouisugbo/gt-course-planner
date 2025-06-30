@@ -13,10 +13,12 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
-    "baseUrl": "./",
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["src/*"]
     },
+    "forceConsistentCasingInFileNames": true,
+    "typeRoots": ["./node_modules/@types", "./types"],
     "plugins": [
       {
         "name": "next"
@@ -30,6 +32,6 @@
     "**/*.tsx",
     "crawler/transform-course.js",
     "populateDatabase.mjs"
-, "src/lib/supabase.js"  ],
-  "exclude": ["node_modules"]
+, "src/lib/supabaseAdmin.js"  ],
+  "exclude": ["node_modules"],
 }
