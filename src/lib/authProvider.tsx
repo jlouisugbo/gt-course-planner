@@ -3,9 +3,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { authService } from "@/lib/auth";
-
-import { supabase } from "./supabaseClient";
-import { ca } from "date-fns/locale";
+import { supabase } from "@/lib/supabaseClient";
 
 interface AuthContext {
   user: User | null;
@@ -23,56 +21,81 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    authService.getSession().then(({ data: { session } }) => {
+    // Get initial session
+    authService.getSession().then(async ({ data: { session } }) => {
+      console.log('AuthProvider - Initial session:', session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
+      
+      // If we have a session but haven't processed user creation yet
+      if (session?.user) {
+        await ensureUserExists(session.user);
+      }
+      
       setLoading(false);
     });
 
+    // Listen for auth changes
     const {
       data: { subscription },
     } = authService.onAuthStateChange(async (event, session) => {
+      console.log('AuthProvider - Auth state change:', event, session?.user?.id);
       setUser(session?.user ?? null);
       setSession(session);
-      setLoading(false);
 
       if (event === "SIGNED_IN" && session?.user) {
-        await handleUserSignIn(session.user);
+        await ensureUserExists(session.user);
       }
+      
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleUserSignIn = async (user: User) => {
+  const ensureUserExists = async (user: User) => {
     try {
+      console.log('AuthProvider - Checking if user exists:', user.id);
+      
+      // First check if user exists
       const { data: existingUser, error: fetchError } = await supabase
         .from("users")
-        .select("*")
-        .eq("id", user.id)
-        .single();
+        .select("id")
+        .eq("auth_id", user.id)
+        .maybeSingle(); // Use maybeSingle to avoid throwing on no results
 
-      if (fetchError && fetchError.code !== "PGRST116") {
-        const { error: insertError } = await supabase.from("users").insert({
-          id: user.id,
-          email: user.email!,
-          full_name: user.user_metadata?.full_name || user.email!.split("@")[0],
-          avatar_url: user.user_metadata?.avatar_url || "",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          plan_settings: {
-            plan_name: "My 4 Year Plan",
-            plan_description:
-              "A personalized 4 year plan for degree completion",
-          },
-        });
+      console.log('AuthProvider - Existing user check:', { existingUser, fetchError });
+
+      // If user doesn't exist, create them
+      if (!existingUser && !fetchError) {
+        console.log('AuthProvider - Creating new user record');
+        
+        const { data: newUser, error: insertError } = await supabase
+          .from("users")
+          .insert({
+            auth_id: user.id,
+            email: user.email!,
+            full_name: user.user_metadata?.full_name || user.email!.split("@")[0],
+            plan_settings: {
+              plan_name: "My 4-Year Plan",
+              starting_semester: "Fall 2024",
+            },
+          })
+          .select()
+          .single();
 
         if (insertError) {
-          console.error("Error inserting new user:", insertError);
+          console.error("AuthProvider - Error creating user:", insertError);
+        } else {
+          console.log("AuthProvider - User created successfully:", newUser);
         }
+      } else if (fetchError) {
+        console.error("AuthProvider - Error checking user:", fetchError);
+      } else {
+        console.log("AuthProvider - User already exists");
       }
     } catch (error) {
-      console.error("Error handling user sign-in:", error);
+      console.error("AuthProvider - Error in ensureUserExists:", error);
     }
   };
 
@@ -88,15 +111,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    setLoading(true);
+    console.log('SignOut function called');
     try {
-      await authService.signOut();
+      console.log('Clearing local state...');
       setUser(null);
       setSession(null);
+      
+      console.log('Calling supabase signOut...');
+      authService.signOut();
+      console.log('Supabase signOut successful');
+      
+      console.log('About to redirect...');
+      window.location.replace('/landing');
+      
     } catch (error) {
       console.error("Error signing out:", error);
-    } finally {
-      setLoading(false);
+      window.location.href = '/landing';
     }
   };
 
