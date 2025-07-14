@@ -12,18 +12,14 @@ export default function HomePage() {
   const { user, loading } = useAuth()
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
-// Add to each component to debug
   console.log('Component render:', { user: !!user, loading, mounted })
-  // Simple mounting check
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Single effect with simple logic
   useEffect(() => {
     if (!mounted || loading || !user) return
 
-    // User is authenticated, check their setup status
     const checkUserSetup = async () => {
       try {
         const { data } = await supabase
@@ -33,14 +29,11 @@ export default function HomePage() {
           .single()
 
         if (!data?.degree_program_id || !data?.graduation_year) {
-          // Needs setup
           router.replace('/setup')
         } else {
-          // Setup complete
           router.replace('/dashboard')
         }
       } catch (error) {
-        // Error - send to setup to be safe
         console.error('User check error:', error)
         router.replace('/setup')
       }
@@ -49,7 +42,6 @@ export default function HomePage() {
     checkUserSetup()
   }, [user, loading, mounted, router])
 
-  // Show loading while checking
   if (!mounted || loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -61,11 +53,9 @@ export default function HomePage() {
     )
   }
 
-  // Show nothing if user exists (will redirect)
   if (user) {
     return null
   }
 
-  // Show landing page for non-authenticated users
   return <LandingPage />
 }
