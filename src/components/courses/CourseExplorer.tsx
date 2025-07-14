@@ -446,12 +446,13 @@ const CourseExplorer = () => {
   );
 
   return (
-    <div className={`space-y-6 ${selectedCourse ? "pointer-events-none" : ""}`}>
-      {/* Selected course popup */}
-      {selectedCourse ? 
-        <div className='fixed bg-black/50 w-screen h-screen flex items-center justify-center pointer-events-auto' onClick={() => setSelectedCourse(null)}>
-          <CourseCardModal onClick={(e) => e.stopPropagation()} className="bg-white opacity-100" course={selectedCourse} index={1} />
-        </div>: null}
+    selectedCourse? 
+      // Selected course popup
+      <div className='fixed gt-gradient w-screen h-screen flex items-center justify-center' onClick={() => setSelectedCourse(null)}>
+        <CourseCardModal onClick={(e) => e.stopPropagation()} className="bg-white opacity-100 rounded-2xl w-8/12 h-8/12" course={selectedCourse} index={1} />
+      </div> 
+      :
+    <div className="space-y-6">
       {/* Enhanced Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
         <div>
