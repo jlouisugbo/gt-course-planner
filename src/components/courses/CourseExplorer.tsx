@@ -29,6 +29,7 @@ import {
 import { sampleCourses, searchCourses } from '@/data/courses';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { se } from 'date-fns/locale';
 
 const CourseExplorer = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -123,14 +124,15 @@ const CourseExplorer = () => {
     'Easy (1-2)', 'Medium (3)', 'Hard (4-5)'
   ];
 
+  // Course display card for grid layout
   const EnhancedCourseCard = ({ course, index }: { course: any; index: number }) => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
-      className="group"
+      className={'group'}
     >
-      <Card className="h-full hover:shadow-xl transition-all duration-300 cursor-pointer group border-slate-300 hover:border-[#B3A369]">
+      <Card className="h-full hover:shadow-xl transition-all duration-300 group border-slate-300 hover:border-[#B3A369]">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -141,7 +143,7 @@ const CourseExplorer = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
+                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 cursor-pointer"
                   onClick={(e) => {
                     e.stopPropagation();
                     toggleBookmark(course.id);
@@ -218,7 +220,7 @@ const CourseExplorer = () => {
           )}
           
           <div className="flex space-x-2 pt-2">
-            <Button size="sm" className="flex-1 bg-[#003057] hover:bg-[#002041]">
+            <Button size="sm" className="flex-1 cursor-pointer bg-[#003057] hover:bg-[#002041]">
               <Plus className="h-3 w-3 mr-1" />
               Add to Plan
             </Button>
@@ -226,6 +228,7 @@ const CourseExplorer = () => {
               variant="outline" 
               size="sm"
               onClick={() => setSelectedCourse(course)}
+              className='cursor-pointer hover:bg-gray-200/75'
             >
               <Eye className="h-3 w-3" />
             </Button>
@@ -235,6 +238,7 @@ const CourseExplorer = () => {
     </motion.div>
   );
 
+  // Course display card for list layout
   const EnhancedCourseListItem = ({ course, index }: { course: any; index: number }) => (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
@@ -326,7 +330,128 @@ const CourseExplorer = () => {
     </motion.div>
   );
 
+  // Enlarged course card modal after clicking details button
+  const CourseCardModal = ({ course, index, className, onClick }: { course: any; index: number; className?: string; onClick?: any}) => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+      className={`group ${className}`}
+      onClick={onClick}
+    >
+      <Card className="h-full hover:shadow-xl transition-all duration-300 group border-slate-300 hover:border-[#B3A369]">
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center space-x-2 mb-2">
+                <CardTitle className="text-lg group-hover:text-[#003057] transition-colors">
+                  {course.code}
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleBookmark(course.id);
+                  }}
+                >
+                  <Bookmark 
+                    className={cn(
+                      "h-4 w-4",
+                      bookmarkedCourses.has(course.id) ? "fill-[#B3A369] text-[#B3A369]" : "text-slate-400"
+                    )} 
+                  />
+                </Button>
+              </div>
+              <CardDescription className="font-medium text-slate-700 line-clamp-2">
+                {course.title}
+              </CardDescription>
+            </div>
+            <Badge variant="secondary" className="ml-2">{course.credits}cr</Badge>
+          </div>
+          
+          <div className="flex items-center space-x-2 mt-2">
+            <Badge className={cn("border", getDifficultyColor(course.difficulty))}>
+              Difficulty {course.difficulty}/5
+            </Badge>
+            <Badge variant="outline" className="text-xs border-slate-300">
+              {course.college}
+            </Badge>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="pt-0 space-y-4">
+          <p className="text-sm text-slate-600 line-clamp-3">
+            {course.description}
+          </p>
+          
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="flex items-center text-slate-500">
+                <Clock className="h-4 w-4 mr-2" />
+                {course.workload}h/week
+              </div>
+              <div className="flex items-center text-slate-500">
+                <Star className="h-4 w-4 mr-2" />
+                {course.difficulty}/5 difficulty
+              </div>
+              <div className="flex items-center text-slate-500">
+                <Users className="h-4 w-4 mr-2" />
+                {course.instructors.length} instructor{course.instructors.length !== 1 ? 's' : ''}
+              </div>
+              <div className="flex items-center text-slate-500">
+                <Calendar className="h-4 w-4 mr-2" />
+                {[course.offerings.fall && 'Fall', course.offerings.spring && 'Spring', course.offerings.summer && 'Summer'].filter(Boolean).length} semester{[course.offerings.fall && 'Fall', course.offerings.spring && 'Spring', course.offerings.summer && 'Summer'].filter(Boolean).length !== 1 ? 's' : ''}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex space-x-1">
+                {course.offerings.fall && <Badge variant="outline" className="text-xs border-slate-300">Fall</Badge>}
+                {course.offerings.spring && <Badge variant="outline" className="text-xs border-slate-300">Spring</Badge>}
+                {course.offerings.summer && <Badge variant="outline" className="text-xs border-slate-300">Summer</Badge>}
+              </div>
+            </div>
+          </div>
+          
+          {course.threads.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {course.threads.map((thread: string) => (
+                <Badge key={thread} variant="outline" className="text-xs bg-[#B3A369]/10 border-[#B3A369] text-[#B3A369]">
+                  <Target className="h-3 w-3 mr-1" />
+                  {thread}
+                </Badge>
+              ))}
+            </div>
+          )}
+          
+          <div className="flex space-x-2 pt-2">
+            <Button size="sm" className="flex-1 cursor-pointer bg-[#003057] hover:bg-[#002041]">
+              <Plus className="h-3 w-3 mr-1" />
+              Add to Plan
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setSelectedCourse(course)}
+              className='cursor-pointer hover:bg-gray-200/75'
+            >
+              <Eye className="h-3 w-3" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+
   return (
+    selectedCourse? 
+      // Selected course popup
+      <div className='fixed gt-gradient w-screen h-screen flex items-center justify-center' onClick={() => setSelectedCourse(null)}>
+        <CourseCardModal onClick={(e) => e.stopPropagation()} className="bg-white opacity-100 rounded-2xl w-8/12 h-8/12" course={selectedCourse} index={1} />
+      </div> 
+      :
     <div className="space-y-6">
       {/* Enhanced Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">

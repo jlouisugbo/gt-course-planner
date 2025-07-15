@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   description: "Georgia Tech Course Planning Tool",
 };
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"] }); 
 
 export default function RootLayout({
   children,
