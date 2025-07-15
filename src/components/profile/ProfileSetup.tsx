@@ -108,7 +108,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
                     {step < 3 && (
                         <Button
                             onClick={handleNext}
-                            className="bg-[#003057] hover:bg-[#002147]"
+                            className="bg-[#003057] hover:bg-[#b3a369] text-white"
                         >
                             Next
                         </Button>
@@ -117,7 +117,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
                         <Button
                             onClick={() => handleSave()}
                             disabled={isLoading}
-                            className="bg-[#003057] hover:bg-[#002147]"
+                            className="bg-[#003057] hover:bg-[#b3a369] text-white"
                         >
                             {isLoading ? (
                                 <>
@@ -125,7 +125,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
                                     Saving...
                                 </>
                             ) : (
-                                "Complete Setup"
+                                "Save"
                             )}
                         </Button>
                     )}

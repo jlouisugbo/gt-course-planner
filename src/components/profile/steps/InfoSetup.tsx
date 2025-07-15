@@ -84,17 +84,19 @@ export const InfoSetup: React.FC<InfoSetupProps> = ({
               }))
             }
           >
-            <SelectTrigger className={errors.year ? "border-red-500" : ""}>
-              <SelectValue placeholder="Select your year" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1st Year">1st Year</SelectItem>
-              <SelectItem value="2nd Year">2nd Year</SelectItem>
-              <SelectItem value="3rd Year">3rd Year</SelectItem>
-              <SelectItem value="4th Year">4th Year</SelectItem>
-              <SelectItem value="5th Year+">5th Year+</SelectItem>
-              <SelectItem value="Graduate">Graduate</SelectItem>
-            </SelectContent>
+              <SelectTrigger
+                  className={`bg-white ${errors.year ? "border-red-500" : ""}`}
+              >
+                  <SelectValue placeholder="Select your year" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border border-black z-50">
+                  <SelectItem value="1st Year" className="bg-white">1st Year</SelectItem>
+                  <SelectItem value="2nd Year" className="bg-white">2nd Year</SelectItem>
+                  <SelectItem value="3rd Year" className="bg-white">3rd Year</SelectItem>
+                  <SelectItem value="4th Year" className="bg-white">4th Year</SelectItem>
+                  <SelectItem value="5th Year+" className="bg-white">5th Year+</SelectItem>
+                  <SelectItem value="Graduate" className="bg-white">Graduate</SelectItem>
+              </SelectContent>
           </Select>
           {errors.year && (
             <p className="text-red-500 text-sm mt-1">{errors.year}</p>
