@@ -61,10 +61,32 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
 
             <div className="mb-8">
                 <Progress value={(step / 3) * 100} className="h-2" />
-                <div className="flex justify-between mt-2 text-xs text-slate-500">
-                    <span>Personal Info</span>
-                    <span>Academic Program</span>
-                    <span>Academic Record</span>
+
+                <div className="relative mt-6">
+                    <div className="flex items-center justify-between text-base text-slate-500 relative">
+                        {/* Step 1 */}
+                        <div className="flex-1 flex items-center">
+        <span className={step === 1 ? "text-slate-800 font-medium text-xl" : ""}>
+          Personal Info
+        </span>
+                            <div className="flex-1 h-px bg-slate-300 mx-2"></div>
+                        </div>
+
+                        {/* Step 2 */}
+                        <div className="flex-1 flex items-center justify-center">
+        <span className={step === 2 ? "text-slate-800 font-medium text-xl" : ""}>
+          Academic Program
+        </span>
+                            <div className="flex-1 h-px bg-slate-300 mx-2"></div>
+                        </div>
+
+                        {/* Step 3 */}
+                        <div>
+        <span className={step === 3 ? "text-slate-800 font-medium text-xl" : ""}>
+          Academic Record
+        </span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
