@@ -122,12 +122,12 @@ export const AcademicProgramStep: React.FC<AcademicProgramStepProps> = ({
             }))
           }
         >
-          <SelectTrigger className={errors.major ? "border-red-500" : ""}>
+          <SelectTrigger className={`bg-white ${errors.major ? "border-red-500" : ""}`}>
             <SelectValue placeholder="Select your major" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white border border-black z-50 max-h-60 overflow-y-auto">
             {MAJORS.map((major) => (
-              <SelectItem key={major.value} value={major.value}>
+              <SelectItem key={major.value} value={major.value} className="bg-white">
                 {major.label}
               </SelectItem>
             ))}

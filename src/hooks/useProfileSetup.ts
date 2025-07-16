@@ -39,13 +39,33 @@ export const useProfileSetup = (user: any, existingProfile?: Partial<UserProfile
     const newErrors: Record<string, string> = {};
 
     switch (stepNumber) {
-      case 1: // Personal Info Step
-        if (!profile.name?.trim()) newErrors.name = "Name is required";
-        if (!profile.email?.trim()) newErrors.email = "Email is required";
-        if (!profile.gtId?.trim()) newErrors.gtId = "GT ID is required";
-        if (!profile.year?.trim()) newErrors.year = "Year is required";
-        break;
-      
+        case 1: // Personal Info Step
+            if (!profile.name?.trim()) {
+                newErrors.name = "Name is required";
+            }
+
+            if (!profile.email?.trim()) {
+                newErrors.email = "Email is required";
+            } else {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(profile.email)) {
+                    newErrors.email = "Email format is invalid";
+                }
+            }
+
+            if (!profile.gtId?.trim()) {
+                newErrors.gtId = "GT ID is required";
+            } else {
+                const gtIdRegex = /^\d{9}$/;
+                if (!gtIdRegex.test(profile.gtId)) {
+                    newErrors.gtId = "GT ID must be exactly 9 digits";
+                }
+            }
+
+            if (!profile.year?.trim()) {
+                newErrors.year = "Year is required";
+            }
+            break;
       case 2: // Academic Program Step
         if (!profile.major) newErrors.major = "Major is required";
         if (profile.isDoubleMajor && !profile.secondMajor) {
@@ -58,13 +78,38 @@ export const useProfileSetup = (user: any, existingProfile?: Partial<UserProfile
           newErrors.threads = "CS students must select exactly 2 threads";
         }
         break;
-      
-      case 3: // Academic Info Step (Timeline + Record)
-        if (!profile.startDate) newErrors.startDate = "Start date is required";
-        if (!profile.expectedGraduation)
-          newErrors.expectedGraduation = "Expected graduation is required";
-        // GPA and credits are optional, so no validation needed
-        break;
+
+        case 3: // Academic Info Step (Timeline + Record)
+            if (!profile.startDate) {
+                newErrors.startDate = "Start date is required";
+            }
+
+            if (!profile.expectedGraduation) {
+                newErrors.expectedGraduation = "Expected graduation is required";
+            }
+
+            // GPA validation (optional but must be valid if entered)
+            if (profile.currentGPA?.toString().trim()) {
+                const gpaRegex = /^(?:[0-3](?:\.\d{1,2})?|4(?:\.0{1,2})?)$/;
+                if (!gpaRegex.test(String(profile.currentGPA))) {
+                    newErrors.gpa = "GPA must be a number between 0.00 and 4.00";
+                }
+            }
+
+            // Credit Hours validation (optional but must be valid if entered)
+            if (profile.transferCredits?.toString().trim()) {
+                const creditHours = Number(profile.transferCredits?.toString().trim());
+                if (
+                    isNaN(creditHours) ||
+                    !Number.isInteger(creditHours) ||
+                    creditHours < 0 ||
+                    creditHours > 150
+                ) {
+                    newErrors.creditHours = "Credit hours must be an integer between 0 and 150";
+                }
+            }
+            break;
+
     }
 
     setErrors(newErrors);

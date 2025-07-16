@@ -57,12 +57,12 @@ export const AcademicRecordSetup: React.FC<AcademicRecordSetupProps> = ({
                 }))
               }
             >
-              <SelectTrigger className={errors.startDate ? "border-red-500" : ""}>
+              <SelectTrigger className={`bg-white ${errors.startDate ? "border-red-500" : ""}`}>
                 <SelectValue placeholder="When did you start?" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white border border-black z-50">
                 {generateSemesterOptions.slice(0, 20).map((semester) => (
-                  <SelectItem key={semester} value={semester}>
+                  <SelectItem key={semester} value={semester} className="bg-white">
                     {semester}
                   </SelectItem>
                 ))}
@@ -84,12 +84,12 @@ export const AcademicRecordSetup: React.FC<AcademicRecordSetupProps> = ({
                 }))
               }
             >
-              <SelectTrigger className={errors.expectedGraduation ? "border-red-500" : ""}>
+              <SelectTrigger className={`bg-white ${errors.expectedGraduation ? "border-red-500" : ""}`}>
                 <SelectValue placeholder="When do you plan to graduate?" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className= "bg-white border border-black z-50 max-h-60 overflow-y-auto">
                 {generateSemesterOptions.slice(10).map((semester) => (
-                  <SelectItem key={semester} value={semester}>
+                  <SelectItem key={semester} value={semester} className="bg-white">
                     {semester}
                   </SelectItem>
                 ))}
