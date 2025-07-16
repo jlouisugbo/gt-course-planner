@@ -46,6 +46,7 @@ const CourseExplorer = () => {
   const semesterArray = Object.values(semesters);
   const [plannedSemester, setPlannedSemester] = useState<SemesterData>(null);
   const [addToPlan, setAddToPlan] = useState<Boolean>(false);
+  const [seeBookmarks, setSeeBookmarks] = useState<Boolean>(false);
   
   let courses = searchQuery ? searchCourses(searchQuery) : sampleCourses;
 
@@ -81,6 +82,10 @@ const CourseExplorer = () => {
         }
       });
     });
+  }
+
+  if (seeBookmarks) {
+    courses = courses.filter(course => (bookmarkedCourses.has(course.id)))
   }
 
   // Apply sorting
@@ -509,8 +514,8 @@ const CourseExplorer = () => {
             <Share2 className="h-4 w-4 mr-2" />
             Share
           </Button>
-          <Button className="bg-[#003057] hover:bg-[#002041]">
-            <Bookmark className="h-4 w-4 mr-2" />
+          <Button onClick={() => setSeeBookmarks(!seeBookmarks)} className="bg-[#003057] hover:bg-[#002041] cursor-pointer text-white">
+            <Bookmark className={`h-4 w-4 mr-2 ${seeBookmarks && "fill-white"}`} />
             Bookmarks ({bookmarkedCourses.size})
           </Button>
         </div>
