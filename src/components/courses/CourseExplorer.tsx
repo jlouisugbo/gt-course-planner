@@ -30,6 +30,9 @@ import { sampleCourses, searchCourses } from '@/data/courses';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { se } from 'date-fns/locale';
+import { P } from 'framer-motion/dist/types.d-D0HXPxHm';
+import { Course, SemesterData } from '@/types/courses';
+import { usePlannerStore } from '@/hooks/usePlannerStore';
 
 const CourseExplorer = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,6 +42,10 @@ const CourseExplorer = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
   const [bookmarkedCourses, setBookmarkedCourses] = useState<Set<string>>(new Set());
+  const { semesters, addCourseToSemester } = usePlannerStore();
+  const semesterArray = Object.values(semesters);
+  const [plannedSemester, setPlannedSemester] = useState<SemesterData>(null);
+  const [addToPlan, setAddToPlan] = useState<Boolean>(false);
   
   let courses = searchQuery ? searchCourses(searchQuery) : sampleCourses;
 
@@ -124,8 +131,22 @@ const CourseExplorer = () => {
     'Easy (1-2)', 'Medium (3)', 'Hard (4-5)'
   ];
 
+  const handleAddToPlan = (course: Course) => {
+    if (plannedSemester != null) {
+      const plannedCourse = {
+        ...course,
+        semesterId: plannedSemester.id,
+        status: 'planned' as const,
+        year: plannedSemester.year,
+        season: plannedSemester.season
+      };
+      addCourseToSemester(plannedCourse);
+    }
+    setAddToPlan(false);
+  }
+
   // Course display card for grid layout
-  const EnhancedCourseCard = ({ course, index }: { course: any; index: number }) => (
+  const EnhancedCourseCard = ({ course, index }: { course: Course; index: number }) => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -143,7 +164,7 @@ const CourseExplorer = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 cursor-pointer"
+                  className={`h-6 w-6 p-0 ${bookmarkedCourses.has(course.id) ? "" : "opacity-0"} group-hover:opacity-100 cursor-pointer`}
                   onClick={(e) => {
                     e.stopPropagation();
                     toggleBookmark(course.id);
@@ -161,79 +182,76 @@ const CourseExplorer = () => {
                 {course.title}
               </CardDescription>
             </div>
-            <Badge variant="secondary" className="ml-2">{course.credits}cr</Badge>
+            <Badge variant="secondary" className="ml-2 border-slate-300">{course.credits} Credits</Badge>
           </div>
+
+          <div className='flex flex-col flex-1 justify-end'>
+            <div className='flex flex-row justify-between'>
+              <div className='space-y-2'>
+                <div className='flex items-center space-x-2'>
+                  <Badge className={cn("border", getDifficultyColor(course.difficulty))}>
+                    Difficulty {course.difficulty}/5
+                  </Badge>
+                  <Badge variant="outline" className="text-xs border-slate-300">
+                    {course.college}
+                  </Badge>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Badge className="flex items-center border-slate-300">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    {[course.offerings.fall && 'Fall', course.offerings.spring && 'Spring', course.offerings.summer && 'Summer'].filter(Boolean).length} semester{[course.offerings.fall && 'Fall', course.offerings.spring && 'Spring', course.offerings.summer && 'Summer'].filter(Boolean).length !== 1 ? 's' : ''}
+                  </Badge>
+                  {(course.prerequisites.length > 0 || course.corequisites.length > 0) && <Badge variant="outline" className="text-xs border-slate-300"><span>R</span></Badge>}
+                </div>
+              </div>
           
-          <div className="flex items-center space-x-2 mt-2">
-            <Badge className={cn("border", getDifficultyColor(course.difficulty))}>
-              Difficulty {course.difficulty}/5
-            </Badge>
-            <Badge variant="outline" className="text-xs border-slate-300">
-              {course.college}
-            </Badge>
+              <CardContent className="pt-0 space-y-4 flex justify-end">
+                {/* Removed but saving the code for potential reuse */}
+                {/*<p className="text-sm text-slate-600 line-clamp-3">
+                  {course.description}
+                </p>*/}
+                
+                {/* Removed but saving the code for potential reuse */}
+                {/*<div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex space-x-1">
+                      {course.offerings.fall && <Badge variant="outline" className="text-xs border-slate-300">Fall</Badge>}
+                      {course.offerings.spring && <Badge variant="outline" className="text-xs border-slate-300">Spring</Badge>}
+                      {course.offerings.summer && <Badge variant="outline" className="text-xs border-slate-300">Summer</Badge>}
+                    </div>
+                  </div>
+                </div>*/}
+                
+                {/* Removed but saving the code for potential reuse */}
+                {/*{course.threads.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {course.threads.map((thread: string) => (
+                      <Badge key={thread} variant="outline" className="text-xs bg-[#B3A369]/10 border-[#B3A369] text-[#B3A369]">
+                        <Target className="h-3 w-3 mr-1" />
+                        {thread}
+                      </Badge>
+                    ))}
+                  </div>
+                )}*/}
+                
+                <div className="flex space-x-2 pt-2">
+                  <Button size="sm" onClick={() => {setAddToPlan(true); setSelectedCourse(course)}} className="flex-1 cursor-pointer active:scale-95 text-white bg-[#003057] hover:bg-[#002041]">
+                    <Plus className="h-3 w-3 mr-1" />
+                    Add to Plan
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setSelectedCourse(course)}
+                    className='cursor-pointer hover:bg-gray-200/75'
+                  >
+                    <Eye className="h-3 w-3" />
+                  </Button>
+                </div>
+              </CardContent>
+            </div>
           </div>
         </CardHeader>
-        
-        <CardContent className="pt-0 space-y-4">
-          <p className="text-sm text-slate-600 line-clamp-3">
-            {course.description}
-          </p>
-          
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="flex items-center text-slate-500">
-                <Clock className="h-4 w-4 mr-2" />
-                {course.workload}h/week
-              </div>
-              <div className="flex items-center text-slate-500">
-                <Star className="h-4 w-4 mr-2" />
-                {course.difficulty}/5 difficulty
-              </div>
-              <div className="flex items-center text-slate-500">
-                <Users className="h-4 w-4 mr-2" />
-                {course.instructors.length} instructor{course.instructors.length !== 1 ? 's' : ''}
-              </div>
-              <div className="flex items-center text-slate-500">
-                <Calendar className="h-4 w-4 mr-2" />
-                {[course.offerings.fall && 'Fall', course.offerings.spring && 'Spring', course.offerings.summer && 'Summer'].filter(Boolean).length} semester{[course.offerings.fall && 'Fall', course.offerings.spring && 'Spring', course.offerings.summer && 'Summer'].filter(Boolean).length !== 1 ? 's' : ''}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex space-x-1">
-                {course.offerings.fall && <Badge variant="outline" className="text-xs border-slate-300">Fall</Badge>}
-                {course.offerings.spring && <Badge variant="outline" className="text-xs border-slate-300">Spring</Badge>}
-                {course.offerings.summer && <Badge variant="outline" className="text-xs border-slate-300">Summer</Badge>}
-              </div>
-            </div>
-          </div>
-          
-          {course.threads.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {course.threads.map((thread: string) => (
-                <Badge key={thread} variant="outline" className="text-xs bg-[#B3A369]/10 border-[#B3A369] text-[#B3A369]">
-                  <Target className="h-3 w-3 mr-1" />
-                  {thread}
-                </Badge>
-              ))}
-            </div>
-          )}
-          
-          <div className="flex space-x-2 pt-2">
-            <Button size="sm" className="flex-1 cursor-pointer bg-[#003057] hover:bg-[#002041]">
-              <Plus className="h-3 w-3 mr-1" />
-              Add to Plan
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setSelectedCourse(course)}
-              className='cursor-pointer hover:bg-gray-200/75'
-            >
-              <Eye className="h-3 w-3" />
-            </Button>
-          </div>
-        </CardContent>
       </Card>
     </motion.div>
   );
@@ -255,15 +273,38 @@ const CourseExplorer = () => {
                   {course.code}
                 </h3>
                 <h4 className="font-medium text-slate-700 flex-1">{course.title}</h4>
+              </div>
+              
+              <p className="text-sm text-slate-600 mb-3 line-clamp-2 max-w-1/4">
+                {course.description}
+              </p>
+              
+              <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Badge variant="secondary">{course.credits}cr</Badge>
+                  <Badge variant="secondary" className='border-slate-300'>{course.credits} Credits</Badge>
                   <Badge className={cn("border", getDifficultyColor(course.difficulty))}>
                     Difficulty {course.difficulty}/5
                   </Badge>
+                  <div className="flex items-center space-x-2">
+                    <Badge className="flex items-center border-slate-300">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      {[course.offerings.fall && 'Fall', course.offerings.spring && 'Spring', course.offerings.summer && 'Summer'].filter(Boolean).length} semester{[course.offerings.fall && 'Fall', course.offerings.spring && 'Spring', course.offerings.summer && 'Summer'].filter(Boolean).length !== 1 ? 's' : ''}
+                    </Badge>
+                    {(course.prerequisites.length > 0 || course.corequisites.length > 0) && <Badge variant="outline" className="text-xs border-slate-300"><span>R</span></Badge>}
+                  </div>
+                  {course.threads.length > 0 && (
+                    <div className="flex space-x-1">
+                      {course.threads.slice(0, 2).map((thread: string) => (
+                        <Badge key={thread} variant="outline" className="text-xs bg-[#B3A369]/10 border-[#B3A369] text-[#B3A369]">
+                          {thread}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
+                    className={`h-6 w-6 p-0 ${bookmarkedCourses.has(course.id) ? "" : "opacity-0"} group-hover:opacity-100`}
                     onClick={() => toggleBookmark(course.id)}
                   >
                     <Bookmark 
@@ -274,39 +315,6 @@ const CourseExplorer = () => {
                     />
                   </Button>
                 </div>
-              </div>
-              
-              <p className="text-sm text-slate-600 mb-3 line-clamp-2">
-                {course.description}
-              </p>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4 text-sm text-slate-500">
-                  <span className="flex items-center">
-                    <Clock className="h-3 w-3 mr-1" />
-                    {course.workload}h/week
-                  </span>
-                  <span className="flex items-center">
-                    <Users className="h-3 w-3 mr-1" />
-                    {course.instructors[0]}
-                    {course.instructors.length > 1 && ` +${course.instructors.length - 1}`}
-                  </span>
-                  <div className="flex space-x-1">
-                    {course.offerings.fall && <Badge variant="outline" className="text-xs border-slate-300">Fall</Badge>}
-                    {course.offerings.spring && <Badge variant="outline" className="text-xs border-slate-300">Spring</Badge>}
-                    {course.offerings.summer && <Badge variant="outline" className="text-xs border-slate-300">Summer</Badge>}
-                  </div>
-                </div>
-
-                {course.threads.length > 0 && (
-                  <div className="flex space-x-1">
-                    {course.threads.slice(0, 2).map((thread: string) => (
-                      <Badge key={thread} variant="outline" className="text-xs bg-[#B3A369]/10 border-[#B3A369] text-[#B3A369]">
-                        {thread}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
             
@@ -319,7 +327,7 @@ const CourseExplorer = () => {
                 <Eye className="h-4 w-4 mr-2" />
                 Details
               </Button>
-              <Button className="bg-[#003057] hover:bg-[#002041]">
+              <Button onClick={() => {setAddToPlan(true); setSelectedCourse(course)}} className="bg-[#003057] hover:bg-[#002041] text-white">
                 <Plus className="h-4 w-4 mr-2" />
                 Add to Plan
               </Button>
@@ -344,13 +352,13 @@ const CourseExplorer = () => {
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center space-x-2 mb-2">
-                <CardTitle className="text-lg group-hover:text-[#003057] transition-colors">
+                <CardTitle className="text-4xl group-hover:text-[#003057] transition-colors">
                   {course.code}
                 </CardTitle>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 cursor-pointer"
+                  className={`h-6 w-6 p-0 ${bookmarkedCourses.has(course.id) ? "" : "opacity-0"} group-hover:opacity-100 cursor-pointer`}
                   onClick={(e) => {
                     e.stopPropagation();
                     toggleBookmark(course.id);
@@ -368,13 +376,25 @@ const CourseExplorer = () => {
                 {course.title}
               </CardDescription>
             </div>
-            <Badge variant="secondary" className="ml-2">{course.credits}cr</Badge>
+            <Badge variant="secondary" className="ml-2 border-slate-300 text-sm">{course.credits} Credits</Badge>
           </div>
           
           <div className="flex items-center space-x-2 mt-2">
             <Badge className={cn("border", getDifficultyColor(course.difficulty))}>
               Difficulty {course.difficulty}/5
             </Badge>
+
+            {course.threads.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {course.threads.map((thread: string) => (
+                  <Badge key={thread} variant="outline" className="text-xs bg-[#B3A369]/10 border-[#B3A369] text-[#B3A369]">
+                    <Target className="h-3 w-3 mr-1" />
+                    {thread}
+                  </Badge>
+                ))}
+              </div>
+            )}
+
             <Badge variant="outline" className="text-xs border-slate-300">
               {course.college}
             </Badge>
@@ -382,63 +402,79 @@ const CourseExplorer = () => {
         </CardHeader>
         
         <CardContent className="pt-0 space-y-4">
-          <p className="text-sm text-slate-600 line-clamp-3">
-            {course.description}
-          </p>
-          
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="flex items-center text-slate-500">
-                <Clock className="h-4 w-4 mr-2" />
-                {course.workload}h/week
+          <div>
+            <p className="text-sm text-slate-600 line-clamp-3">
+              {course.description}
+            </p>
+            
+            {/*<div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="flex items-center text-slate-500">
+                  <Star className="h-4 w-4 mr-2" />
+                  {course.difficulty}/5 difficulty
+                </div>
+                <div className="flex items-center text-slate-500">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  {[course.offerings.fall && 'Fall', course.offerings.spring && 'Spring', course.offerings.summer && 'Summer'].filter(Boolean).length} semester{[course.offerings.fall && 'Fall', course.offerings.spring && 'Spring', course.offerings.summer && 'Summer'].filter(Boolean).length !== 1 ? 's' : ''}
+                </div>
               </div>
-              <div className="flex items-center text-slate-500">
-                <Star className="h-4 w-4 mr-2" />
-                {course.difficulty}/5 difficulty
-              </div>
-              <div className="flex items-center text-slate-500">
-                <Users className="h-4 w-4 mr-2" />
-                {course.instructors.length} instructor{course.instructors.length !== 1 ? 's' : ''}
-              </div>
-              <div className="flex items-center text-slate-500">
-                <Calendar className="h-4 w-4 mr-2" />
-                {[course.offerings.fall && 'Fall', course.offerings.spring && 'Spring', course.offerings.summer && 'Summer'].filter(Boolean).length} semester{[course.offerings.fall && 'Fall', course.offerings.spring && 'Spring', course.offerings.summer && 'Summer'].filter(Boolean).length !== 1 ? 's' : ''}
-              </div>
-            </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex space-x-1">
-                {course.offerings.fall && <Badge variant="outline" className="text-xs border-slate-300">Fall</Badge>}
-                {course.offerings.spring && <Badge variant="outline" className="text-xs border-slate-300">Spring</Badge>}
-                {course.offerings.summer && <Badge variant="outline" className="text-xs border-slate-300">Summer</Badge>}
+              <div className="flex items-center justify-between">
+                <div className="flex space-x-1">
+                  {course.offerings.fall && <Badge variant="outline" className="text-xs border-slate-300">Fall</Badge>}
+                  {course.offerings.spring && <Badge variant="outline" className="text-xs border-slate-300">Spring</Badge>}
+                  {course.offerings.summer && <Badge variant="outline" className="text-xs border-slate-300">Summer</Badge>}
+                </div>
               </div>
+            </div>*/}
+            
+            <div className="flex flex-col space-y-2 pt-2">
+              <Button size="sm" onClick={() => setAddToPlan(!addToPlan)} className="flex-1 p-1.5 cursor-pointer active:scale-95 text-white bg-[#003057] hover:bg-[#002041]">
+                <Plus className={`h-3 w-3 mr-1 ${addToPlan && "rotate-45"}`} />
+                Add to Plan
+              </Button>
+              {addToPlan && <Card className='flex items-center'>
+                <div className='grid grid-cols-3 space-y-3 space-x-2 w-full p-3 max-h-24 overflow-auto'>
+                  {semesterArray.map(semester => (
+                  <Button className={`cursor-pointer hover:bg-[#B3A369] ${semester == plannedSemester ? "bg-[#B3A369] border-2 border-[#003057]" : "bg-[#D4C794]"}`} onClick={() => setPlannedSemester(semester)} key={semester.id}>{semester.season} {semester.year}</Button>
+                  ))}
+                </div>
+                <Button onClick={() => {handleAddToPlan(course)}} className='bg-[#003057] hover:bg-[#002041] text-white cursor-pointer'>Done</Button>
+              </Card>}
             </div>
           </div>
-          
-          {course.threads.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {course.threads.map((thread: string) => (
-                <Badge key={thread} variant="outline" className="text-xs bg-[#B3A369]/10 border-[#B3A369] text-[#B3A369]">
-                  <Target className="h-3 w-3 mr-1" />
-                  {thread}
-                </Badge>
-              ))}
-            </div>
-          )}
-          
-          <div className="flex space-x-2 pt-2">
-            <Button size="sm" className="flex-1 cursor-pointer bg-[#003057] hover:bg-[#002041]">
-              <Plus className="h-3 w-3 mr-1" />
-              Add to Plan
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setSelectedCourse(course)}
-              className='cursor-pointer hover:bg-gray-200/75'
-            >
-              <Eye className="h-3 w-3" />
-            </Button>
+          <div className='flex flex-row space-x-3'>
+            {course.offerings &&
+            <div className="flex flex-col w-32 text-sm">
+              <button className="peer w-full text-center px-4 py-2 active:scale-95 transition text-sm text-white rounded-full bg-gradient-to-r from-[#003057] via-[#1a365d] to-[#003057] focus:to-[#B3A369] cursor-pointer">
+                <span>Semesters</span>
+              </button>
+              <ul className="hidden overflow-hidden right-0 peer-focus:block w-40 bg-white border border-gray-300 rounded shadow-md mt-2 py-1">
+                {course.offerings.fall && <li className="px-4 py-2 hover:bg-gray-500/10">Fall</li>}
+                {course.offerings.spring && <li className="px-4 py-2 hover:bg-gray-500/10">Spring</li>}
+                {course.offerings.summer && <li className="px-4 py-2 hover:bg-gray-500/10">Summer</li>}
+              </ul>
+            </div>}
+
+            {course.prerequisites.length > 0 &&
+            <div className="flex flex-col w-32 text-sm">
+              <button className="peer w-full text-center px-4 py-2 active:scale-95 transition text-sm text-white rounded-full bg-gradient-to-r from-[#003057] via-[#1a365d] to-[#003057] focus:to-[#B3A369] cursor-pointer">
+                <span>Prerequisites</span>
+              </button>
+              <ul className="hidden overflow-hidden right-0 peer-focus:block w-40 bg-white border border-gray-300 rounded shadow-md mt-2 py-1">
+                {course.prerequisites[0]?.courses.map((c, index) => <li key={index} className="px-4 py-2 hover:bg-gray-500/10">{c}</li>)}
+              </ul>
+            </div>}
+
+            {course.corequisites.length > 0 &&
+            <div className="flex flex-col w-32 text-sm">
+              <button className="peer w-full text-center px-4 py-2 active:scale-95 transition text-sm text-white rounded-full bg-gradient-to-r from-[#003057] via-[#1a365d] to-[#003057] focus:to-[#B3A369] cursor-pointer">
+                <span>Corequisites</span>
+              </button>
+              <ul className="hidden overflow-hidden right-0 peer-focus:block w-40 bg-white border border-gray-300 rounded shadow-md mt-2 py-1">
+                {course.corequisites?.map((c, index) => <li key={index} className="px-4 py-2 hover:bg-gray-500/10">{c}</li>)}
+              </ul>
+            </div>}
           </div>
         </CardContent>
       </Card>
@@ -447,12 +483,14 @@ const CourseExplorer = () => {
 
   return (
     selectedCourse? 
-      // Selected course popup
-      <div className='fixed gt-gradient w-screen h-screen flex items-center justify-center' onClick={() => setSelectedCourse(null)}>
-        <CourseCardModal onClick={(e) => e.stopPropagation()} className="bg-white opacity-100 rounded-2xl w-8/12 h-8/12" course={selectedCourse} index={1} />
-      </div> 
+      <div>
+        {/* Selected course popup */}
+        <div className='fixed gt-gradient w-screen h-screen flex items-center justify-center' onClick={() => {setSelectedCourse(null); setAddToPlan(false)}}>
+          <CourseCardModal onClick={(e) => e.stopPropagation()} className="bg-white opacity-100 rounded-2xl w-8/12 h-8/12" course={selectedCourse} index={1} />
+        </div> 
+      </div>
       :
-    <div className="space-y-6">
+    <div className="space-y-6 p-10 pt-5">
       {/* Enhanced Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
         <div>
@@ -632,7 +670,7 @@ const CourseExplorer = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6"
             >
               {courses.map((course, index) => (
                 <EnhancedCourseCard key={course.id} course={course} index={index} />

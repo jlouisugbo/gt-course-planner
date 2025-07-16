@@ -277,7 +277,7 @@ export const sampleCourses: Course[] = [
         logic: "AND"
       }
     ],
-    corequisites: [],
+    corequisites: ["CS 2340"],
     attributes: ["Core", "Programming"],
     offerings: {
       fall: true,
