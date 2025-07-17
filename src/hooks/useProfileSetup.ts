@@ -1,129 +1,100 @@
+// hooks/useProfileSetup.ts - Updated with your profile structure and auth integration
 import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { UserProfile } from "@/types/user";
+import { UserProfile } from "@/types";
 import { usePlannerStore } from "@/hooks/usePlannerStore";
+import { useAuth } from "@/providers/AuthProvider";
 
-export const useProfileSetup = (user: any, existingProfile?: Partial<UserProfile>, pageMode = false, onClose?: () => void) => {
-  const {
-    updateStudentInfo,
-    updateStudentThreads,
-    updateStudentMinors,
-    updateStudentMajor,
-  } = usePlannerStore();
+export const useProfileSetup = (
+    user: any, 
+    existingProfile?: Partial<UserProfile>, 
+    pageMode = false, 
+    onClose?: () => void
+) => {
+    const { refreshUserRecord } = useAuth();
+    const {
+        updateStudentInfo,
+        updateStudentThreads,
+        updateStudentMinors,
+        updateStudentMajor,
+    } = usePlannerStore();
 
-  const [profile, setProfile] = useState<Partial<UserProfile>>(() => ({
-    name: user?.user_metadata?.full_name || "",
-    email: user?.email || "",
-    gtId: "",
-    major: "",
-    secondMajor: "",
-    threads: [],
-    minors: [],
-    startDate: "",
-    expectedGraduation: "",
-    currentGPA: 0,
-    totalCreditsEarned: 0,
-    isTransferStudent: false,
-    transferCredits: 0,
-    isDoubleMajor: false,
-    year: "",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    ...existingProfile,
-  }));
+    const [profile, setProfile] = useState<Partial<UserProfile>>(() => ({
+        name: user?.user_metadata?.full_name || "",
+        email: user?.email || "",
+        gtId: 0,
+        major: "",
+        secondMajor: "",
+        threads: [],
+        minors: [],
+        startDate: "",
+        expectedGraduation: "",
+        currentGPA: 0,
+        totalCreditsEarned: 0,
+        isTransferStudent: false,
+        transferCredits: 0,
+        isDoubleMajor: false,
+        year: "",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        ...existingProfile,
+    }));
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [isLoading, setIsLoading] = useState(false);
 
-  const validateStep = useCallback((stepNumber: number): boolean => {
-    const newErrors: Record<string, string> = {};
+    const validateStep = useCallback((stepNumber: number): boolean => {
+        const newErrors: Record<string, string> = {};
 
-    switch (stepNumber) {
-        case 1: // Personal Info Step
-            if (!profile.name?.trim()) {
-                newErrors.name = "Name is required";
-            }
-
-            if (!profile.email?.trim()) {
-                newErrors.email = "Email is required";
-            } else {
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(profile.email)) {
-                    newErrors.email = "Email format is invalid";
+        switch (stepNumber) {
+            case 1: // Personal Info Step
+                if (!profile.name?.trim()) newErrors.name = "Name is required";
+                if (!profile.email?.trim()) newErrors.email = "Email is required";
+                if (!profile.gtId) newErrors.gtId = "GT ID is required";
+                if (!profile.year?.trim()) newErrors.year = "Year is required";
+                break;
+            
+            case 2: // Academic Program Step
+                if (!profile.major) newErrors.major = "Major is required";
+                if (profile.isDoubleMajor && !profile.secondMajor) {
+                    newErrors.secondMajor = "Second major is required for double major";
                 }
-            }
-
-            if (!profile.gtId?.trim()) {
-                newErrors.gtId = "GT ID is required";
-            } else {
-                const gtIdRegex = /^\d{9}$/;
-                if (!gtIdRegex.test(profile.gtId)) {
-                    newErrors.gtId = "GT ID must be exactly 9 digits";
-                }
-            }
-
-            if (!profile.year?.trim()) {
-                newErrors.year = "Year is required";
-            }
-            break;
-      case 2: // Academic Program Step
-        if (!profile.major) newErrors.major = "Major is required";
-        if (profile.isDoubleMajor && !profile.secondMajor) {
-          newErrors.secondMajor = "Second major is required for double major";
-        }
-        if (
-          profile.major === "Computer Science" &&
-          profile.threads?.length !== 2
-        ) {
-          newErrors.threads = "CS students must select exactly 2 threads";
-        }
-        break;
-
-        case 3: // Academic Info Step (Timeline + Record)
-            if (!profile.startDate) {
-                newErrors.startDate = "Start date is required";
-            }
-
-            if (!profile.expectedGraduation) {
-                newErrors.expectedGraduation = "Expected graduation is required";
-            }
-
-            // GPA validation (optional but must be valid if entered)
-            if (profile.currentGPA?.toString().trim()) {
-                const gpaRegex = /^(?:[0-3](?:\.\d{1,2})?|4(?:\.0{1,2})?)$/;
-                if (!gpaRegex.test(String(profile.currentGPA))) {
-                    newErrors.gpa = "GPA must be a number between 0.00 and 4.00";
-                }
-            }
-
-            // Credit Hours validation (optional but must be valid if entered)
-            if (profile.transferCredits?.toString().trim()) {
-                const creditHours = Number(profile.transferCredits?.toString().trim());
                 if (
-                    isNaN(creditHours) ||
-                    !Number.isInteger(creditHours) ||
-                    creditHours < 0 ||
-                    creditHours > 150
+                    profile.major === "Computer Science" &&
+                    profile.threads?.length !== 2
                 ) {
-                    newErrors.creditHours = "Credit hours must be an integer between 0 and 150";
+                    newErrors.threads = "CS students must select exactly 2 threads";
                 }
-            }
-            break;
+                break;
+            
+            case 3: // Academic Info Step (Timeline + Record)
+                if (!profile.startDate) newErrors.startDate = "Start date is required";
+                if (!profile.expectedGraduation)
+                    newErrors.expectedGraduation = "Expected graduation is required";
+                // GPA and credits are optional, so no validation needed
+                break;
+        }
 
-    }
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    }, [profile]);
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }, [profile]);
+    const handleSave = useCallback(async () => {
+        // Validate the final step (step 3) before saving
+        if (!validateStep(3)) {
+            console.error('Validation failed for step 3');
+            return;
+        }
 
-  const handleSave = useCallback(async () => {
-    // Validate the final step (step 3) before saving
-    if (validateStep(3)) {
+        if (!user) {
+            console.error("No authenticated user");
+            setErrors({ general: "No authenticated user" });
+            return;
+        }
+
         setIsLoading(true);
+        
         try {
-            if (!user) {
-                throw new Error("No authenticated user");
-            }
             console.log("Saving profile for user:", user.id);
             
             // Fixed and improved getDegreeId function
@@ -188,18 +159,17 @@ export const useProfileSetup = (user: any, existingProfile?: Partial<UserProfile
             // Optional: Warn if we couldn't find the degree program
             if (profile.major && !degreeId) {
                 console.warn(`Could not find degree program for major: ${profile.major}`);
-                // You could add user notification here if needed
             }
 
             // Update the users table with profile information
-            const { error: updateError } = await supabase
+            const { data, error: updateError } = await supabase
                 .from('users')
                 .update({
                     full_name: profile.name,
                     gt_username: profile.gtId,
                     graduation_year: profile.expectedGraduation ? 
                         parseInt(profile.expectedGraduation.split(' ')[1]) : null,
-                    degree_program_id: degreeId, // Now properly awaited and can be null
+                    degree_program_id: degreeId,
                     selected_threads: profile.threads || [],
                     plan_settings: {
                         ...profile,
@@ -208,21 +178,25 @@ export const useProfileSetup = (user: any, existingProfile?: Partial<UserProfile
                     },
                     updated_at: new Date().toISOString()
                 })
-                .eq('auth_id', user.id);
+                .eq('auth_id', user.id)
+                .select()
+                .single();
 
             if (updateError) {
                 console.error("Database update error:", updateError);
                 throw updateError;
             }
             
-            console.log("Profile updated in database successfully");
+            console.log("Profile updated in database successfully:", data);
 
-            // Create complete profile object
+            // Refresh the user record in the auth context
+            await refreshUserRecord();
+
             const completeProfile: UserProfile = {
                 id: user.id,
                 name: profile.name || "",
                 email: profile.email || "",
-                gtId: profile.gtId || "",
+                gtId: profile.gtId || 0,
                 major: profile.major || "",
                 secondMajor: profile.secondMajor,
                 isDoubleMajor: profile.isDoubleMajor,
@@ -235,8 +209,7 @@ export const useProfileSetup = (user: any, existingProfile?: Partial<UserProfile
                 totalCreditsEarned: profile.totalCreditsEarned || 0,
                 isTransferStudent: profile.isTransferStudent || false,
                 transferCredits: profile.transferCredits,
-                advisorName: profile.advisorName,
-                advisorEmail: profile.advisorEmail,
+
                 createdAt: profile.createdAt || new Date(),
                 updatedAt: new Date(),
             };
@@ -246,10 +219,50 @@ export const useProfileSetup = (user: any, existingProfile?: Partial<UserProfile
             console.log("Profile saved to store successfully:", completeProfile);
             
             if (completeProfile.threads && completeProfile.threads.length > 0) {
-                await updateStudentThreads(completeProfile.threads);
+                const threadIds = await Promise.all(
+                    completeProfile.threads.map(async (threadName) => {
+                        const { data, error } = await supabase
+                            .from('threads') // or 'degree_programs' if threads are stored there
+                            .select('id')
+                            .eq('name', threadName)
+                            .single();
+                        
+                        if (error || !data) {
+                            console.warn(`Could not find thread ID for: ${threadName}`);
+                            return null;
+                        }
+                        return data.id;
+                    })
+                );
+            const validThreadIds = threadIds.filter((id): id is number => id !== null);
+                if (validThreadIds.length > 0) {
+                    await updateStudentThreads(validThreadIds);
+                }
             }
+
             if (completeProfile.minors && completeProfile.minors.length > 0) {
-                await updateStudentMinors(completeProfile.minors);
+                // Convert minor names to minor IDs (same pattern as threads)
+                const minorIds = await Promise.all(
+                    completeProfile.minors.map(async (minorName) => {
+                        const { data, error } = await supabase
+                            .from('degree_programs') // assuming minors are in degree_programs table
+                            .select('id')
+                            .eq('name', minorName)
+                            .eq('is_active', true) // add this filter if relevant
+                            .single();
+                        
+                        if (error || !data) {
+                            console.warn(`Could not find minor ID for: ${minorName}`);
+                            return null;
+                        }
+                        return data.id;
+                    })
+                );
+                
+                const validMinorIds = minorIds.filter((id): id is number => id !== null);
+                if (validMinorIds.length > 0) {
+                    await updateStudentMinors(validMinorIds);
+                }
             }
             if (completeProfile.major) {
                 await updateStudentMajor(completeProfile.major);
@@ -274,22 +287,22 @@ export const useProfileSetup = (user: any, existingProfile?: Partial<UserProfile
                 console.log("Calling onClose...");
                 onClose();
             }
+
         } catch (error) {
             console.error("Error saving profile:", error);
-            alert("There was an error saving your profile. Please try again.");
+            setErrors({ general: "There was an error saving your profile. Please try again." });
         } finally {
             setIsLoading(false);
         }
-    }
-}, [validateStep, profile, user, updateStudentInfo, updateStudentThreads, updateStudentMinors, updateStudentMajor, pageMode, onClose]);
+    }, [validateStep, profile, user, updateStudentInfo, updateStudentThreads, updateStudentMinors, updateStudentMajor, pageMode, onClose, refreshUserRecord]);
       
-  return {
-    profile,
-    setProfile,
-    errors,
-    setErrors,
-    isLoading,
-    validateStep,
-    handleSave
-  };
+    return {
+        profile,
+        setProfile,
+        errors,
+        setErrors,
+        isLoading,
+        validateStep,
+        handleSave
+    };
 };

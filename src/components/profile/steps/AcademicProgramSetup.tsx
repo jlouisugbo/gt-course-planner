@@ -5,18 +5,17 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { GraduationCap, Plus } from "lucide-react";
-import { UserProfile } from "@/types/user";
+import { UserProfile } from "@/types";
 import { CS_THREADS, COE_THREADS, CM_THREADS, getAllMajors, getAllMinors } from "@/lib/constants";
 
-interface AcademicProgramStepProps {
+interface AcademicProgramSetupProps {
   profile: Partial<UserProfile>;
   setProfile: React.Dispatch<React.SetStateAction<Partial<UserProfile>>>;
   errors: Record<string, string>;
 }
 
-export const AcademicProgramStep: React.FC<AcademicProgramStepProps> = ({
+export const AcademicProgramSetup: React.FC<AcademicProgramSetupProps> = ({
   profile,
   setProfile,
   errors

@@ -1,5 +1,5 @@
 export interface Course {
-    id: string;
+    id: number;
     code: string;
     title: string;
     credits: number;
@@ -8,9 +8,7 @@ export interface Course {
     corequisites: string[];
     attributes: string[];
     offerings: SemesterOffering;
-    instructors: string[];
     difficulty: number;
-    workload: number;
     threads: string[];
     college: string;
 }
@@ -31,15 +29,27 @@ export interface SemesterOffering {
 }
 
 export interface PlannedCourse extends Course {
-    semesterId: string;
+    semesterId: number;
     status: "completed" | "in-progress" | "planned";
-    grade?: string;
+    grade?: string | null;
     year: number;
     season: "Fall" | "Spring" | "Summer";
 }
 
+export interface AcademicRecord {
+    courseId: number;
+    courseCode: string;
+    courseTitle: string;
+    credits: number;
+    grade: string;
+    semester: string;
+    year: number;
+    gpaPoints: number;
+    status: "completed" | "in-progress" | "withdrawn" | "audit";
+}
+
 export interface SemesterData {
-    id: string;
+    id: number;
     year: number;
     season: "Fall" | "Spring" | "Summer";
     courses: PlannedCourse[];
@@ -47,4 +57,12 @@ export interface SemesterData {
     maxCredits: number;
     isActive: boolean;
     gpa: number;
+}
+
+export interface CourseFilters {
+    search?: string
+    credits?: number
+    code?: string
+    title?: string
+    course_type?: string
 }

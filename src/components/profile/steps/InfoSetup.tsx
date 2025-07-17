@@ -1,12 +1,11 @@
-// steps/PersonalInfoStep.tsx
-import React, { useMemo } from "react";
+import React from "react";
+//import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { User } from "lucide-react";
-import { UserProfile } from "@/types/user";
+import { UserProfile } from "@/types";
 
 interface InfoSetupProps {
   profile: Partial<UserProfile>;
@@ -19,6 +18,7 @@ export const InfoSetup: React.FC<InfoSetupProps> = ({
   setProfile,
   errors
 }) => {
+  /*
   const SEMESTERS = ["Fall", "Spring", "Summer"];
   const CURRENT_YEAR = new Date().getFullYear();
 
@@ -41,7 +41,7 @@ export const InfoSetup: React.FC<InfoSetupProps> = ({
     }
     return options;
   }, [CURRENT_YEAR]);
-
+  */
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -133,7 +133,7 @@ export const InfoSetup: React.FC<InfoSetupProps> = ({
             onChange={(e) =>
               setProfile(prev => ({
                 ...prev,
-                gtId: e.target.value,
+                gtId: parseInt(e.target.value) || 0,
               }))
             }
             placeholder="e.g., 903123456"

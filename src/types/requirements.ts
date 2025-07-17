@@ -1,5 +1,5 @@
 export interface RequirementCategory {
-    id: string;
+    id: number;
     name: string;
     requiredCredits: number;
     completedCredits: number;
@@ -17,29 +17,28 @@ export interface SpecificRequirement {
     completed: boolean;
 }
 
-
 export interface ThreadRequirement {
-  name: string;
-  requiredCourses: string[];
-  electiveOptions: string[];
-  totalCredits: number;
-  isComplete: boolean;
+    name: string;
+    requiredCourses: string[];
+    electiveOptions: string[];
+    totalCredits: number;
+    isComplete: boolean;
 }
 
 export interface MinorRequirement {
-  name: string;
-  requiredCourses: string[];
-  electiveOptions: string[];
-  totalCredits: number;
-  isComplete: boolean;
+    name: string;
+    requiredCourses: string[];
+    electiveOptions: string[];
+    totalCredits: number;
+    isComplete: boolean;
 }
 
 export interface MajorRequirement {
-  name: string;
-  coreRequirements: string[];
-  electiveOptions: string[];
-  totalCredits: number;
-  isComplete: boolean;
+    name: string;
+    coreRequirements: string[];
+    electiveOptions: string[];
+    totalCredits: number;
+    isComplete: boolean;
 }
 
 export interface DegreeRequirements {
@@ -48,4 +47,48 @@ export interface DegreeRequirements {
     threads: ThreadRequirement[];
     gpaRequirement: number;
     residencyHours: number;
+}
+
+export interface DegreeProgram {
+    id: number;
+    name: string;
+    degree_type: 'Thread' | 'Minor' | 'Major';
+    required_credits: number;
+    description?: string;
+    requirements?: {
+        core_courses?: number[];
+        elective_credits?: number;
+        categories?: {
+            name: string;
+            required_credits: number;
+            eligible_courses: number[];
+        }[];
+    };
+}
+
+export interface ProgressItem {
+    id: number;
+    name: string;
+    type: 'thread' | 'minor';
+    completed: number;
+    required: number;
+    percentage: number;
+    color: string;
+    courses: {
+        completed: number[];
+        inProgress: number[];
+        planned: number[];
+        remaining: number[];
+    };
+}
+
+export interface AcademicProgress {
+    totalCreditsRequired: number;
+    creditsCompleted: number;
+    creditsInProgress: number;
+    creditsPlanned: number;
+    currentGPA: number;
+    projectedGPA: number;
+    graduationDate: string;
+    onTrack: boolean;
 }

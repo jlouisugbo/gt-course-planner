@@ -1,130 +1,76 @@
-import { useEffect, useState } from 'react'
-import { User, Session } from '@supabase/supabase-js'
-import { authService } from '@/lib/auth'
-import { supabase } from '@/lib/supabaseClient'
+import { supabase } from "@/lib/supabaseClient";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
-export function useAuth() {
-    const [user, setUser] = useState<User | null>(null)
-    const [session, setSession] = useState<Session | null>(null)
-    const [loading, setLoading] = useState(true)
-
-    useEffect(() => {
-        // Get initial session
-        authService.getSession().then(async ({ data: { session } }) => {
-            console.log('useAuth - Initial session:', session?.user?.id);
-            setSession(session);
-            setUser(session?.user ?? null);
-            
-            // If we have a session but haven't processed user creation yet
-            if (session?.user) {
-                await ensureUserExists(session.user);
-            }
-            
-            setLoading(false);
-        }).catch(error => {
-            console.error('useAuth - Error getting initial session:', error);
-            setLoading(false);
+export const authService = {
+    async signInWithGoogle() {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: "google",
+            options: {
+                redirectTo: `${window.location.origin}/auth/callback`,
+                queryParams: {
+                    access_type: "offline",
+                    prompt: "consent",
+                },
+            },
         });
 
-        // Listen for auth changes
-        const {
-            data: { subscription },
-        } = authService.onAuthStateChange(async (event, session) => {
-            console.log('useAuth - Auth state change:', event, session?.user?.id);
-            setUser(session?.user ?? null);
-            setSession(session);
+        if (error) {
+            console.error('Error in signInWithGoogle:', error);
+            throw error;
+        }
+        return data;
+    },
 
-            if (event === "SIGNED_IN" && session?.user) {
-                await ensureUserExists(session.user);
-            }
-            
-            setLoading(false);
+    async signOut() {
+        console.log('authService.signOut called');
+        const { error } = await supabase.auth.signOut({
+            scope: 'local'
         });
+        
+        if (error) {
+            console.error('Error in authService.signOut:', error);
+            throw error;
+        }
+        
+        console.log('authService.signOut completed successfully');
+    },
 
-        return () => subscription.unsubscribe();
-    }, []); // FIX: Added missing dependency array
-
-    const ensureUserExists = async (user: User) => {
+    async getSession() {
         try {
-            console.log('useAuth - Checking if user exists:', user.id);
+            const response = await supabase.auth.getSession();
+            console.log('authService.getSession response:', response.data.session?.user?.id);
+            return response;
+        } catch (error) {
+            console.error('Error in getSession:', error);
+            throw error;
+        }
+    },
+
+    async getUser() {
+        try {
+            const {
+                data: { user },
+                error,
+            } = await supabase.auth.getUser();
             
-            // First check if user exists
-            const { data: existingUser, error: fetchError } = await supabase
-                .from("users")
-                .select("id")
-                .eq("auth_id", user.id)
-                .maybeSingle();
-
-            console.log('useAuth - Existing user check:', { existingUser, fetchError });
-
-            // If user doesn't exist, create them
-            if (!existingUser && !fetchError) {
-                console.log('useAuth - Creating new user record');
-                
-                const { data: newUser, error: insertError } = await supabase
-                    .from("users")
-                    .insert({
-                        auth_id: user.id,
-                        email: user.email!,
-                        full_name: user.user_metadata?.full_name || user.email!.split("@")[0],
-                        plan_settings: {
-                            plan_name: "My 4-Year Plan",
-                            starting_semester: "Fall 2024",
-                        },
-                    })
-                    .select()
-                    .single();
-
-                if (insertError) {
-                    console.error("useAuth - Error creating user:", insertError);
-                } else {
-                    console.log("useAuth - User created successfully:", newUser);
-                }
-            } else if (fetchError) {
-                console.error("useAuth - Error checking user:", fetchError);
-            } else {
-                console.log("useAuth - User already exists");
+            if (error) {
+                console.error('Error in getUser:', error);
+                throw error;
             }
-        } catch (error) {
-            console.error("useAuth - Error in ensureUserExists:", error);
-        }
-    };
-
-    const signInWithGoogle = async () => {
-        setLoading(true);
-        try {
-            await authService.signInWithGoogle();
-        } catch (error) {
-            console.error("Error signing in with Google:", error);
-            setLoading(false); // FIX: Reset loading on error
-        }
-    };
-
-    const signOut = async () => {
-        console.log('SignOut function called');
-        try {
-            console.log('Clearing local state...');
-            setUser(null);
-            setSession(null);
             
-            console.log('Calling supabase signOut...');
-            await authService.signOut();
-            console.log('Supabase signOut successful');
-            
-            console.log('About to redirect...');
-            window.location.replace('/');
-            
+            return user;
         } catch (error) {
-            console.error("Error signing out:", error);
-            window.location.href = '/';
+            console.error('Error in getUser:', error);
+            throw error;
         }
-    };
+    },
 
-    return {
-        user,
-        session,
-        loading,
-        signInWithGoogle,
-        signOut,
-    };
-}
+    onAuthStateChange(
+        callback: (event: AuthChangeEvent, session: Session | null) => void,
+    ) {
+        return supabase.auth.onAuthStateChange((event, session) => {
+            console.log('authService - Auth state change:', event, session?.user?.id);
+            callback(event, session);
+        });
+    },
+};

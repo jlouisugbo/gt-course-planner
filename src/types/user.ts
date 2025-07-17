@@ -1,23 +1,22 @@
+import { MajorRequirement, MinorRequirement, ThreadRequirement } from '@/types';
 export interface UserProfile {
-    id: string;
+    id: number;
     name: string;
     email: string;
-    gtId: string;
+    gtId: number;
     major: string;
-    secondMajor?: string; // Optional for double majors
-    isDoubleMajor?: boolean; // Indicates if the user has a second major
+    secondMajor?: string; 
+    isDoubleMajor?: boolean; 
     concentration?: string;
     threads: string[];
     minors: string[];
-    startDate: string; // Format: "Fall 2024"
-    expectedGraduation: string; // Format: "Spring 2028"
+    startDate: string; 
+    expectedGraduation: string;
     currentGPA: number;
     year: string;
     totalCreditsEarned: number;
     isTransferStudent: boolean;
     transferCredits?: number;
-    advisorName?: string;
-    advisorEmail?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -31,14 +30,17 @@ export interface UserSettings {
     defaultCreditLoad: number;
 }
 
-export interface AcademicRecord {
-    courseId: string;
-    courseCode: string;
-    courseTitle: string;
-    credits: number;
-    grade: string;
-    semester: string;
-    year: number;
-    gpaPoints: number;
-    status: "completed" | "in-progress" | "withdrawn" | "audit";
+export interface StudentInfo {
+    id: number;
+    name: string;
+    email: string;
+    major: string;
+    threads: string[];
+    minors: string[];
+    majorRequirements: MajorRequirement[];
+    minorRequirements?: MinorRequirement[];
+    threadRequirements?: ThreadRequirement[];
+    startYear: number;
+    expectedGraduation: string;
+    currentGPA: number;
 }

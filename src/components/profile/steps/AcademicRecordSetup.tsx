@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, BookOpen, Target } from "lucide-react";
-import { UserProfile } from "@/types/user";
+import { UserProfile } from "@/types";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface AcademicRecordSetupProps {

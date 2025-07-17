@@ -27,14 +27,14 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, Filter, BookOpen, Clock, Star } from "lucide-react";
+import { Plus, Search, Filter, BookOpen, Star } from "lucide-react";
 import { Course, PlannedCourse } from "@/types/courses";
 import { usePlannerStore } from "@/hooks/usePlannerStore";
-import { sampleCourses } from "@/data/courses";
 import { motion, AnimatePresence } from "framer-motion";
+import { useCoursesPaginated } from '@/data/courses'; 
 
 interface CourseManagerProps {
-    semesterId: string;
+    semesterId: number; 
     onClose: () => void;
 }
 
@@ -61,18 +61,46 @@ const CourseManager: React.FC<CourseManagerProps> = ({
         status: "planned" as "completed" | "in-progress" | "planned",
     });
 
-    const semester = semesters[semesterId];
-    const filteredCourses = sampleCourses.filter(
-        (course) =>
-            course.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            course.title.toLowerCase().includes(searchQuery.toLowerCase()),
+    // Fetch courses using your existing service with search filtering
+    const { 
+        data: coursesResponse, 
+        isLoading, 
+        error 
+    } = useCoursesPaginated(
+        { 
+            search: searchQuery || undefined, // Only pass search if there's a query
+        },
+        { 
+            page: 1, 
+            limit: 20 
+        }
     );
+
+    const courses = coursesResponse?.data || [];
+    const semester = semesters[semesterId];
+    
+    // Since we're using server-side filtering, we don't need to filter again
+    const filteredCourses = courses;
 
     const handleAddCourse = (course: Course) => {
         const plannedCourse: PlannedCourse = {
-            ...course,
-            semesterId,
+            // Course properties
+            id: course.id,
+            code: course.code,
+            title: course.title,
+            credits: course.credits,
+            description: course.description,
+            prerequisites: course.prerequisites,
+            corequisites: course.corequisites,
+            attributes: course.attributes,
+            offerings: course.offerings,
+            difficulty: course.difficulty,
+            threads: course.threads,
+            college: course.college,
+            // Planning properties
+            semesterId: semesterId,
             status: "planned",
+            grade: null,
             year: semester.year,
             season: semester.season,
         };
@@ -84,8 +112,12 @@ const CourseManager: React.FC<CourseManagerProps> = ({
     const handleAddCustomCourse = () => {
         if (!customCourse.code || !customCourse.title) return;
 
-        const course: Course = {
-            id: `custom-${Date.now()}`,
+        // Generate a numeric ID for custom courses (timestamp-based)
+        const customId = Date.now();
+
+        const plannedCourse: PlannedCourse = {
+            // Course properties
+            id: customId,
             code: customCourse.code,
             title: customCourse.title,
             credits: customCourse.credits,
@@ -94,18 +126,13 @@ const CourseManager: React.FC<CourseManagerProps> = ({
             corequisites: [],
             attributes: ["Custom"],
             offerings: { fall: true, spring: true, summer: true },
-            instructors: [],
             difficulty: 3,
-            workload: customCourse.credits * 3,
             threads: [],
             college: "Custom",
-        };
-
-        const plannedCourse: PlannedCourse = {
-            ...course,
-            semesterId,
+            // Planning properties
+            semesterId: semesterId,
             status: customCourse.status,
-            grade: customCourse.grade || undefined,
+            grade: customCourse.grade || null,
             year: customCourse.year,
             season: semester.season,
         };
@@ -143,10 +170,6 @@ const CourseManager: React.FC<CourseManagerProps> = ({
             </div>
 
             <div className="flex items-center space-x-2 text-xs text-slate-500 mb-2">
-                <span className="flex items-center">
-                    <Clock className="h-3 w-3 mr-1" />
-                    {course.workload}h/week
-                </span>
                 <span className="flex items-center">
                     <Star className="h-3 w-3 mr-1" />
                     {course.difficulty}/5
@@ -186,6 +209,22 @@ const CourseManager: React.FC<CourseManagerProps> = ({
             </div>
         </motion.div>
     );
+
+    if (!semester) {
+        return (
+            <Dialog open={true} onOpenChange={onClose}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Error</DialogTitle>
+                        <DialogDescription>
+                            Semester not found. Please try again.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <Button onClick={onClose}>Close</Button>
+                </DialogContent>
+            </Dialog>
+        );
+    }
 
     return (
         <Dialog open={true} onOpenChange={onClose}>
@@ -232,19 +271,43 @@ const CourseManager: React.FC<CourseManagerProps> = ({
                             </Button>
                         </div>
 
-                        {/* Course Results */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
-                            <AnimatePresence>
-                                {filteredCourses.map((course) => (
-                                    <CourseCard
-                                        key={course.id}
-                                        course={course}
-                                    />
-                                ))}
-                            </AnimatePresence>
-                        </div>
+                        {/* Loading State */}
+                        {isLoading && (
+                            <div className="text-center py-8 text-slate-500">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-400 mx-auto mb-2"></div>
+                                Loading courses...
+                            </div>
+                        )}
 
-                        {filteredCourses.length === 0 && searchQuery && (
+                        {/* Error State */}
+                        {error && (
+                            <div className="text-center text-red-500 py-8">
+                                <div className="mb-2">Error loading courses</div>
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={() => window.location.reload()}
+                                >
+                                    Retry
+                                </Button>
+                            </div>
+                        )}
+
+                        {/* Course Results */}
+                        {!isLoading && !error && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+                                <AnimatePresence>
+                                    {filteredCourses.map((course) => (
+                                        <CourseCard
+                                            key={course.id}
+                                            course={course}
+                                        />
+                                    ))}
+                                </AnimatePresence>
+                            </div>
+                        )}
+
+                        {!isLoading && !error && filteredCourses.length === 0 && searchQuery && (
                             <div className="text-center py-8 text-slate-500">
                                 <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
                                 <p>
@@ -254,6 +317,16 @@ const CourseManager: React.FC<CourseManagerProps> = ({
                                 <p className="text-sm">
                                     Try a different search term or add a custom
                                     course
+                                </p>
+                            </div>
+                        )}
+
+                        {!isLoading && !error && filteredCourses.length === 0 && !searchQuery && (
+                            <div className="text-center py-8 text-slate-500">
+                                <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                <p>Start typing to search courses</p>
+                                <p className="text-sm">
+                                    Or add a custom course using the other tab
                                 </p>
                             </div>
                         )}
@@ -464,8 +537,7 @@ const CourseManager: React.FC<CourseManagerProps> = ({
                                     {selectedCourse.title}
                                 </DialogTitle>
                                 <DialogDescription>
-                                    {selectedCourse.credits} credits •{" "}
-                                    {selectedCourse.college}
+                                    {selectedCourse.credits} credits • {selectedCourse.college}
                                 </DialogDescription>
                             </DialogHeader>
 
@@ -482,25 +554,11 @@ const CourseManager: React.FC<CourseManagerProps> = ({
                                         <div className="space-y-1 text-sm">
                                             <div className="flex justify-between">
                                                 <span>Difficulty:</span>
-                                                <span>
-                                                    {selectedCourse.difficulty}
-                                                    /5
-                                                </span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span>Workload:</span>
-                                                <span>
-                                                    {selectedCourse.workload}
-                                                    h/week
-                                                </span>
+                                                <span>{selectedCourse.difficulty}/5</span>
                                             </div>
                                             <div className="flex justify-between">
                                                 <span>Prerequisites:</span>
-                                                <span>
-                                                    {selectedCourse
-                                                        .prerequisites.length ||
-                                                        "None"}
-                                                </span>
+                                                <span>{selectedCourse.prerequisites.length || "None"}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -515,14 +573,12 @@ const CourseManager: React.FC<CourseManagerProps> = ({
                                                     Fall
                                                 </Badge>
                                             )}
-                                            {selectedCourse.offerings
-                                                .spring && (
+                                            {selectedCourse.offerings.spring && (
                                                 <Badge variant="outline">
                                                     Spring
                                                 </Badge>
                                             )}
-                                            {selectedCourse.offerings
-                                                .summer && (
+                                            {selectedCourse.offerings.summer && (
                                                 <Badge variant="outline">
                                                     Summer
                                                 </Badge>
@@ -537,16 +593,29 @@ const CourseManager: React.FC<CourseManagerProps> = ({
                                             CS Threads
                                         </h4>
                                         <div className="flex flex-wrap gap-1">
-                                            {selectedCourse.threads.map(
-                                                (thread) => (
-                                                    <Badge
-                                                        key={thread}
-                                                        className="bg-[#B3A369] text-white"
-                                                    >
-                                                        {thread}
-                                                    </Badge>
-                                                ),
-                                            )}
+                                            {selectedCourse.threads.map((thread) => (
+                                                <Badge
+                                                    key={thread}
+                                                    className="bg-[#B3A369] text-white"
+                                                >
+                                                    {thread}
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {selectedCourse.attributes.length > 0 && (
+                                    <div>
+                                        <h4 className="font-medium mb-2">
+                                            Attributes
+                                        </h4>
+                                        <div className="flex flex-wrap gap-1">
+                                            {selectedCourse.attributes.map((attr) => (
+                                                <Badge key={attr} variant="outline">
+                                                    {attr}
+                                                </Badge>
+                                            ))}
                                         </div>
                                     </div>
                                 )}

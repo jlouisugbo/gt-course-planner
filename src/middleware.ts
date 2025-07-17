@@ -1,4 +1,3 @@
-// middleware.ts - temporary debug version
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -12,17 +11,14 @@ export async function middleware(request: NextRequest) {
 
   // Allow all public routes
   if (pathname === '/' || 
-      pathname.startsWith('/auth') || 
+      pathname.startsWith('/landing') || 
       pathname.startsWith('/setup') ||
-      pathname.startsWith('/_next') ||
-      pathname.startsWith('/api')) {
+      pathname.startsWith('/')) {
     return NextResponse.next()
   }
 
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+  let supabaseResponse = NextResponse.next({
+    request,
   })
 
   const supabase = createServerClient(
@@ -30,60 +26,36 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
+        getAll() {
+          return request.cookies.getAll()
         },
-        set(name: string, value: string, options: any) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({
+            request,
           })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-        },
-        remove(name: string, options: any) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
         },
       },
     }
   )
 
-  // Get user session
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   console.log('Middleware - pathname:', pathname)
   console.log('Middleware - user exists:', !!user)
 
-  // NOT AUTHENTICATED
   if (!user) {
     console.log('Middleware - No user, redirecting to home')
-    return NextResponse.redirect(new URL('/', request.url))
+    const url = request.nextUrl.clone()
+    url.pathname = '/landing' 
+    return NextResponse.redirect(url)
   }
 
-  // AUTHENTICATED - check profile setup
   const { data: userProfile, error: profileError } = await supabase
     .from('users')
     .select('degree_program_id, full_name, graduation_year')
@@ -96,7 +68,9 @@ export async function middleware(request: NextRequest) {
   // If no profile exists, redirect to setup
   if (profileError?.code === 'PGRST116') {
     console.log('Middleware - No profile, redirecting to setup')
-    return NextResponse.redirect(new URL('/setup', request.url))
+    const url = request.nextUrl.clone()
+    url.pathname = '/setup'
+    return NextResponse.redirect(url)
   }
 
   const isSetupComplete = Boolean(
@@ -110,12 +84,14 @@ export async function middleware(request: NextRequest) {
   // AUTHENTICATED + SETUP NOT COMPLETE
   if (!isSetupComplete) {
     console.log('Middleware - Setup not complete, redirecting to setup')
-    return NextResponse.redirect(new URL('/setup', request.url))
+    const url = request.nextUrl.clone()
+    url.pathname = '/setup'
+    return NextResponse.redirect(url)
   }
 
   // AUTHENTICATED + SETUP COMPLETE - allow access
   console.log('Middleware - Setup complete, allowing access')
-  return response
+  return supabaseResponse
 }
 
 export const config = {

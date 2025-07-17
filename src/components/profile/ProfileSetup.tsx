@@ -1,15 +1,15 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { useAuth } from "@/lib/authProvider";
+import { useAuth } from "@/providers/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { X } from "lucide-react";
-import { UserProfile } from "@/types/user";
+import { UserProfile } from "@/types";
 import { motion } from "framer-motion";
 import { useProfileSetup } from "@/hooks/useProfileSetup";
 import { InfoSetup } from "./steps/InfoSetup";
-import { AcademicProgramStep } from "./steps/AcademicProgramSetup";
+import { AcademicProgramSetup } from "./steps/AcademicProgramSetup";
 import { AcademicRecordSetup } from "./steps/AcademicRecordSetup";
 
 interface ProfileSetupProps {
@@ -100,7 +100,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
             )}
 
             {step === 2 && (
-                <AcademicProgramStep
+                <AcademicProgramSetup
                     profile={profile}
                     setProfile={setProfile}
                     errors={errors}

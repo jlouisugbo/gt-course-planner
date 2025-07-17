@@ -1,38 +1,15 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Search,
-  BookOpen,
-  Clock,
-  Users,
-  Star,
-  Plus,
-  Grid3X3,
-  List,
-  SortAsc,
-  SortDesc,
-  Calendar,
-  Target,
-  TrendingUp,
-  CheckCircle,
-  Download,
-  Share2,
-  Bookmark,
-  Eye,
-} from 'lucide-react';
-import { sampleCourses, searchCourses } from '@/data/courses';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
-import { se } from 'date-fns/locale';
-import { P } from 'framer-motion/dist/types.d-D0HXPxHm';
-import { Course, SemesterData } from '@/types/courses';
-import { usePlannerStore } from '@/hooks/usePlannerStore';
+import { BookOpen, TrendingUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+import { CourseExplorerHeader } from './parts/CourseExplorerHeader';
+import { CourseSearchFilters } from './parts/CourseSearchFilters';
+import { CourseGrid } from './parts/CourseGrid';
+import { CourseList } from './parts/CourseList';
+import { useCourseFiltering } from '@/hooks/useCourseFiltering';
 
 const CourseExplorer = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,83 +17,15 @@ const CourseExplorer = () => {
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<'code' | 'difficulty' | 'credits' | 'popularity'>('code');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [selectedCourse, setSelectedCourse] = useState<any>(null);
   const [bookmarkedCourses, setBookmarkedCourses] = useState<Set<string>>(new Set());
-  const { semesters, addCourseToSemester } = usePlannerStore();
-  const semesterArray = Object.values(semesters);
-  const [plannedSemester, setPlannedSemester] = useState<SemesterData>(null);
-  const [addToPlan, setAddToPlan] = useState<Boolean>(false);
-  const [seeBookmarks, setSeeBookmarks] = useState<Boolean>(false);
-  
-  let courses = searchQuery ? searchCourses(searchQuery) : sampleCourses;
 
-  // Apply filters
-  if (selectedFilters.length > 0) {
-    courses = courses.filter(course => {
-      return selectedFilters.some(filter => {
-        switch (filter) {
-          case 'CS Core':
-            return ['CS 1301', 'CS 1331', 'CS 1332', 'CS 2110', 'CS 2340', 'CS 3510'].includes(course.code);
-          case 'Math':
-            return course.code.startsWith('MATH');
-          case 'Science':
-            return course.code.startsWith('PHYS') || course.code.startsWith('CHEM') || course.code.startsWith('BIOL');
-          case 'Intelligence Thread':
-            return course.threads.includes('Intelligence');
-          case 'Systems Thread':
-            return course.threads.includes('Systems & Architecture');
-          case 'Fall Offerings':
-            return course.offerings.fall;
-          case 'Spring Offerings':
-            return course.offerings.spring;
-          case 'Summer Offerings':
-            return course.offerings.summer;
-          case 'Easy (1-2)':
-            return course.difficulty <= 2;
-          case 'Medium (3)':
-            return course.difficulty === 3;
-          case 'Hard (4-5)':
-            return course.difficulty >= 4;
-          default:
-            return false;
-        }
-      });
-    });
-  }
-
-  if (seeBookmarks) {
-    courses = courses.filter(course => (bookmarkedCourses.has(course.id)))
-  }
-
-  // Apply sorting
-  courses = [...courses].sort((a, b) => {
-    let comparison = 0;
-    switch (sortBy) {
-      case 'code':
-        comparison = a.code.localeCompare(b.code);
-        break;
-      case 'difficulty':
-        comparison = a.difficulty - b.difficulty;
-        break;
-      case 'credits':
-        comparison = a.credits - b.credits;
-        break;
-      case 'popularity':
-        // Mock popularity based on course level and threads
-        const aPopularity = a.threads.length + (5 - a.difficulty);
-        const bPopularity = b.threads.length + (5 - b.difficulty);
-        comparison = bPopularity - aPopularity;
-        break;
-    }
-    return sortOrder === 'asc' ? comparison : -comparison;
+  // Custom hook for filtering logic
+  const { courses: filteredCourses, isLoading, error, total } = useCourseFiltering({
+    searchQuery,
+    selectedFilters,
+    sortBy,
+    sortOrder,
   });
-
-  const getDifficultyColor = (difficulty: number) => {
-    if (difficulty <= 2) return 'bg-green-100 text-green-800 border-green-300';
-    if (difficulty <= 3) return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-    if (difficulty <= 4) return 'bg-orange-100 text-orange-800 border-orange-300';
-    return 'bg-red-100 text-red-800 border-red-300';
-  };
 
   const toggleBookmark = (courseId: string) => {
     setBookmarkedCourses(prev => {
@@ -130,523 +39,76 @@ const CourseExplorer = () => {
     });
   };
 
-  const filterOptions = [
-    'CS Core', 'Math', 'Science', 'Intelligence Thread', 'Systems Thread',
-    'Fall Offerings', 'Spring Offerings', 'Summer Offerings',
-    'Easy (1-2)', 'Medium (3)', 'Hard (4-5)'
-  ];
-
-  const handleAddToPlan = (course: Course) => {
-    if (plannedSemester != null) {
-      const plannedCourse = {
-        ...course,
-        semesterId: plannedSemester.id,
-        status: 'planned' as const,
-        year: plannedSemester.year,
-        season: plannedSemester.season
-      };
-      addCourseToSemester(plannedCourse);
-    }
-    setAddToPlan(false);
-  }
-
-  // Course display card for grid layout
-  const EnhancedCourseCard = ({ course, index }: { course: Course; index: number }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
-      className={'group'}
-    >
-      <Card className="h-full hover:shadow-xl transition-all duration-300 group border-slate-300 hover:border-[#B3A369]">
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center space-x-2 mb-2">
-                <CardTitle className="text-lg group-hover:text-[#003057] transition-colors">
-                  {course.code}
-                </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`h-6 w-6 p-0 ${bookmarkedCourses.has(course.id) ? "" : "opacity-0"} group-hover:opacity-100 cursor-pointer`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleBookmark(course.id);
-                  }}
-                >
-                  <Bookmark 
-                    className={cn(
-                      "h-4 w-4",
-                      bookmarkedCourses.has(course.id) ? "fill-[#B3A369] text-[#B3A369]" : "text-slate-400"
-                    )} 
-                  />
-                </Button>
-              </div>
-              <CardDescription className="font-medium text-slate-700 line-clamp-2">
-                {course.title}
-              </CardDescription>
-            </div>
-            <Badge variant="secondary" className="ml-2 border-slate-300">{course.credits} Credits</Badge>
-          </div>
-
-          <div className='flex flex-col flex-1 justify-end'>
-            <div className='flex flex-row justify-between'>
-              <div className='space-y-2'>
-                <div className='flex items-center space-x-2'>
-                  <Badge className={cn("border", getDifficultyColor(course.difficulty))}>
-                    Difficulty {course.difficulty}/5
-                  </Badge>
-                  <Badge variant="outline" className="text-xs border-slate-300">
-                    {course.college}
-                  </Badge>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Badge className="flex items-center border-slate-300">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    {[course.offerings.fall && 'Fall', course.offerings.spring && 'Spring', course.offerings.summer && 'Summer'].filter(Boolean).length} semester{[course.offerings.fall && 'Fall', course.offerings.spring && 'Spring', course.offerings.summer && 'Summer'].filter(Boolean).length !== 1 ? 's' : ''}
-                  </Badge>
-                  {(course.prerequisites.length > 0 || course.corequisites.length > 0) && <Badge variant="outline" className="text-xs border-slate-300"><span>R</span></Badge>}
-                </div>
-              </div>
-          
-              <CardContent className="pt-0 space-y-4 flex justify-end">
-                {/* Removed but saving the code for potential reuse */}
-                {/*<p className="text-sm text-slate-600 line-clamp-3">
-                  {course.description}
-                </p>*/}
-                
-                {/* Removed but saving the code for potential reuse */}
-                {/*<div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex space-x-1">
-                      {course.offerings.fall && <Badge variant="outline" className="text-xs border-slate-300">Fall</Badge>}
-                      {course.offerings.spring && <Badge variant="outline" className="text-xs border-slate-300">Spring</Badge>}
-                      {course.offerings.summer && <Badge variant="outline" className="text-xs border-slate-300">Summer</Badge>}
-                    </div>
-                  </div>
-                </div>*/}
-                
-                {/* Removed but saving the code for potential reuse */}
-                {/*{course.threads.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {course.threads.map((thread: string) => (
-                      <Badge key={thread} variant="outline" className="text-xs bg-[#B3A369]/10 border-[#B3A369] text-[#B3A369]">
-                        <Target className="h-3 w-3 mr-1" />
-                        {thread}
-                      </Badge>
-                    ))}
-                  </div>
-                )}*/}
-                
-                <div className="flex space-x-2 pt-2">
-                  <Button size="sm" onClick={() => {setAddToPlan(true); setSelectedCourse(course)}} className="flex-1 cursor-pointer active:scale-95 text-white bg-[#003057] hover:bg-[#002041]">
-                    <Plus className="h-3 w-3 mr-1" />
-                    Add to Plan
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setSelectedCourse(course)}
-                    className='cursor-pointer hover:bg-gray-200/75'
-                  >
-                    <Eye className="h-3 w-3" />
-                  </Button>
-                </div>
-              </CardContent>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
-    </motion.div>
-  );
-
-  // Course display card for list layout
-  const EnhancedCourseListItem = ({ course, index }: { course: any; index: number }) => (
-    <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.03 }}
-      className="group"
-    >
-      <Card className="hover:shadow-md transition-all duration-200 border-slate-300 hover:border-[#B3A369]">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <div className="flex items-center space-x-4 mb-3">
-                <h3 className="font-semibold text-lg text-slate-900 group-hover:text-[#003057] transition-colors">
-                  {course.code}
-                </h3>
-                <h4 className="font-medium text-slate-700 flex-1">{course.title}</h4>
-              </div>
-              
-              <p className="text-sm text-slate-600 mb-3 line-clamp-2 max-w-1/4">
-                {course.description}
-              </p>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Badge variant="secondary" className='border-slate-300'>{course.credits} Credits</Badge>
-                  <Badge className={cn("border", getDifficultyColor(course.difficulty))}>
-                    Difficulty {course.difficulty}/5
-                  </Badge>
-                  <div className="flex items-center space-x-2">
-                    <Badge className="flex items-center border-slate-300">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      {[course.offerings.fall && 'Fall', course.offerings.spring && 'Spring', course.offerings.summer && 'Summer'].filter(Boolean).length} semester{[course.offerings.fall && 'Fall', course.offerings.spring && 'Spring', course.offerings.summer && 'Summer'].filter(Boolean).length !== 1 ? 's' : ''}
-                    </Badge>
-                    {(course.prerequisites.length > 0 || course.corequisites.length > 0) && <Badge variant="outline" className="text-xs border-slate-300"><span>R</span></Badge>}
-                  </div>
-                  {course.threads.length > 0 && (
-                    <div className="flex space-x-1">
-                      {course.threads.slice(0, 2).map((thread: string) => (
-                        <Badge key={thread} variant="outline" className="text-xs bg-[#B3A369]/10 border-[#B3A369] text-[#B3A369]">
-                          {thread}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`h-6 w-6 p-0 ${bookmarkedCourses.has(course.id) ? "" : "opacity-0"} group-hover:opacity-100`}
-                    onClick={() => toggleBookmark(course.id)}
-                  >
-                    <Bookmark 
-                      className={cn(
-                        "h-4 w-4",
-                        bookmarkedCourses.has(course.id) ? "fill-[#B3A369] text-[#B3A369]" : "text-slate-400"
-                      )} 
-                    />
-                  </Button>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex space-x-2 ml-4">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setSelectedCourse(course)}
-              >
-                <Eye className="h-4 w-4 mr-2" />
-                Details
-              </Button>
-              <Button onClick={() => {setAddToPlan(true); setSelectedCourse(course)}} className="bg-[#003057] hover:bg-[#002041] text-white">
-                <Plus className="h-4 w-4 mr-2" />
-                Add to Plan
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-
-  // Enlarged course card modal after clicking details button
-  const CourseCardModal = ({ course, index, className, onClick }: { course: any; index: number; className?: string; onClick?: any}) => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
-      className={`group ${className}`}
-      onClick={onClick}
-    >
-      <Card className="h-full hover:shadow-xl transition-all duration-300 group border-slate-300 hover:border-[#B3A369]">
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center space-x-2 mb-2">
-                <CardTitle className="text-4xl group-hover:text-[#003057] transition-colors">
-                  {course.code}
-                </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`h-6 w-6 p-0 ${bookmarkedCourses.has(course.id) ? "" : "opacity-0"} group-hover:opacity-100 cursor-pointer`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleBookmark(course.id);
-                  }}
-                >
-                  <Bookmark 
-                    className={cn(
-                      "h-4 w-4",
-                      bookmarkedCourses.has(course.id) ? "fill-[#B3A369] text-[#B3A369]" : "text-slate-400"
-                    )} 
-                  />
-                </Button>
-              </div>
-              <CardDescription className="font-medium text-slate-700 line-clamp-2">
-                {course.title}
-              </CardDescription>
-            </div>
-            <Badge variant="secondary" className="ml-2 border-slate-300 text-sm">{course.credits} Credits</Badge>
-          </div>
-          
-          <div className="flex items-center space-x-2 mt-2">
-            <Badge className={cn("border", getDifficultyColor(course.difficulty))}>
-              Difficulty {course.difficulty}/5
-            </Badge>
-
-            {course.threads.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {course.threads.map((thread: string) => (
-                  <Badge key={thread} variant="outline" className="text-xs bg-[#B3A369]/10 border-[#B3A369] text-[#B3A369]">
-                    <Target className="h-3 w-3 mr-1" />
-                    {thread}
-                  </Badge>
-                ))}
-              </div>
-            )}
-
-            <Badge variant="outline" className="text-xs border-slate-300">
-              {course.college}
-            </Badge>
-          </div>
-        </CardHeader>
-        
-        <CardContent className="pt-0 space-y-4">
-          <div>
-            <p className="text-sm text-slate-600 line-clamp-3">
-              {course.description}
-            </p>
-            
-            {/*<div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="flex items-center text-slate-500">
-                  <Star className="h-4 w-4 mr-2" />
-                  {course.difficulty}/5 difficulty
-                </div>
-                <div className="flex items-center text-slate-500">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  {[course.offerings.fall && 'Fall', course.offerings.spring && 'Spring', course.offerings.summer && 'Summer'].filter(Boolean).length} semester{[course.offerings.fall && 'Fall', course.offerings.spring && 'Spring', course.offerings.summer && 'Summer'].filter(Boolean).length !== 1 ? 's' : ''}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex space-x-1">
-                  {course.offerings.fall && <Badge variant="outline" className="text-xs border-slate-300">Fall</Badge>}
-                  {course.offerings.spring && <Badge variant="outline" className="text-xs border-slate-300">Spring</Badge>}
-                  {course.offerings.summer && <Badge variant="outline" className="text-xs border-slate-300">Summer</Badge>}
-                </div>
-              </div>
-            </div>*/}
-            
-            <div className="flex flex-col space-y-2 pt-2">
-              <Button size="sm" onClick={() => setAddToPlan(!addToPlan)} className="flex-1 p-1.5 cursor-pointer active:scale-95 text-white bg-[#003057] hover:bg-[#002041]">
-                <Plus className={`h-3 w-3 mr-1 ${addToPlan && "rotate-45"}`} />
-                Add to Plan
-              </Button>
-              {addToPlan && <Card className='flex items-center'>
-                <div className='grid grid-cols-3 space-y-3 space-x-2 w-full p-3 max-h-24 overflow-auto'>
-                  {semesterArray.map(semester => (
-                  <Button className={`cursor-pointer hover:bg-[#B3A369] ${semester == plannedSemester ? "bg-[#B3A369] border-2 border-[#003057]" : "bg-[#D4C794]"}`} onClick={() => setPlannedSemester(semester)} key={semester.id}>{semester.season} {semester.year}</Button>
-                  ))}
-                </div>
-                <Button onClick={() => {handleAddToPlan(course)}} className='bg-[#003057] hover:bg-[#002041] text-white cursor-pointer'>Done</Button>
-              </Card>}
-            </div>
-          </div>
-          <div className='flex flex-row space-x-3'>
-            {course.offerings &&
-            <div className="flex flex-col w-32 text-sm">
-              <button className="peer w-full text-center px-4 py-2 active:scale-95 transition text-sm text-white rounded-full bg-gradient-to-r from-[#003057] via-[#1a365d] to-[#003057] focus:to-[#B3A369] cursor-pointer">
-                <span>Semesters</span>
-              </button>
-              <ul className="hidden overflow-hidden right-0 peer-focus:block w-40 bg-white border border-gray-300 rounded shadow-md mt-2 py-1">
-                {course.offerings.fall && <li className="px-4 py-2 hover:bg-gray-500/10">Fall</li>}
-                {course.offerings.spring && <li className="px-4 py-2 hover:bg-gray-500/10">Spring</li>}
-                {course.offerings.summer && <li className="px-4 py-2 hover:bg-gray-500/10">Summer</li>}
-              </ul>
-            </div>}
-
-            {course.prerequisites.length > 0 &&
-            <div className="flex flex-col w-32 text-sm">
-              <button className="peer w-full text-center px-4 py-2 active:scale-95 transition text-sm text-white rounded-full bg-gradient-to-r from-[#003057] via-[#1a365d] to-[#003057] focus:to-[#B3A369] cursor-pointer">
-                <span>Prerequisites</span>
-              </button>
-              <ul className="hidden overflow-hidden right-0 peer-focus:block w-40 bg-white border border-gray-300 rounded shadow-md mt-2 py-1">
-                {course.prerequisites[0]?.courses.map((c, index) => <li key={index} className="px-4 py-2 hover:bg-gray-500/10">{c}</li>)}
-              </ul>
-            </div>}
-
-            {course.corequisites.length > 0 &&
-            <div className="flex flex-col w-32 text-sm">
-              <button className="peer w-full text-center px-4 py-2 active:scale-95 transition text-sm text-white rounded-full bg-gradient-to-r from-[#003057] via-[#1a365d] to-[#003057] focus:to-[#B3A369] cursor-pointer">
-                <span>Corequisites</span>
-              </button>
-              <ul className="hidden overflow-hidden right-0 peer-focus:block w-40 bg-white border border-gray-300 rounded shadow-md mt-2 py-1">
-                {course.corequisites?.map((c, index) => <li key={index} className="px-4 py-2 hover:bg-gray-500/10">{c}</li>)}
-              </ul>
-            </div>}
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
+  const clearAllFilters = () => {
+    setSearchQuery('');
+    setSelectedFilters([]);
+  };
 
   return (
-    selectedCourse? 
+    <div className="space-y-6">
+      <CourseExplorerHeader bookmarkedCount={bookmarkedCourses.size} />
+
+      <CourseSearchFilters
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        selectedFilters={selectedFilters}
+        setSelectedFilters={setSelectedFilters}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        sortOrder={sortOrder}
+        setSortOrder={setSortOrder}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+      />
+
+      {/* Results Section */}
       <div>
-        {/* Selected course popup */}
-        <div className='fixed gt-gradient w-screen h-screen flex items-center justify-center' onClick={() => {setSelectedCourse(null); setAddToPlan(false)}}>
-          <CourseCardModal onClick={(e) => e.stopPropagation()} className="bg-white opacity-100 rounded-2xl w-8/12 h-8/12" course={selectedCourse} index={1} />
-        </div> 
-      </div>
-      :
-    <div className="space-y-6 p-10 pt-5">
-      {/* Enhanced Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Course Explorer</h1>
-          <p className="text-lg text-slate-600 mt-2">
-            Discover and explore courses for your academic plan
-          </p>
-        </div>
-        
-        <div className="mt-4 lg:mt-0 flex items-center space-x-3">
-          <Button variant="outline" className="border-slate-300">
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-          <Button variant="outline" className="border-slate-300">
-            <Share2 className="h-4 w-4 mr-2" />
-            Share
-          </Button>
-          <Button onClick={() => setSeeBookmarks(!seeBookmarks)} className="bg-[#003057] hover:bg-[#002041] cursor-pointer text-white">
-            <Bookmark className={`h-4 w-4 mr-2 ${seeBookmarks && "fill-white"}`} />
-            Bookmarks ({bookmarkedCourses.size})
-          </Button>
-        </div>
-      </div>
+        {/* Loading State */}
+        {isLoading && (
+          <div className="text-center py-8 text-slate-500">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-400 mx-auto mb-2"></div>
+            Loading courses...
+          </div>
+        )}
 
-      {/* Enhanced Search and Filters */}
-      <Card className="border-slate-300">
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            <div className="flex flex-col lg:flex-row lg:items-center space-y-4 lg:space-y-0 lg:space-x-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                  placeholder="Search courses by code, title, description, or instructor..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 border-slate-300"
-                />
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
-                  <SelectTrigger className="w-40 border-slate-300">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="code">Course Code</SelectItem>
-                    <SelectItem value="difficulty">Difficulty</SelectItem>
-                    <SelectItem value="credits">Credits</SelectItem>
-                    <SelectItem value="popularity">Popularity</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                  className="border-slate-300"
-                >
-                  {sortOrder === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
-                </Button>
-                
-                <div className="flex rounded-lg border border-slate-300 overflow-hidden">
-                  <Button
-                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('grid')}
-                    className="rounded-none"
-                  >
-                    <Grid3X3 className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={viewMode === 'list' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('list')}
-                    className="rounded-none"
-                  >
-                    <List className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
+        {/* Error State */}
+        {error && (
+          <div className="text-center text-red-500 py-8">
+            <div className="mb-2">Error loading courses</div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => window.location.reload()}
+            >
+              Retry
+            </Button>
+          </div>
+        )}
 
-            {/* Enhanced Filter Tags */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium text-slate-700">Filters</h4>
+        {/* Results header - only show when not loading */}
+        {!isLoading && !error && (
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-4">
+              <p className="text-sm text-slate-600">
+                Showing <span className="font-medium">{filteredCourses.length}</span> courses
+                {total > 0 && <span> of {total} total</span>}
                 {selectedFilters.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedFilters([])}
-                    className="text-slate-500 hover:text-slate-700"
-                  >
-                    Clear all
-                  </Button>
+                  <span> with <span className="font-medium">{selectedFilters.length}</span> filter{selectedFilters.length !== 1 ? 's' : ''}</span>
                 )}
-              </div>
+              </p>
               
-              <div className="flex flex-wrap gap-2">
-                {filterOptions.map((filter) => (
-                  <Button
-                    key={filter}
-                    variant="outline"
-                    size="sm"
-                    className={cn(
-                      "text-sm border-slate-300",
-                      selectedFilters.includes(filter) && "bg-[#003057] text-white border-[#003057] hover:bg-[#002041]"
-                    )}
-                    onClick={() => {
-                      setSelectedFilters(prev =>
-                        prev.includes(filter)
-                          ? prev.filter(f => f !== filter)
-                          : [...prev, filter]
-                      );
-                    }}
-                  >
-                    {filter}
-                    {selectedFilters.includes(filter) && (
-                      <CheckCircle className="h-3 w-3 ml-1" />
-                    )}
-                  </Button>
-                ))}
-              </div>
+              {filteredCourses.length > 0 && (
+                <div className="flex items-center space-x-2 text-xs text-slate-500">
+                  <TrendingUp className="h-3 w-3" />
+                  <span>Avg difficulty: {(filteredCourses.reduce((sum, c) => sum + (c.difficulty || 3), 0) / filteredCourses.length).toFixed(1)}/5</span>
+                </div>
+              )}
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Enhanced Results */}
-      <div>
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
-            <p className="text-sm text-slate-600">
-              Showing <span className="font-medium">{courses.length}</span> courses
-              {selectedFilters.length > 0 && (
-                <span> with <span className="font-medium">{selectedFilters.length}</span> filter{selectedFilters.length !== 1 ? 's' : ''}</span>
-              )}
-            </p>
-            
-            {courses.length > 0 && (
-              <div className="flex items-center space-x-2 text-xs text-slate-500">
-                <TrendingUp className="h-3 w-3" />
-                <span>Avg difficulty: {(courses.reduce((sum, c) => sum + c.difficulty, 0) / courses.length).toFixed(1)}/5</span>
-              </div>
-            )}
-          </div>
-        </div>
+        )}
 
         <AnimatePresence mode="wait">
-          {courses.length === 0 ? (
+          {!isLoading && !error && filteredCourses.length === 0 ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -660,39 +122,24 @@ const CourseExplorer = () => {
               </p>
               <Button
                 variant="outline"
-                onClick={() => {
-                  setSearchQuery('');
-                  setSelectedFilters([]);
-                }}
+                onClick={clearAllFilters}
                 className="border-slate-300"
               >
                 Clear search and filters
               </Button>
             </motion.div>
-          ) : viewMode === 'grid' ? (
-            <motion.div
-              key="grid"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6"
-            >
-              {courses.map((course, index) => (
-                <EnhancedCourseCard key={course.id} course={course} index={index} />
-              ))}
-            </motion.div>
-          ) : (
-            <motion.div
-              key="list"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="space-y-4"
-            >
-              {courses.map((course, index) => (
-                <EnhancedCourseListItem key={course.id} course={course} index={index} />
-              ))}
-            </motion.div>
+          ) : !isLoading && !error && viewMode === 'grid' ? (
+            <CourseGrid
+              courses={filteredCourses}
+              bookmarkedCourses={bookmarkedCourses}
+              toggleBookmark={toggleBookmark}
+            />
+          ) : !isLoading && !error && (
+            <CourseList
+              courses={filteredCourses}
+              bookmarkedCourses={bookmarkedCourses}
+              toggleBookmark={toggleBookmark}
+            />
           )}
         </AnimatePresence>
       </div>

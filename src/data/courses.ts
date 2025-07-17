@@ -1,11 +1,15 @@
 import { supabase } from "@/lib/supabaseClient";
-import { Course } from "@/types/courses";
 import {
+    Course,
     CourseFilters,
     PaginatedResponse,
     PaginationParams,
-} from "@/types/query";
-import { useQuery, useInfiniteQuery, keepPreviousData } from "@tanstack/react-query";
+} from "@/types";
+import {
+    useQuery,
+    useInfiniteQuery,
+    keepPreviousData,
+} from "@tanstack/react-query";
 
 export const fetchAllCourses = async (): Promise<Course[]> => {
     const { data, error } = await supabase
@@ -23,7 +27,7 @@ export const fetchAllCourses = async (): Promise<Course[]> => {
 
 export const fetchCoursesPaginated = async (
     filters: CourseFilters = {},
-    pagination: PaginationParams = {}
+    pagination: PaginationParams = {},
 ): Promise<PaginatedResponse<Course>> => {
     const { page = 1, limit = 50 } = pagination;
     const from = (page - 1) * limit;
@@ -93,7 +97,7 @@ export const fetchCourseById = async (id: string): Promise<Course | null> => {
 };
 
 export const fetchCourseByCode = async (
-    code: string
+    code: string,
 ): Promise<Course | null> => {
     const { data, error } = await supabase
         .from("courses")
@@ -159,9 +163,6 @@ export const fetchCoursesInfinite = async ({
     };
 };
 
-
-
-
 export const useAllCourses = () => {
     return useQuery({
         queryKey: ["courses", "all"],
@@ -173,7 +174,7 @@ export const useAllCourses = () => {
 
 export const useCoursesPaginated = (
     filters: CourseFilters = {},
-    pagination: PaginationParams = {}
+    pagination: PaginationParams = {},
 ) => {
     return useQuery({
         queryKey: ["courses", "paginated", filters, pagination],
@@ -216,272 +217,281 @@ export const useCourseByCode = (code: string) => {
     });
 };
 
-
 export const sampleCourses: Course[] = [
-  {
-    id: "cs-1301",
-    code: "CS 1301",
-    title: "Intro to Computing",
-    credits: 3,
-    description: "Introduction to computing and programming using Python. Covers basic programming concepts, data structures, and problem-solving techniques.",
-    prerequisites: [],
-    corequisites: [],
-    attributes: ["Foundation", "Programming"],
-    offerings: {
-      fall: true,
-      spring: true,
-      summer: true
+    {
+        id: "cs-1301",
+        code: "CS 1301",
+        title: "Intro to Computing",
+        credits: 3,
+        description:
+            "Introduction to computing and programming using Python. Covers basic programming concepts, data structures, and problem-solving techniques.",
+        prerequisites: [],
+        corequisites: [],
+        attributes: ["Foundation", "Programming"],
+        offerings: {
+            fall: true,
+            spring: true,
+            summer: true,
+        },
+        instructors: ["Simpkins", "McDaniel", "Stallworth"],
+        difficulty: 2,
+        workload: 8,
+        threads: [],
+        college: "CoC",
     },
-    instructors: ["Simpkins", "McDaniel", "Stallworth"],
-    difficulty: 2,
-    workload: 8,
-    threads: [],
-    college: "CoC"
-  },
-  {
-    id: "cs-1331",
-    code: "CS 1331",
-    title: "Introduction to Object Oriented Programming",
-    credits: 3,
-    description: "Object-oriented programming using Java. Covers classes, objects, inheritance, polymorphism, and basic GUI programming.",
-    prerequisites: [
-      {
-        type: "course",
-        courses: ["CS 1301"],
-        logic: "AND"
-      }
-    ],
-    corequisites: [],
-    attributes: ["Foundation", "Programming"],
-    offerings: {
-      fall: true,
-      spring: true,
-      summer: false
+    {
+        id: "cs-1331",
+        code: "CS 1331",
+        title: "Introduction to Object Oriented Programming",
+        credits: 3,
+        description:
+            "Object-oriented programming using Java. Covers classes, objects, inheritance, polymorphism, and basic GUI programming.",
+        prerequisites: [
+            {
+                type: "course",
+                courses: ["CS 1301"],
+                logic: "AND",
+            },
+        ],
+        corequisites: [],
+        attributes: ["Foundation", "Programming"],
+        offerings: {
+            fall: true,
+            spring: true,
+            summer: false,
+        },
+        instructors: ["Simpkins", "McDaniel"],
+        difficulty: 3,
+        workload: 12,
+        threads: [],
+        college: "CoC",
     },
-    instructors: ["Simpkins", "McDaniel"],
-    difficulty: 3,
-    workload: 12,
-    threads: [],
-    college: "CoC"
-  },
-  {
-    id: "cs-1332",
-    code: "CS 1332",
-    title: "Data Structures and Algorithms",
-    credits: 3,
-    description: "Implementation and analysis of fundamental data structures and algorithms. Covers arrays, linked lists, stacks, queues, trees, and graphs.",
-    prerequisites: [
-      {
-        type: "course",
-        courses: ["CS 1331"],
-        logic: "AND"
-      }
-    ],
-    corequisites: ["CS 2340"],
-    attributes: ["Core", "Programming"],
-    offerings: {
-      fall: true,
-      spring: true,
-      summer: true
+    {
+        id: "cs-1332",
+        code: "CS 1332",
+        title: "Data Structures and Algorithms",
+        credits: 3,
+        description:
+            "Implementation and analysis of fundamental data structures and algorithms. Covers arrays, linked lists, stacks, queues, trees, and graphs.",
+        prerequisites: [
+            {
+                type: "course",
+                courses: ["CS 1331"],
+                logic: "AND",
+            },
+        ],
+        corequisites: ["CS 2340"],
+        attributes: ["Core", "Programming"],
+        offerings: {
+            fall: true,
+            spring: true,
+            summer: true,
+        },
+        instructors: ["Reilly", "McDaniel"],
+        difficulty: 4,
+        workload: 15,
+        threads: [],
+        college: "CoC",
     },
-    instructors: ["Reilly", "McDaniel"],
-    difficulty: 4,
-    workload: 15,
-    threads: [],
-    college: "CoC"
-  },
-  {
-    id: "cs-2110",
-    code: "CS 2110",
-    title: "Computer Organization and Programming",
-    credits: 4,
-    description: "Computer organization, machine language programming, assembly language programming, and C programming.",
-    prerequisites: [
-      {
-        type: "course",
-        courses: ["CS 1332"],
-        logic: "AND"
-      }
-    ],
-    corequisites: [],
-    attributes: ["Core", "Systems"],
-    offerings: {
-      fall: true,
-      spring: true,
-      summer: false
+    {
+        id: "cs-2110",
+        code: "CS 2110",
+        title: "Computer Organization and Programming",
+        credits: 4,
+        description:
+            "Computer organization, machine language programming, assembly language programming, and C programming.",
+        prerequisites: [
+            {
+                type: "course",
+                courses: ["CS 1332"],
+                logic: "AND",
+            },
+        ],
+        corequisites: [],
+        attributes: ["Core", "Systems"],
+        offerings: {
+            fall: true,
+            spring: true,
+            summer: false,
+        },
+        instructors: ["Conte", "Peng"],
+        difficulty: 4,
+        workload: 16,
+        threads: ["Systems & Architecture"],
+        college: "CoC",
     },
-    instructors: ["Conte", "Peng"],
-    difficulty: 4,
-    workload: 16,
-    threads: ["Systems & Architecture"],
-    college: "CoC"
-  },
-  {
-    id: "cs-2340",
-    code: "CS 2340",
-    title: "Objects and Design",
-    credits: 3,
-    description: "Object-oriented programming and design techniques. Software engineering principles, UML, design patterns, and team development.",
-    prerequisites: [
-      {
-        type: "course",
-        courses: ["CS 1332"],
-        logic: "AND"
-      }
-    ],
-    corequisites: [],
-    attributes: ["Core", "Software Engineering"],
-    offerings: {
-      fall: true,
-      spring: true,
-      summer: false
+    {
+        id: "cs-2340",
+        code: "CS 2340",
+        title: "Objects and Design",
+        credits: 3,
+        description:
+            "Object-oriented programming and design techniques. Software engineering principles, UML, design patterns, and team development.",
+        prerequisites: [
+            {
+                type: "course",
+                courses: ["CS 1332"],
+                logic: "AND",
+            },
+        ],
+        corequisites: [],
+        attributes: ["Core", "Software Engineering"],
+        offerings: {
+            fall: true,
+            spring: true,
+            summer: false,
+        },
+        instructors: ["Waters", "McDaniel"],
+        difficulty: 3,
+        workload: 14,
+        threads: ["People"],
+        college: "CoC",
     },
-    instructors: ["Waters", "McDaniel"],
-    difficulty: 3,
-    workload: 14,
-    threads: ["People"],
-    college: "CoC"
-  },
-  {
-    id: "cs-3510",
-    code: "CS 3510",
-    title: "Design & Analysis of Algorithms",
-    credits: 3,
-    description: "Algorithm design techniques: divide-and-conquer, dynamic programming, greedy algorithms, and network flow algorithms.",
-    prerequisites: [
-      {
-        type: "course",
-        courses: ["CS 1332", "MATH 1554"],
-        logic: "AND"
-      }
-    ],
-    corequisites: [],
-    attributes: ["Core", "Theory"],
-    offerings: {
-      fall: true,
-      spring: true,
-      summer: false
+    {
+        id: "cs-3510",
+        code: "CS 3510",
+        title: "Design & Analysis of Algorithms",
+        credits: 3,
+        description:
+            "Algorithm design techniques: divide-and-conquer, dynamic programming, greedy algorithms, and network flow algorithms.",
+        prerequisites: [
+            {
+                type: "course",
+                courses: ["CS 1332", "MATH 1554"],
+                logic: "AND",
+            },
+        ],
+        corequisites: [],
+        attributes: ["Core", "Theory"],
+        offerings: {
+            fall: true,
+            spring: true,
+            summer: false,
+        },
+        instructors: ["Vigoda", "Tetali"],
+        difficulty: 5,
+        workload: 18,
+        threads: ["Theory"],
+        college: "CoC",
     },
-    instructors: ["Vigoda", "Tetali"],
-    difficulty: 5,
-    workload: 18,
-    threads: ["Theory"],
-    college: "CoC"
-  },
-  {
-    id: "cs-3600",
-    code: "CS 3600",
-    title: "Introduction to Artificial Intelligence",
-    credits: 3,
-    description: "Basic concepts and methods of artificial intelligence including problem solving, knowledge representation, and machine learning.",
-    prerequisites: [
-      {
-        type: "course",
-        courses: ["CS 1332", "MATH 1554"],
-        logic: "AND"
-      }
-    ],
-    corequisites: [],
-    attributes: ["Core", "AI"],
-    offerings: {
-      fall: true,
-      spring: true,
-      summer: false
+    {
+        id: "cs-3600",
+        code: "CS 3600",
+        title: "Introduction to Artificial Intelligence",
+        credits: 3,
+        description:
+            "Basic concepts and methods of artificial intelligence including problem solving, knowledge representation, and machine learning.",
+        prerequisites: [
+            {
+                type: "course",
+                courses: ["CS 1332", "MATH 1554"],
+                logic: "AND",
+            },
+        ],
+        corequisites: [],
+        attributes: ["Core", "AI"],
+        offerings: {
+            fall: true,
+            spring: true,
+            summer: false,
+        },
+        instructors: ["Riedl", "Thomaz"],
+        difficulty: 4,
+        workload: 15,
+        threads: ["Intelligence"],
+        college: "CoC",
     },
-    instructors: ["Riedl", "Thomaz"],
-    difficulty: 4,
-    workload: 15,
-    threads: ["Intelligence"],
-    college: "CoC"
-  },
-  {
-    id: "cs-4641",
-    code: "CS 4641",
-    title: "Machine Learning",
-    credits: 3,
-    description: "Machine learning techniques and applications including supervised learning, unsupervised learning, and reinforcement learning.",
-    prerequisites: [
-      {
-        type: "course",
-        courses: ["CS 3510", "MATH 2550"],
-        logic: "AND"
-      }
-    ],
-    corequisites: [],
-    attributes: ["Elective", "AI", "Popular"],
-    offerings: {
-      fall: true,
-      spring: true,
-      summer: false
+    {
+        id: "cs-4641",
+        code: "CS 4641",
+        title: "Machine Learning",
+        credits: 3,
+        description:
+            "Machine learning techniques and applications including supervised learning, unsupervised learning, and reinforcement learning.",
+        prerequisites: [
+            {
+                type: "course",
+                courses: ["CS 3510", "MATH 2550"],
+                logic: "AND",
+            },
+        ],
+        corequisites: [],
+        attributes: ["Elective", "AI", "Popular"],
+        offerings: {
+            fall: true,
+            spring: true,
+            summer: false,
+        },
+        instructors: ["Mahajan", "Song"],
+        difficulty: 4,
+        workload: 16,
+        threads: ["Intelligence"],
+        college: "CoC",
     },
-    instructors: ["Mahajan", "Song"],
-    difficulty: 4,
-    workload: 16,
-    threads: ["Intelligence"],
-    college: "CoC"
-  },
-  {
-    id: "math-1551",
-    code: "MATH 1551",
-    title: "Differential Calculus",
-    credits: 2,
-    description: "Differential calculus including limits, derivatives, and applications to optimization and related rates.",
-    prerequisites: [],
-    corequisites: [],
-    attributes: ["Math", "Foundation"],
-    offerings: {
-      fall: true,
-      spring: true,
-      summer: true
+    {
+        id: "math-1551",
+        code: "MATH 1551",
+        title: "Differential Calculus",
+        credits: 2,
+        description:
+            "Differential calculus including limits, derivatives, and applications to optimization and related rates.",
+        prerequisites: [],
+        corequisites: [],
+        attributes: ["Math", "Foundation"],
+        offerings: {
+            fall: true,
+            spring: true,
+            summer: true,
+        },
+        instructors: ["Various"],
+        difficulty: 3,
+        workload: 10,
+        threads: [],
+        college: "CoS",
     },
-    instructors: ["Various"],
-    difficulty: 3,
-    workload: 10,
-    threads: [],
-    college: "CoS"
-  },
-  {
-    id: "math-1552",
-    code: "MATH 1552",
-    title: "Integral Calculus",
-    credits: 4,
-    description: "Integral calculus including techniques of integration, applications, and infinite series.",
-    prerequisites: [
-      {
-        type: "course",
-        courses: ["MATH 1551"],
-        logic: "AND"
-      }
-    ],
-    corequisites: [],
-    attributes: ["Math", "Foundation"],
-    offerings: {
-      fall: true,
-      spring: true,
-      summer: true
+    {
+        id: "math-1552",
+        code: "MATH 1552",
+        title: "Integral Calculus",
+        credits: 4,
+        description:
+            "Integral calculus including techniques of integration, applications, and infinite series.",
+        prerequisites: [
+            {
+                type: "course",
+                courses: ["MATH 1551"],
+                logic: "AND",
+            },
+        ],
+        corequisites: [],
+        attributes: ["Math", "Foundation"],
+        offerings: {
+            fall: true,
+            spring: true,
+            summer: true,
+        },
+        instructors: ["Various"],
+        difficulty: 3,
+        workload: 12,
+        threads: [],
+        college: "CoS",
     },
-    instructors: ["Various"],
-    difficulty: 3,
-    workload: 12,
-    threads: [],
-    college: "CoS"
-  }
 ];
 
-
 export const getCourseById = (id: string): Course | undefined => {
-  return sampleCourses.find(course => course.id === id);
+    return sampleCourses.find((course) => course.id === id);
 };
 
 export const getCoursesByThread = (thread: string): Course[] => {
-  return sampleCourses.filter(course => course.threads.includes(thread));
+    return sampleCourses.filter((course) => course.threads.includes(thread));
 };
 
 export const searchCourses = (query: string): Course[] => {
-  const lowercaseQuery = query.toLowerCase();
-  return sampleCourses.filter(course => 
-    course.code.toLowerCase().includes(lowercaseQuery) ||
-    course.title.toLowerCase().includes(lowercaseQuery) ||
-    course.description.toLowerCase().includes(lowercaseQuery)
-  );
+    const lowercaseQuery = query.toLowerCase();
+    return sampleCourses.filter(
+        (course) =>
+            course.code.toLowerCase().includes(lowercaseQuery) ||
+            course.title.toLowerCase().includes(lowercaseQuery) ||
+            course.description.toLowerCase().includes(lowercaseQuery),
+    );
 };

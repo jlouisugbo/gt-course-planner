@@ -1,30 +1,28 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/lib/authProvider";
-import AppLayout from "@/components/layout/AppLayout";
+import { AppProviders } from "@/providers/AppProviders";
+import  AppLayout  from "@/components/layout/AppLayout";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "GT Course Planner",
-  description: "Georgia Tech Course Planning Tool",
+    title: "GT 4-Year Planner",
+    description: "Plan your Georgia Tech academic journey",
 };
 
-const inter = Inter({ subsets: ["latin"] }); 
-
 export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <html lang="en">
-      <body className={inter.className}>
-        <AuthProvider>
-          <AppLayout>
-            {children}
-          </AppLayout>
-        </AuthProvider>
-      </body>
-    </html>
-  );
+    children,
+}: {
+    children: React.ReactNode;
+}) {
+    return (
+        <html lang="en">
+            <body className={inter.className}>
+                <AppProviders>
+                    <AppLayout>{children}</AppLayout>
+                </AppProviders>
+            </body>
+        </html>
+    );
 }
