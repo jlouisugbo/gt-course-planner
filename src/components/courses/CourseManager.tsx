@@ -59,6 +59,7 @@ const CourseManager: React.FC<CourseManagerProps> = ({
         year: new Date().getFullYear(),
         grade: "",
         status: "planned" as "completed" | "in-progress" | "planned",
+        type: "elective" as "core" | "elective" | "free",
     });
 
     // Fetch courses using your existing service with search filtering
@@ -91,12 +92,10 @@ const CourseManager: React.FC<CourseManagerProps> = ({
             credits: course.credits,
             description: course.description,
             prerequisites: course.prerequisites,
-            corequisites: course.corequisites,
-            attributes: course.attributes,
             offerings: course.offerings,
             difficulty: course.difficulty,
-            threads: course.threads,
             college: course.college,
+            type: course.type || "elective", // Default to "elective" if type is missing
             // Planning properties
             semesterId: semesterId,
             status: "planned",
@@ -123,11 +122,9 @@ const CourseManager: React.FC<CourseManagerProps> = ({
             credits: customCourse.credits,
             description: "Custom course entry",
             prerequisites: [],
-            corequisites: [],
-            attributes: ["Custom"],
             offerings: { fall: true, spring: true, summer: true },
             difficulty: 3,
-            threads: [],
+            type: customCourse.type || "elective", // Default to "elective" if type is missing
             college: "Custom",
             // Planning properties
             semesterId: semesterId,
@@ -138,6 +135,7 @@ const CourseManager: React.FC<CourseManagerProps> = ({
         };
 
         addCourseToSemester(plannedCourse);
+
         setCustomCourse({
             code: "",
             title: "",
@@ -146,7 +144,9 @@ const CourseManager: React.FC<CourseManagerProps> = ({
             year: new Date().getFullYear(),
             grade: "",
             status: "planned",
+            type: "elective",
         });
+        
         onClose();
     };
 
@@ -586,39 +586,6 @@ const CourseManager: React.FC<CourseManagerProps> = ({
                                         </div>
                                     </div>
                                 </div>
-
-                                {selectedCourse.threads.length > 0 && (
-                                    <div>
-                                        <h4 className="font-medium mb-2">
-                                            CS Threads
-                                        </h4>
-                                        <div className="flex flex-wrap gap-1">
-                                            {selectedCourse.threads.map((thread) => (
-                                                <Badge
-                                                    key={thread}
-                                                    className="bg-[#B3A369] text-white"
-                                                >
-                                                    {thread}
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {selectedCourse.attributes.length > 0 && (
-                                    <div>
-                                        <h4 className="font-medium mb-2">
-                                            Attributes
-                                        </h4>
-                                        <div className="flex flex-wrap gap-1">
-                                            {selectedCourse.attributes.map((attr) => (
-                                                <Badge key={attr} variant="outline">
-                                                    {attr}
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
 
                                 <div className="flex justify-end space-x-2 pt-4">
                                     <Button

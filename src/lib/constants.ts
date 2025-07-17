@@ -1,4 +1,4 @@
-import { MajorMinorOption } from "@/types/types";
+import { MajorMinorOption } from "@/types";
 
 // Georgia Tech Undergraduate Majors (BS degrees)
 export const majors: MajorMinorOption[] = [

@@ -49,7 +49,7 @@ export interface DegreeRequirements {
     residencyHours: number;
 }
 
-export interface DegreeProgram {
+export interface DegreeProgramDisplay {
     id: number;
     name: string;
     degree_type: 'Thread' | 'Minor' | 'Major';

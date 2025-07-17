@@ -2,15 +2,13 @@ export interface Course {
     id: number;
     code: string;
     title: string;
-    credits: number;
     description: string;
+    credits: number;
     prerequisites: Prerequisite[];
-    corequisites: string[];
-    attributes: string[];
+    college: string;
     offerings: SemesterOffering;
     difficulty: number;
-    threads: string[];
-    college: string;
+    type: string; // e.g., "core", "elective", "major"
 }
 
 export interface Prerequisite {

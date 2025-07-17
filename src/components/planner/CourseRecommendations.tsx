@@ -19,8 +19,6 @@ import {
     Info,
     ChevronDown,
     ChevronUp,
-    Zap,
-    Award,
     Calculator,
     Beaker,
     Navigation,
@@ -94,9 +92,7 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
                         difficulty: 2,
                         college: "College of Computing",
                         prerequisites: [],
-                        corequisites: [],
-                        threads: [],
-                        attributes: ["CORE"],
+                        type: "Lecture",
                         offerings: { fall: true, spring: true, summer: true },
                     },
                     {
@@ -114,9 +110,7 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
                                 logic: "AND",
                             },
                         ],
-                        corequisites: [],
-                        threads: [],
-                        attributes: ["CORE"],
+                        type: "Lecture",
                         offerings: { fall: true, spring: true, summer: false },
                     },
                     // Add more sample courses as needed
@@ -232,26 +226,6 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
                     const code = course?.code || '';
                     const codeNumber = parseInt(code.split(" ")[1] || '0');
                     return code.startsWith("CS") && codeNumber >= 3000 && !["CS 3510"].includes(code);
-                }),
-            },
-            "thread-intelligence": {
-                name: "Intelligence Thread",
-                description: "AI/ML specialization courses",
-                color: "bg-purple-600 text-white",
-                icon: Zap,
-                courses: safeCourses.filter((course) => {
-                    const threads = Array.isArray(course?.threads) ? course.threads : [];
-                    return threads.includes("Intelligence");
-                }),
-            },
-            "thread-systems": {
-                name: "Systems Thread",
-                description: "Systems & Architecture courses",
-                color: "bg-orange-600 text-white",
-                icon: Award,
-                courses: safeCourses.filter((course) => {
-                    const threads = Array.isArray(course?.threads) ? course.threads : [];
-                    return threads.includes("Systems & Architecture");
                 }),
             },
         };
@@ -392,7 +366,6 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
         const courseTitle = course.title || 'No title';
         const courseCredits = typeof course.credits === 'number' ? course.credits : 0;
         const courseDifficulty = typeof course.difficulty === 'number' ? course.difficulty : 0;
-        const courseThreads = Array.isArray(course.threads) ? course.threads : [];
         const courseOfferings = course.offerings || { fall: false, spring: false, summer: false };
         const missingPrereqs = Array.isArray(validation.missingPrereqs) ? validation.missingPrereqs : [];
         const warnings = Array.isArray(validation.warnings) ? validation.warnings : [];
@@ -518,20 +491,6 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
                         )}
                     </div>
                 </div>
-
-                {courseThreads.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-3">
-                        {courseThreads.slice(0, 2).map((thread: string, index: number) => (
-                            <Badge
-                                key={`${thread}-${index}`}
-                                variant="outline"
-                                className="text-xs bg-[#B3A369]/10 border-[#B3A369] text-[#B3A369]"
-                            >
-                                {thread}
-                            </Badge>
-                        ))}
-                    </div>
-                )}
 
                 {missingPrereqs.length > 0 && (
                     <Alert className="mb-3 border-red-200 bg-red-50">

@@ -1,0 +1,16 @@
+export { default as Dashboard } from "./Dashboard";
+export { default as WelcomeHeader } from "./parts/WelcomeHeader";
+export { default as StatsGrid } from "./parts/StatsGrid";
+export { default as StatCard } from "./parts/StatCard";
+export { default as ChartsRow } from "./parts/ChartsRow";
+export { default as CreditDistributionChart } from "./parts/CreditDistributionChart";
+export { default as GPATrendChart } from "./parts/GPATrendChart";
+export { default as QuickActionsPanel } from "./parts/QuickActionsPanel";
+export { default as AnalyticsRow } from "./parts/AnalyticsRow";
+export { default as CourseDifficultyChart } from "./parts/CourseDifficultyChart";
+export { default as ThreadProgressChart } from "./parts/ThreadProgressChart";
+export { default as InsightsAndActivityRow } from "./parts/InsightsAndActivityRow";
+export { default as AIInsightsPanel } from "./parts/AIInsightsPanel";
+export { default as InsightCard } from "./parts/InsightCard";
+export { default as RecentActivityPanel } from "./parts/RecentActivityPanel";
+export { default as TimelineOverview } from "./parts/TimelineOverview";
