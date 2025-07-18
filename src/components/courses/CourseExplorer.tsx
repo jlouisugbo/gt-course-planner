@@ -332,7 +332,7 @@ const CourseExplorer = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header with bookmarks button */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
         <CourseExplorerHeader bookmarkedCount={bookmarkedCourses.size} />
@@ -375,7 +375,7 @@ const CourseExplorer = () => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
             <p className="text-sm text-slate-600">
-              Showing <span className="font-medium">{displayCourses.length}</span> courses
+              Showing <span className="font-medium">{displayCourses.length}</span> course{displayCourses.length !== 1 ? 's' : ''}
               {selectedFilters.length > 0 && (
                 <span> with <span className="font-medium">{selectedFilters.length}</span> filter{selectedFilters.length !== 1 ? 's' : ''}</span>
               )}

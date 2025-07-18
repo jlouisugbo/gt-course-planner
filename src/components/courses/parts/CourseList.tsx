@@ -74,20 +74,41 @@ export const CourseList: React.FC<CourseListProps> = ({
         transition={{ delay: index * 0.03 }}
         className="group"
       >
-        <Card className="hover:shadow-md transition-all duration-200 border-slate-300 hover:border-[#B3A369]">
+        <Card className="hover:shadow-md transition-all duration-200 border-slate-300 hover:border-[#B3A369] py-0">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <div className="flex items-center space-x-4 mb-3">
+                <div className="flex items-center space-x-4 mb-1">
                   <h3 className="font-semibold text-lg text-slate-900 group-hover:text-[#003057] transition-colors">
                     {courseCode}
                   </h3>
                   <h4 className="font-medium text-slate-700 flex-1">{courseTitle}</h4>
                 </div>
                 
-                <p className="text-sm text-slate-600 mb-3 line-clamp-2 max-w-1/4">
-                  {courseDescription}
-                </p>
+                <div className='flex flex-row justify-between'>
+                  <p className="text-sm text-slate-600 mb-3 line-clamp-2 max-w-1/4">
+                    {courseDescription}
+                  </p>
+
+                  <div className="flex space-x-2 ml-4">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => onViewDetails && onViewDetails(course)}
+                      className='cursor-pointer hover:bg-gray-200/75'
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      Details
+                    </Button>
+                    <Button 
+                      onClick={() => onAddToPlan && onAddToPlan(course)} 
+                      className="bg-[#003057] hover:bg-[#002041] text-white cursor-pointer"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add to Plan
+                    </Button>
+                  </div>
+                </div>
                 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
@@ -114,7 +135,7 @@ export const CourseList: React.FC<CourseListProps> = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className={`h-6 w-6 p-0 ${bookmarkedCourses.has(String(courseId)) ? "" : "opacity-0"} group-hover:opacity-100`}
+                      className={`h-6 w-6 p-0 ${bookmarkedCourses.has(String(courseId)) ? "" : "opacity-0"} group-hover:opacity-100 cursor-pointer`}
                       onClick={() => toggleBookmark && toggleBookmark(String(courseId))}
                     >
                       <Bookmark 
@@ -126,24 +147,6 @@ export const CourseList: React.FC<CourseListProps> = ({
                     </Button>
                   </div>
                 </div>
-              </div>
-              
-              <div className="flex space-x-2 ml-4">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => onViewDetails && onViewDetails(course)}
-                >
-                  <Eye className="h-4 w-4 mr-2" />
-                  Details
-                </Button>
-                <Button 
-                  onClick={() => onAddToPlan && onAddToPlan(course)} 
-                  className="bg-[#003057] hover:bg-[#002041] text-white"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add to Plan
-                </Button>
               </div>
             </div>
           </CardContent>

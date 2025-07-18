@@ -74,8 +74,8 @@ export const CourseGrid: React.FC<CourseGridProps> = ({
         transition={{ delay: index * 0.05 }}
         className={'group'}
       >
-        <Card className="h-full hover:shadow-xl transition-all duration-300 group border-slate-300 hover:border-[#B3A369]">
-          <CardHeader className="pb-3">
+        <Card className="h-full hover:shadow-xl transition-all duration-300 group border-slate-300 hover:border-[#B3A369] py-2">
+          <CardHeader className="pb-2 @container">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center space-x-2 mb-2">
@@ -106,59 +106,57 @@ export const CourseGrid: React.FC<CourseGridProps> = ({
               <Badge variant="secondary" className="ml-2 border-slate-300">{courseCredits} Credits</Badge>
             </div>
 
-            <div className='flex flex-col flex-1 justify-end'>
-              <div className='flex flex-row justify-between'>
-                <div className='space-y-2'>
-                  <div className='flex items-center space-x-2'>
-                    <Badge className={cn("border", getDifficultyColor(courseDifficulty))}>
-                      Difficulty {courseDifficulty}/5
-                    </Badge>
-                    <Badge variant="outline" className="text-xs border-slate-300">
-                      {courseCollege}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Badge className="flex items-center border-slate-300">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      {[courseOfferings.fall && 'Fall', courseOfferings.spring && 'Spring', courseOfferings.summer && 'Summer'].filter(Boolean).length} semester{[courseOfferings.fall && 'Fall', courseOfferings.spring && 'Spring', courseOfferings.summer && 'Summer'].filter(Boolean).length !== 1 ? 's' : ''}
-                    </Badge>
-                    {(coursePrerequisites.length > 0 || courseCorequisites.length > 0) && <Badge variant="outline" className="text-xs border-slate-300"><span>R</span></Badge>}
-                  </div>
+            <div className='flex flex-row justify-between'>
+              <div className='space-y-2'>
+                <div className='flex items-center space-x-2'>
+                  <Badge className={cn("border", getDifficultyColor(courseDifficulty))}>
+                    Difficulty {courseDifficulty}/5
+                  </Badge>
+                  <Badge className="flex items-center border-slate-300">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    {[courseOfferings.fall && 'Fall', courseOfferings.spring && 'Spring', courseOfferings.summer && 'Summer'].filter(Boolean).length} semester{[courseOfferings.fall && 'Fall', courseOfferings.spring && 'Spring', courseOfferings.summer && 'Summer'].filter(Boolean).length !== 1 ? 's' : ''}
+                  </Badge>
                 </div>
-            
-                <CardContent className="pt-0 space-y-4 flex justify-end">
-                  {/* Threads display (from old version) */}
-                  {courseThreads.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-3">
-                      {courseThreads.slice(0, 2).map((thread: string) => (
-                        <Badge key={thread} variant="outline" className="text-xs bg-[#B3A369]/10 border-[#B3A369] text-[#B3A369]">
-                          <Target className="h-3 w-3 mr-1" />
-                          {thread}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                  
-                  <div className="flex space-x-2 pt-2">
-                    <Button 
-                      size="sm" 
-                      onClick={() => onAddToPlan && onAddToPlan(course)} 
-                      className="flex-1 cursor-pointer active:scale-95 text-white bg-[#003057] hover:bg-[#002041]"
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      Add to Plan
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => onViewDetails && onViewDetails(course)}
-                      className='cursor-pointer hover:bg-gray-200/75'
-                    >
-                      <Eye className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </CardContent>
+                <div className="flex items-center space-x-2">
+                  <Badge variant="outline" className="text-xs border-slate-300">
+                    {courseCollege}
+                  </Badge>
+                  {(coursePrerequisites.length > 0 || courseCorequisites.length > 0) && <Badge variant="outline" className="text-xs border-slate-300"><span>R</span></Badge>}
+                </div>
               </div>
+          
+              <CardContent className="pt-0 pr-0 pl-2 space-y-4 flex justify-end">
+                {/* Threads display (from old version) */}
+                {courseThreads.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {courseThreads.slice(0, 2).map((thread: string) => (
+                      <Badge key={thread} variant="outline" className="text-xs bg-[#B3A369]/10 border-[#B3A369] text-[#B3A369]">
+                        <Target className="h-3 w-3 mr-1" />
+                        {thread}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                
+                <div className="flex space-x-2 pt-2">
+                  <Button 
+                    size="sm" 
+                    onClick={() => onAddToPlan && onAddToPlan(course)} 
+                    className="flex-1 cursor-pointer active:scale-95 text-white bg-[#003057] hover:bg-[#002041]"
+                  >
+                    <Plus className="h-3 w-3" />
+                    <p className='hidden ml-1 @md:block'>Add to Plan</p>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => onViewDetails && onViewDetails(course)}
+                    className='cursor-pointer hover:bg-gray-200/75'
+                  >
+                    <Eye className="h-3 w-3" />
+                  </Button>
+                </div>
+              </CardContent>
             </div>
           </CardHeader>
         </Card>
