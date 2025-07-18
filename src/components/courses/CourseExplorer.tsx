@@ -417,7 +417,7 @@ const CourseExplorer = () => {
               <Button
                 variant="outline"
                 onClick={clearAllFilters}
-                className="border-slate-300"
+                className="border-slate-300 cursor-pointer hover:bg-gray-200/75"
               >
                 Clear search and filters
               </Button>
