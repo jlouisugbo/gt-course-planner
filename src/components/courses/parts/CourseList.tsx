@@ -111,18 +111,16 @@ export const CourseList: React.FC<CourseListProps> = ({
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex flex-wrap items-center space-x-2 space-y-2">
                     <Badge variant="secondary" className='border-slate-300'>{courseCredits} Credits</Badge>
                     <Badge className={cn("border", getDifficultyColor(courseDifficulty))}>
                       Difficulty {courseDifficulty}/5
                     </Badge>
-                    <div className="flex items-center space-x-2">
-                      <Badge className="flex items-center border-slate-300">
-                        <Calendar className="h-4 w-4 mr-2" />
-                        {[courseOfferings.fall && 'Fall', courseOfferings.spring && 'Spring', courseOfferings.summer && 'Summer'].filter(Boolean).length} semester{[courseOfferings.fall && 'Fall', courseOfferings.spring && 'Spring', courseOfferings.summer && 'Summer'].filter(Boolean).length !== 1 ? 's' : ''}
-                      </Badge>
-                      {(coursePrerequisites.length > 0 || courseCorequisites.length > 0) && <Badge variant="outline" className="text-xs border-slate-300"><span>R</span></Badge>}
-                    </div>
+                    <Badge className="flex items-center border-slate-300">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      {[courseOfferings.fall && 'Fall', courseOfferings.spring && 'Spring', courseOfferings.summer && 'Summer'].filter(Boolean).length} semester{[courseOfferings.fall && 'Fall', courseOfferings.spring && 'Spring', courseOfferings.summer && 'Summer'].filter(Boolean).length !== 1 ? 's' : ''}
+                    </Badge>
+                    {(coursePrerequisites.length > 0 || courseCorequisites.length > 0) && <Badge variant="outline" className="text-xs border-slate-300"><span>R</span></Badge>}
                     {courseThreads.length > 0 && (
                       <div className="flex space-x-1">
                         {courseThreads.slice(0, 2).map((thread: string) => (

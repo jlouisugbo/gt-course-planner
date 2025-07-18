@@ -103,7 +103,22 @@ export const CourseGrid: React.FC<CourseGridProps> = ({
                   {courseTitle}
                 </CardDescription>
               </div>
-              <Badge variant="secondary" className="ml-2 border-slate-300">{courseCredits} Credits</Badge>
+
+              <div className='flex flex-col space-y-2 items-end'>
+                <Badge variant="secondary" className="border-slate-300">{courseCredits} Credits</Badge>
+
+                {/* Threads display (from old version) */}
+                {courseThreads.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {courseThreads.slice(0, 2).map((thread: string) => (
+                      <Badge key={thread} variant="outline" className="text-xs bg-[#B3A369]/10 border-[#B3A369] text-[#B3A369]">
+                        <Target className="h-3 w-3 mr-1" />
+                        {thread}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className='flex flex-row justify-between'>
@@ -126,18 +141,9 @@ export const CourseGrid: React.FC<CourseGridProps> = ({
               </div>
           
               <CardContent className="pt-0 pr-0 pl-2 space-y-4 flex justify-end">
-                {/* Threads display (from old version) */}
-                {courseThreads.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-3">
-                    {courseThreads.slice(0, 2).map((thread: string) => (
-                      <Badge key={thread} variant="outline" className="text-xs bg-[#B3A369]/10 border-[#B3A369] text-[#B3A369]">
-                        <Target className="h-3 w-3 mr-1" />
-                        {thread}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
                 
+                
+                {/* Interactive buttons */}
                 <div className="flex space-x-2 pt-2">
                   <Button 
                     size="sm" 

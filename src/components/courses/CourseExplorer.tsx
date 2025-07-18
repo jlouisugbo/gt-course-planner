@@ -338,11 +338,11 @@ const CourseExplorer = () => {
         <CourseExplorerHeader bookmarkedCount={bookmarkedCourses.size} />
         
         <div className="mt-4 lg:mt-0 flex items-center space-x-3">
-          <Button variant="outline" className="border-slate-300">
+          <Button variant="outline" className="border-slate-300 cursor-pointer hover:bg-gray-200/75">
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
-          <Button variant="outline" className="border-slate-300">
+          <Button variant="outline" className="border-slate-300 cursor-pointer hover:bg-gray-200/75">
             <Share2 className="h-4 w-4 mr-2" />
             Share
           </Button>

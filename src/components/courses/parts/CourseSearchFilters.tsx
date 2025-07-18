@@ -82,7 +82,7 @@ export const CourseSearchFilters: React.FC<CourseSearchFiltersProps> = ({
 
   return (
     <Card className="border-slate-300">
-      <CardContent className="p-6">
+      <CardContent className="px-6">
         <div className="space-y-4">
           <div className="flex flex-col lg:flex-row lg:items-center space-y-4 lg:space-y-0 lg:space-x-4">
             <div className="flex-1 relative">
@@ -97,14 +97,14 @@ export const CourseSearchFilters: React.FC<CourseSearchFiltersProps> = ({
             
             <div className="flex items-center space-x-2">
               <Select value={sortBy} onValueChange={handleSortChange}>
-                <SelectTrigger className="w-40 border-slate-300">
+                <SelectTrigger className="w-40 border-slate-300 cursor-pointer">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="code">Course Code</SelectItem>
-                  <SelectItem value="difficulty">Difficulty</SelectItem>
-                  <SelectItem value="credits">Credits</SelectItem>
-                  <SelectItem value="popularity">Popularity</SelectItem>
+                <SelectContent className='bg-white'>
+                  <SelectItem value="code" className='rounded-none shadow border-slate-300 border-b cursor-pointer'>Course Code</SelectItem>
+                  <SelectItem value="difficulty" className='rounded-none shadow border-slate-300 border-b cursor-pointer'>Difficulty</SelectItem>
+                  <SelectItem value="credits" className='rounded-none shadow border-slate-300 border-b cursor-pointer'>Credits</SelectItem>
+                  <SelectItem value="popularity" className='rounded-none shadow border-slate-300 border-b cursor-pointer'>Popularity</SelectItem>
                 </SelectContent>
               </Select>
               
@@ -112,7 +112,7 @@ export const CourseSearchFilters: React.FC<CourseSearchFiltersProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={handleSortOrderToggle}
-                className="border-slate-300"
+                className="border-slate-300 cursor-pointer hover:bg-gray-200/75"
               >
                 {sortOrder === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
               </Button>
@@ -122,7 +122,7 @@ export const CourseSearchFilters: React.FC<CourseSearchFiltersProps> = ({
                   variant={viewMode === 'grid' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => handleViewModeChange('grid')}
-                  className="rounded-none"
+                  className="rounded-none border-slate-300 border-r hover:bg-gray-200/75 cursor-pointer"
                 >
                   <Grid3X3 className="h-4 w-4" />
                 </Button>
@@ -130,7 +130,7 @@ export const CourseSearchFilters: React.FC<CourseSearchFiltersProps> = ({
                   variant={viewMode === 'list' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => handleViewModeChange('list')}
-                  className="rounded-none"
+                  className="rounded-none hover:bg-gray-200/75 cursor-pointer"
                 >
                   <List className="h-4 w-4" />
                 </Button>
@@ -144,10 +144,10 @@ export const CourseSearchFilters: React.FC<CourseSearchFiltersProps> = ({
               <h4 className="text-sm font-medium text-slate-700">Filters</h4>
               {safeSelectedFilters.length > 0 && (
                 <Button
-                  variant="ghost"
+                  variant="default"
                   size="sm"
                   onClick={handleClearFilters}
-                  className="text-slate-500 hover:text-slate-700"
+                  className="hover:bg-gray-200/75 border border-slate-300 cursor-pointer"
                 >
                   Clear all
                 </Button>
@@ -161,8 +161,8 @@ export const CourseSearchFilters: React.FC<CourseSearchFiltersProps> = ({
                   variant="outline"
                   size="sm"
                   className={cn(
-                    "text-sm border-slate-300",
-                    safeSelectedFilters.includes(filter) && "bg-[#003057] text-white border-[#003057] hover:bg-[#002041]"
+                    "text-sm hover:bg-gray-200/75 border border-slate-300 cursor-pointer",
+                    safeSelectedFilters.includes(filter) && "bg-[#003057] text-white hover:text-white border-[#003057] hover:bg-[#002041]"
                   )}
                   onClick={() => toggleFilter(filter)}
                 >
