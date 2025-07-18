@@ -81,8 +81,8 @@ export const CourseSearchFilters: React.FC<CourseSearchFiltersProps> = ({
   const safeSelectedFilters = Array.isArray(selectedFilters) ? selectedFilters : [];
 
   return (
-    <Card className="border-slate-300">
-      <CardContent className="px-6">
+    <Card className="border-slate-300 py-4">
+      <CardContent className="px-5">
         <div className="space-y-4">
           <div className="flex flex-col lg:flex-row lg:items-center space-y-4 lg:space-y-0 lg:space-x-4">
             <div className="flex-1 relative">
@@ -122,7 +122,7 @@ export const CourseSearchFilters: React.FC<CourseSearchFiltersProps> = ({
                   variant={viewMode === 'grid' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => handleViewModeChange('grid')}
-                  className="rounded-none border-slate-300 border-r hover:bg-gray-200/75 cursor-pointer"
+                  className={`rounded-none border-slate-300 border-r hover:bg-gray-200/75 cursor-pointer ${viewMode === 'grid' && 'bg-slate-300/50'}`}
                 >
                   <Grid3X3 className="h-4 w-4" />
                 </Button>
@@ -130,7 +130,7 @@ export const CourseSearchFilters: React.FC<CourseSearchFiltersProps> = ({
                   variant={viewMode === 'list' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => handleViewModeChange('list')}
-                  className="rounded-none hover:bg-gray-200/75 cursor-pointer"
+                  className={`rounded-none hover:bg-gray-200/75 cursor-pointer ${viewMode === 'list' && 'bg-slate-300/50'}`}
                 >
                   <List className="h-4 w-4" />
                 </Button>

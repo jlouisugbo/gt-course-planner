@@ -74,8 +74,8 @@ export const CourseList: React.FC<CourseListProps> = ({
         transition={{ delay: index * 0.03 }}
         className="group"
       >
-        <Card className="hover:shadow-md transition-all duration-200 border-slate-300 hover:border-[#B3A369] py-0">
-          <CardContent className="p-4">
+        <Card className="hover:shadow-md transition-all duration-200 border-slate-300 hover:border-[#B3A369] py-3">
+          <CardContent className="px-4">
             <div className="flex items-center justify-between">
               <div className="flex-1 flex flex-row items-center justify-between">
                 <div className="flex flex-col space-x-4">
