@@ -27,7 +27,7 @@ interface CourseCompletionModalProps {
   onUpdateStatus?: (courseId: number, semesterId: number, status: PlannedCourse['status'], grade?: string) => void;
 }
 
-const GRADES = ['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'D-', 'F', 'W', 'I', 'IP'];
+const GRADES = ['A', 'B', 'C', 'D','F', 'W', 'I', 'IP'];
 
 const CourseCompletionModal: React.FC<CourseCompletionModalProps> = ({
   course,
@@ -120,7 +120,7 @@ const CourseCompletionModal: React.FC<CourseCompletionModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md bg-white">
         <DialogHeader>
           <div className="flex items-start justify-between">
             <div>
@@ -131,9 +131,6 @@ const CourseCompletionModal: React.FC<CourseCompletionModalProps> = ({
                 {courseCode} - {courseTitle}
               </DialogDescription>
             </div>
-            <Button variant="ghost" size="sm" onClick={handleClose}>
-              <X className="h-4 w-4" />
-            </Button>
           </div>
         </DialogHeader>
 
@@ -170,7 +167,7 @@ const CourseCompletionModal: React.FC<CourseCompletionModalProps> = ({
                 <SelectTrigger className="mt-1">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="mt-1 bg-white">
                   <SelectItem value="planned">
                     <div className="flex items-center space-x-2">
                       <Calendar className="h-4 w-4 text-slate-400" />
@@ -203,7 +200,7 @@ const CourseCompletionModal: React.FC<CourseCompletionModalProps> = ({
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Select grade" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="mt-1 bg-white">
                     {GRADES.map(grade => (
                       <SelectItem key={grade} value={grade}>
                         <div className="flex items-center space-x-2">
@@ -256,7 +253,7 @@ const CourseCompletionModal: React.FC<CourseCompletionModalProps> = ({
             </Button>
             <Button 
               onClick={handleSave}
-              className="bg-[#003057] hover:bg-[#002041]"
+              className="bg-[#003057] hover:bg-[#b3a369] text-white"
               disabled={!isFormValid}
             >
               Update Status
