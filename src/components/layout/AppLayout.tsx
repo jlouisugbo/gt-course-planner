@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import ProfileSetup from "@/components/profile/ProfileSetup";
 import {
     Home,
     Calendar,
@@ -19,6 +20,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/AuthProvider";
+import { usePlannerStore } from "@/hooks/usePlannerStore";
 
 interface AppLayoutProps {
     children: React.ReactNode;
@@ -32,6 +34,22 @@ const navigation = [
 ];
 
 export default function AppLayout({ children }: AppLayoutProps) {
+
+    const [showProfileSetup, setShowProfileSetup] = useState(false);
+    const { semesters, studentInfo, userProfile } = usePlannerStore();
+
+    const safeUserProfile = useMemo(() => {
+        return userProfile && typeof userProfile === 'object' ? userProfile : null;
+    }, [userProfile]);
+
+    const handleProfileSetupOpen = useCallback(() => {
+        setShowProfileSetup(true);
+    }, []);
+
+    const handleProfileSetupClose = useCallback(() => {
+        setShowProfileSetup(false);
+    }, []);
+
     const pathname = usePathname();
     const { user, signOut } = useAuth();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -188,13 +206,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
                         <div className="flex items-center space-x-2">
                             {isClient && user && (
                                 <>
-                                    <Button
+                                    {/* Notifications button is commented out for now */}
+                                {/*<Button
                                         variant="ghost"
                                         size="sm"
                                         className="hidden md:flex h-8 w-8 p-0"
                                     >
                                         <Bell className="h-4 w-4" />
-                                    </Button>
+                                    </Button>*/}
                                     <Button
                                         variant="ghost"
                                         size="sm"
@@ -205,6 +224,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                                     <Button
                                         variant="ghost"
                                         size="sm"
+                                        onClick={handleProfileSetupOpen}
                                         className="hidden md:flex h-8 w-8 p-0"
                                     >
                                         <Settings className="h-4 w-4" />
@@ -232,6 +252,15 @@ export default function AppLayout({ children }: AppLayoutProps) {
                             </Button>
                         </div>
                     </div>
+
+                    {/* Profile Setup Modal */}
+                    {showProfileSetup && (
+                        <ProfileSetup
+                            isOpen={showProfileSetup}
+                            onClose={handleProfileSetupClose}
+                            existingProfile={safeUserProfile || undefined}
+                        />
+                    )}
 
                     {/* Mobile Navigation */}
                     {mobileMenuOpen && (

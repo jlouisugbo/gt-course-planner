@@ -12,15 +12,18 @@ import ProfileSetup from "@/components/profile/ProfileSetup";
 import CourseRecommendations from "./CourseRecommendations";
 
 const PlannerGrid = () => {
+
     const { semesters, studentInfo, userProfile } = usePlannerStore();
     const [showProfileSetup, setShowProfileSetup] = useState(false);
 
     const safeSemesters = useMemo(() => {
         return semesters && typeof semesters === 'object' ? semesters : {};
     }, [semesters]);
+
     const safeStudentInfo = useMemo(() => {
         return studentInfo && typeof studentInfo === 'object' ? studentInfo : {};
     }, [studentInfo]);
+
     const safeUserProfile = useMemo(() => {
         return userProfile && typeof userProfile === 'object' ? userProfile : null;
     }, [userProfile]);
