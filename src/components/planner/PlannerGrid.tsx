@@ -121,7 +121,7 @@ const PlannerGrid = () => {
                             <Upload className="h-4 w-4 mr-2" />
                             Import
                         </Button>
-                        <Button className="bg-[#003057] hover:bg-[#002041] text-sm h-9">
+                        <Button className="bg-[#003057] hover:bg-[#b3a369] text-sm h-9 text-white">
                             <Download className="h-4 w-4 mr-2" />
                             Export
                         </Button>

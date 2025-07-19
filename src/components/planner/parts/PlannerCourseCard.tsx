@@ -136,16 +136,6 @@ const CourseCard: React.FC<CourseCardProps> = ({
           opacity: isDragging ? 0.5 : 1
         }}
       >
-        {/* Status Indicator */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="absolute top-1 right-1 h-6 w-6 p-0 opacity-70 hover:opacity-100"
-          onClick={handleStatusClick}
-        >
-          {getStatusIcon(courseStatus)}
-        </Button>
-
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-2">
             <GripVertical className={cn(
@@ -166,11 +156,11 @@ const CourseCard: React.FC<CourseCardProps> = ({
             </Badge>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100">
+                <Button variant="ghost" size="sm" className="h-5 w-5 p-0 opacity-100">
                   <MoreVertical className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className={"bg-white"}>
                 <DropdownMenuItem onClick={(e) => {
                   e.stopPropagation();
                   setShowCompletionModal(true);
