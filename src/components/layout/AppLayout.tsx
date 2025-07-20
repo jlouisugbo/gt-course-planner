@@ -34,10 +34,9 @@ const navigation = [
 ];
 
 export default function AppLayout({ children }: AppLayoutProps) {
-
     const [showHelpModal, setShowHelpModal] = useState(false);
     const [showProfileSetup, setShowProfileSetup] = useState(false);
-    const { semesters, studentInfo, userProfile } = usePlannerStore();
+    const { userProfile } = usePlannerStore();
 
     const safeUserProfile = useMemo(() => {
         return userProfile && typeof userProfile === 'object' ? userProfile : null;
@@ -52,7 +51,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
     }, []);
 
     const pathname = usePathname();
-    const { user, signOut } = useAuth();
+    {/* userRecord gives access to more detailed info than the standard user object provided
+     needed in order to access info like major,graduation sem, etc*/}
+    const { user, userRecord, signOut} = useAuth();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [isClient, setIsClient] = useState(false);
 
@@ -63,19 +64,18 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
     // Safe user info extraction - only after client hydration
     const getUserInfo = () => {
-        if (!isClient || !user) {
+        if (!isClient || !user || !userRecord) {
             return {
                 displayName: "User",
                 displayMajor: "Undeclared",
             };
         }
-
         return {
             displayName:
-                user.user_metadata?.full_name ||
-                user.email?.split("@")[0] ||
+                userRecord.full_name ||
+                userRecord.email?.split("@")[0] ||
                 "User",
-            displayMajor: user.user_metadata?.major || "Undeclared",
+            displayMajor: userRecord.plan_settings.major || "Undeclared",
         };
     };
 
@@ -98,7 +98,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     // Render user profile section
     const renderUserProfile = () => {
         return (
-            <div className="flex items-center space-x-2 pl-2 border-l border-slate-300">
+        <div className="flex items-center space-x-2 pl-2 border-l border-slate-300">
                 <div className="w-7 h-7 bg-[#B3A369] rounded-full flex items-center justify-center">
                     <User className="h-3 w-3 text-white" />
                 </div>
