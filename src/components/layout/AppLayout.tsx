@@ -35,6 +35,7 @@ const navigation = [
 
 export default function AppLayout({ children }: AppLayoutProps) {
 
+    const [showHelpModal, setShowHelpModal] = useState(false);
     const [showProfileSetup, setShowProfileSetup] = useState(false);
     const { semesters, studentInfo, userProfile } = usePlannerStore();
 
@@ -218,6 +219,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                                         variant="ghost"
                                         size="sm"
                                         className="hidden md:flex h-8 w-8 p-0"
+                                        onClick={() => setShowHelpModal(true)}
                                     >
                                         <HelpCircle className="h-4 w-4" />
                                     </Button>
@@ -252,6 +254,51 @@ export default function AppLayout({ children }: AppLayoutProps) {
                             </Button>
                         </div>
                     </div>
+
+                    {/* Info/Help button modal */}
+                    {showHelpModal && (
+                        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                            <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full p-6 relative h-96">
+                                <button
+                                    onClick={() => setShowHelpModal(false)}
+                                    className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+                                >
+                                    ✕
+                                </button>
+
+                                <h2 className="text-xl font-semibold mb-3">About This Site</h2>
+
+                                <p className="text-lg text-gray-700 mb-4">
+                                    This platform is designed to help Georgia Tech students manage their degree planning information efficiently.
+                                    Use it to track your academic progress, build your course roadmap, and explore available offerings.
+                                </p>
+
+                                <ul className="list-disc pl-5 text-lg text-gray-700 space-y-2 mb-4">
+                                    <li><strong>Dashboard:</strong> View key academic information such as GPA and course activity at a glance.</li>
+                                    <li><strong>Planner:</strong> View and edit your academic plan, organizing courses by term.</li>
+                                    <li><strong>Courses:</strong> Browse and search through available course offerings to build your plan.</li>
+                                </ul>
+
+                                {/* Footer with credits */}
+                                <div className="text-sm text-gray-500 border-t pt-3">
+                                    Created by{' '}
+                                    <a href="https://www.linkedin.com/in/jlouisugbo/" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-700">
+                                        Joel Louis-Ugbo
+                                    </a>{' '}
+                                    ,{' '}
+                                    <a href="https://www.linkedin.com/in/sekun-oshikanlu/" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-700">
+                                        Sekun Oshikanlu
+                                    </a>
+                                    {' '}and{' '}
+                                    <a href="https://www.linkedin.com/in/tumelongono" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-700">
+                                        Tumelo Ngono
+                                    </a>
+                                    .
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
 
                     {/* Profile Setup Modal */}
                     {showProfileSetup && (
