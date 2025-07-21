@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, TrendingUp, Download, Share2, Bookmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ const CourseExplorer = () => {
   const [bookmarkedCourses, setBookmarkedCourses] = useState<Set<string>>(new Set());
   const [seeBookmarks, setSeeBookmarks] = useState<boolean>(false);
   const [addToPlan, setAddToPlan] = useState<boolean>(false);
+  const [animate, setAnimate] = useState<boolean>(true);
   const [plannedSemester, setPlannedSemester] = useState<any>(null);
   
   const { semesters, addCourseToSemester } = usePlannerStore();
@@ -175,6 +176,12 @@ const CourseExplorer = () => {
       bookmarkedCourses.has(String(course.id))
     );
   }
+
+  //UseEffect to only animate course cards on first render or on viewMode change
+  useEffect(() => {
+    setTimeout(() => setAnimate(false), 1250)
+    setAnimate(true)
+  }, [viewMode])
 
   const toggleBookmark = (courseId: string) => {
     setBookmarkedCourses(prev => {
@@ -332,17 +339,17 @@ const CourseExplorer = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header with bookmarks button */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
         <CourseExplorerHeader bookmarkedCount={bookmarkedCourses.size} />
         
         <div className="mt-4 lg:mt-0 flex items-center space-x-3">
-          <Button variant="outline" className="border-slate-300">
+          <Button variant="outline" className="border-slate-300 cursor-pointer hover:bg-gray-200/75">
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
-          <Button variant="outline" className="border-slate-300">
+          <Button variant="outline" className="border-slate-300 cursor-pointer hover:bg-gray-200/75">
             <Share2 className="h-4 w-4 mr-2" />
             Share
           </Button>
@@ -375,7 +382,7 @@ const CourseExplorer = () => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
             <p className="text-sm text-slate-600">
-              Showing <span className="font-medium">{displayCourses.length}</span> courses
+              Showing <span className="font-medium">{displayCourses.length}</span> course{displayCourses.length !== 1 ? 's' : ''}
               {selectedFilters.length > 0 && (
                 <span> with <span className="font-medium">{selectedFilters.length}</span> filter{selectedFilters.length !== 1 ? 's' : ''}</span>
               )}
@@ -417,7 +424,7 @@ const CourseExplorer = () => {
               <Button
                 variant="outline"
                 onClick={clearAllFilters}
-                className="border-slate-300"
+                className="border-slate-300 cursor-pointer hover:bg-gray-200/75"
               >
                 Clear search and filters
               </Button>
@@ -429,6 +436,7 @@ const CourseExplorer = () => {
               toggleBookmark={toggleBookmark}
               onViewDetails={handleViewDetails}
               onAddToPlan={handleAddToPlan}
+              animate={animate}
             />
           ) : (
             <CourseList
@@ -437,6 +445,7 @@ const CourseExplorer = () => {
               toggleBookmark={toggleBookmark}
               onViewDetails={handleViewDetails}
               onAddToPlan={handleAddToPlan}
+              animate={animate}
             />
           )}
         </AnimatePresence>

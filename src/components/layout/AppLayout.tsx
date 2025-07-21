@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import ProfileSetup from "@/components/profile/ProfileSetup";
 import {
     Home,
     Calendar,
@@ -19,6 +20,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/AuthProvider";
+import { usePlannerStore } from "@/hooks/usePlannerStore";
 
 interface AppLayoutProps {
     children: React.ReactNode;
@@ -32,8 +34,26 @@ const navigation = [
 ];
 
 export default function AppLayout({ children }: AppLayoutProps) {
+    const [showHelpModal, setShowHelpModal] = useState(false);
+    const [showProfileSetup, setShowProfileSetup] = useState(false);
+    const { userProfile } = usePlannerStore();
+
+    const safeUserProfile = useMemo(() => {
+        return userProfile && typeof userProfile === 'object' ? userProfile : null;
+    }, [userProfile]);
+
+    const handleProfileSetupOpen = useCallback(() => {
+        setShowProfileSetup(true);
+    }, []);
+
+    const handleProfileSetupClose = useCallback(() => {
+        setShowProfileSetup(false);
+    }, []);
+
     const pathname = usePathname();
-    const { user, signOut } = useAuth();
+    {/* userRecord gives access to more detailed info than the standard user object provided
+     needed in order to access info like major,graduation sem, etc*/}
+    const { user, userRecord, signOut} = useAuth();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [isClient, setIsClient] = useState(false);
 
@@ -44,19 +64,18 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
     // Safe user info extraction - only after client hydration
     const getUserInfo = () => {
-        if (!isClient || !user) {
+        if (!isClient || !user || !userRecord) {
             return {
                 displayName: "User",
                 displayMajor: "Undeclared",
             };
         }
-
         return {
             displayName:
-                user.user_metadata?.full_name ||
-                user.email?.split("@")[0] ||
+                userRecord.full_name ||
+                userRecord.email?.split("@")[0] ||
                 "User",
-            displayMajor: user.user_metadata?.major || "Undeclared",
+            displayMajor: userRecord.plan_settings.major || "Undeclared",
         };
     };
 
@@ -79,7 +98,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     // Render user profile section
     const renderUserProfile = () => {
         return (
-            <div className="flex items-center space-x-2 pl-2 border-l border-slate-300">
+        <div className="flex items-center space-x-2 pl-2 border-l border-slate-300">
                 <div className="w-7 h-7 bg-[#B3A369] rounded-full flex items-center justify-center">
                     <User className="h-3 w-3 text-white" />
                 </div>
@@ -188,23 +207,26 @@ export default function AppLayout({ children }: AppLayoutProps) {
                         <div className="flex items-center space-x-2">
                             {isClient && user && (
                                 <>
-                                    <Button
+                                    {/* Notifications button is commented out for now */}
+                                {/*<Button
                                         variant="ghost"
                                         size="sm"
                                         className="hidden md:flex h-8 w-8 p-0"
                                     >
                                         <Bell className="h-4 w-4" />
-                                    </Button>
+                                    </Button>*/}
                                     <Button
                                         variant="ghost"
                                         size="sm"
                                         className="hidden md:flex h-8 w-8 p-0"
+                                        onClick={() => setShowHelpModal(true)}
                                     >
                                         <HelpCircle className="h-4 w-4" />
                                     </Button>
                                     <Button
                                         variant="ghost"
                                         size="sm"
+                                        onClick={handleProfileSetupOpen}
                                         className="hidden md:flex h-8 w-8 p-0"
                                     >
                                         <Settings className="h-4 w-4" />
@@ -232,6 +254,60 @@ export default function AppLayout({ children }: AppLayoutProps) {
                             </Button>
                         </div>
                     </div>
+
+                    {/* Info/Help button modal */}
+                    {showHelpModal && (
+                        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                            <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full p-6 relative h-96">
+                                <button
+                                    onClick={() => setShowHelpModal(false)}
+                                    className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+                                >
+                                    ✕
+                                </button>
+
+                                <h2 className="text-xl font-semibold mb-3">About This Site</h2>
+
+                                <p className="text-lg text-gray-700 mb-4">
+                                    This platform is designed to help Georgia Tech students manage their degree planning information efficiently.
+                                    Use it to track your academic progress, build your course roadmap, and explore available offerings.
+                                </p>
+
+                                <ul className="list-disc pl-5 text-lg text-gray-700 space-y-2 mb-4">
+                                    <li><strong>Dashboard:</strong> View key academic information such as GPA and course activity at a glance.</li>
+                                    <li><strong>Planner:</strong> View and edit your academic plan, organizing courses by term.</li>
+                                    <li><strong>Courses:</strong> Browse and search through available course offerings to build your plan.</li>
+                                </ul>
+
+                                {/* Footer with credits */}
+                                <div className="text-sm text-gray-500 border-t pt-3">
+                                    Created by{' '}
+                                    <a href="https://www.linkedin.com/in/jlouisugbo/" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-700">
+                                        Joel Louis-Ugbo
+                                    </a>{' '}
+                                    ,{' '}
+                                    <a href="https://www.linkedin.com/in/sekun-oshikanlu/" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-700">
+                                        Sekun Oshikanlu
+                                    </a>
+                                    {' '}and{' '}
+                                    <a href="https://www.linkedin.com/in/tumelongono" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-700">
+                                        Tumelo Ngono
+                                    </a>
+                                    .
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+
+                    {/* Profile Setup Modal */}
+                    {showProfileSetup && (
+                        <ProfileSetup
+                            isOpen={showProfileSetup}
+                            onClose={handleProfileSetupClose}
+                            existingProfile={safeUserProfile || undefined}
+                        />
+                    )}
 
                     {/* Mobile Navigation */}
                     {mobileMenuOpen && (
