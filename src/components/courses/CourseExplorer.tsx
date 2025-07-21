@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, TrendingUp, Download, Share2, Bookmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ const CourseExplorer = () => {
   const [bookmarkedCourses, setBookmarkedCourses] = useState<Set<string>>(new Set());
   const [seeBookmarks, setSeeBookmarks] = useState<boolean>(false);
   const [addToPlan, setAddToPlan] = useState<boolean>(false);
+  const [animate, setAnimate] = useState<boolean>(true);
   const [plannedSemester, setPlannedSemester] = useState<any>(null);
   
   const { semesters, addCourseToSemester } = usePlannerStore();
@@ -175,6 +176,12 @@ const CourseExplorer = () => {
       bookmarkedCourses.has(String(course.id))
     );
   }
+
+  //UseEffect to only animate course cards on first render or on viewMode change
+  useEffect(() => {
+    setTimeout(() => setAnimate(false), 1250)
+    setAnimate(true)
+  }, [viewMode])
 
   const toggleBookmark = (courseId: string) => {
     setBookmarkedCourses(prev => {
@@ -429,6 +436,7 @@ const CourseExplorer = () => {
               toggleBookmark={toggleBookmark}
               onViewDetails={handleViewDetails}
               onAddToPlan={handleAddToPlan}
+              animate={animate}
             />
           ) : (
             <CourseList
@@ -437,6 +445,7 @@ const CourseExplorer = () => {
               toggleBookmark={toggleBookmark}
               onViewDetails={handleViewDetails}
               onAddToPlan={handleAddToPlan}
+              animate={animate}
             />
           )}
         </AnimatePresence>

@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 interface CourseGridProps {
   courses?: any[];
   bookmarkedCourses?: Set<string>;
+  animate?: boolean;
   toggleBookmark?: (courseId: string) => void;
   onViewDetails?: (course: any) => void;
   onAddToPlan?: (course: any) => void;
@@ -19,6 +20,7 @@ interface CourseGridProps {
 export const CourseGrid: React.FC<CourseGridProps> = ({
   courses = [],
   bookmarkedCourses = new Set(),
+  animate = false,
   toggleBookmark,
   onViewDetails,
   onAddToPlan,
@@ -45,7 +47,7 @@ export const CourseGrid: React.FC<CourseGridProps> = ({
   };
 
   // Enhanced course card for grid layout (from old version)
-  const EnhancedCourseCard = ({ course, index }: { course: any; index: number }) => {
+  const EnhancedCourseCard = ({ course, index }: { course: any; index: number; }) => {
     if (!course || typeof course !== 'object') {
       return (
         <Card className="border-red-200 bg-red-50">
@@ -69,7 +71,7 @@ export const CourseGrid: React.FC<CourseGridProps> = ({
 
     return (
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={animate ? { opacity: 0, y: 20 } : false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: index * 0.05 }}
         className={'group'}
@@ -182,7 +184,7 @@ export const CourseGrid: React.FC<CourseGridProps> = ({
         <EnhancedCourseCard 
           key={course?.id || `course-${index}`} 
           course={course} 
-          index={index} 
+          index={index}
         />
       ))}
     </motion.div>

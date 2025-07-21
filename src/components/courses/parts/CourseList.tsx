@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 interface CourseListProps {
   courses?: any[];
   bookmarkedCourses?: Set<string>;
+  animate?: boolean;
   toggleBookmark?: (courseId: string) => void;
   onViewDetails?: (course: any) => void; 
   onAddToPlan?: (course: any) => void;
@@ -19,6 +20,7 @@ interface CourseListProps {
 export const CourseList: React.FC<CourseListProps> = ({
   courses = [],
   bookmarkedCourses = new Set(),
+  animate = false,
   toggleBookmark,
   onViewDetails,
   onAddToPlan,
@@ -69,7 +71,7 @@ export const CourseList: React.FC<CourseListProps> = ({
 
     return (
       <motion.div
-        initial={{ opacity: 0, x: -20 }}
+        initial={animate ? { opacity: 0, x: -20 } : false}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: index * 0.03 }}
         className="group"
