@@ -12,15 +12,18 @@ import ProfileSetup from "@/components/profile/ProfileSetup";
 import CourseRecommendations from "./CourseRecommendations";
 
 const PlannerGrid = () => {
+
     const { semesters, studentInfo, userProfile } = usePlannerStore();
     const [showProfileSetup, setShowProfileSetup] = useState(false);
 
     const safeSemesters = useMemo(() => {
         return semesters && typeof semesters === 'object' ? semesters : {};
     }, [semesters]);
+
     const safeStudentInfo = useMemo(() => {
         return studentInfo && typeof studentInfo === 'object' ? studentInfo : {};
     }, [studentInfo]);
+
     const safeUserProfile = useMemo(() => {
         return userProfile && typeof userProfile === 'object' ? userProfile : null;
     }, [userProfile]);
@@ -121,7 +124,7 @@ const PlannerGrid = () => {
                             <Upload className="h-4 w-4 mr-2" />
                             Import
                         </Button>
-                        <Button className="bg-[#003057] hover:bg-[#002041] text-sm h-9">
+                        <Button className="bg-[#003057] hover:bg-[#b3a369] text-sm h-9 text-white">
                             <Download className="h-4 w-4 mr-2" />
                             Export
                         </Button>
