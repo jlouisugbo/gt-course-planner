@@ -230,10 +230,11 @@ const CourseExplorer = () => {
   // Enhanced course card modal component (from old version)
   const CourseModal = ({ course }: { course: Course }) => (
     <div 
-      className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50' 
+      className='fixed inset-0 bg-black/50 flex items-center justify-center z-50' 
       onClick={() => {
         setSelectedCourse(null); 
         setAddToPlan(false);
+        setPlannedSemester(null);
       }}
     >
       <motion.div
@@ -252,7 +253,7 @@ const CourseExplorer = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={`h-8 w-8 p-0`}
+                  className={`h-8 w-8 p-0 cursor-pointer`}
                   onClick={(e) => {
                     e.stopPropagation();
                     toggleBookmark(String(course.id));
@@ -277,31 +278,31 @@ const CourseExplorer = () => {
             
             {/* Course info grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-3 bg-slate-50 rounded-lg">
+              <Card className="text-center p-3 rounded-lg bg-white border border-gray-200 shadow-sm">
                 <div className="text-sm text-slate-500">Credits</div>
-                <div className="text-lg font-semibold text-[#003057]">{course.credits}</div>
-              </div>
-              <div className="text-center p-3 bg-slate-50 rounded-lg">
+                <div className="text-xl font-semibold text-[#003057]">{course.credits}</div>
+              </Card>
+              <Card className="text-center p-3 rounded-lg bg-white border border-gray-200 shadow-sm">
                 <div className="text-sm text-slate-500">Difficulty</div>
-                <div className="text-lg font-semibold text-[#003057]">{course.difficulty}/5</div>
-              </div>
-              <div className="text-center p-3 bg-slate-50 rounded-lg">
+                <div className="text-xl font-semibold text-[#003057]">{course.difficulty}/5</div>
+              </Card>
+              <Card className="text-center p-3 rounded-lg bg-white border border-gray-200 shadow-sm">
                 <div className="text-sm text-slate-500">College</div>
                 <div className="text-lg font-semibold text-[#003057]">{course.college}</div>
-              </div>
-              <div className="text-center p-3 bg-slate-50 rounded-lg">
+              </Card>
+              <Card className="text-center p-3 rounded-lg bg-white border border-gray-200 shadow-sm">
                 <div className="text-sm text-slate-500">Semesters</div>
-                <div className="text-lg font-semibold text-[#003057]">
+                <div className="text-xl font-semibold text-[#003057]">
                   {[course.offerings.fall && 'Fall', course.offerings.spring && 'Spring', course.offerings.summer && 'Summer'].filter(Boolean).length}
                 </div>
-              </div>
+              </Card>
             </div>
 
             {/* Action buttons */}
             <div className="flex space-x-3 pt-4">
               <Button 
                 onClick={() => setAddToPlan(!addToPlan)} 
-                className="bg-[#003057] hover:bg-[#002041] text-white flex-1"
+                className="bg-[#003057] hover:bg-[#002041] text-white flex-1 cursor-pointer"
               >
                 Add to Plan
               </Button>
@@ -317,7 +318,7 @@ const CourseExplorer = () => {
                       key={semester.id}
                       variant={semester === plannedSemester ? "default" : "outline"}
                       onClick={() => setPlannedSemester(semester)}
-                      className={semester === plannedSemester ? "bg-[#B3A369] border-2 border-[#003057]" : ""}
+                      className={`cursor-pointer hover:bg-[#B3A369]/85 ${semester === plannedSemester ? "bg-[#B3A369] border-2 border-[#003057]" : ""}`}
                     >
                       {semester.season} {semester.year}
                     </Button>
@@ -325,7 +326,7 @@ const CourseExplorer = () => {
                 </div>
                 <Button 
                   onClick={() => confirmAddToPlan(course)} 
-                  className="bg-[#003057] hover:bg-[#002041] text-white w-full"
+                  className="bg-[#003057] hover:bg-[#002041] text-white w-full cursor-pointer"
                   disabled={!plannedSemester}
                 >
                   Confirm Add to Plan
