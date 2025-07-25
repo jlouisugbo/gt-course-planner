@@ -3,6 +3,7 @@
 import React from "react";
 import AIInsightsPanel from "./AIInsightsPanel";
 import RecentActivityPanel from "./RecentActivityPanel";
+import DeadlinesPanel from "./DeadlinesPanel";
 
 interface InsightsAndActivityRowProps {
     data?: {
@@ -30,10 +31,13 @@ const InsightsAndActivityRow = ({ data }: InsightsAndActivityRowProps) => {
                 remainingCourses={remainingCourses} 
                 delay={1.0} 
             />
-            <RecentActivityPanel 
-                recentActivity={recentActivity} 
-                delay={1.1} 
-            />
+            <div className="space-y-6">
+                <RecentActivityPanel 
+                    recentActivity={recentActivity} 
+                    delay={1.1}
+                />
+                <DeadlinesPanel delay={1.2} />
+            </div>
         </div>
     );
 };
