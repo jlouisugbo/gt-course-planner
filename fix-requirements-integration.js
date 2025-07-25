@@ -1,13 +1,8 @@
 // Complete fix for requirements integration
 // Run this script to fix the database schema and populate missing data
 
-const { createClient } = require('@supabase/supabase-js');
 
-// Replace with your actual Supabase credentials
-const supabaseUrl = 'https://ysoiwgmutgfamxjlxrna.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlzb2l3Z211dGdmYW14amx4cm5hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjEyMzgwMjYsImV4cCI6MjAzNjgxNDAyNn0.ikDLnGjOD8vYyLNLv41NZGvQ42DtO3UOZm8kvWpNcPE'; // Use service role key for admin operations
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase } from "@/lib/supabaseAdmin.ts";
 
 async function fixDatabase() {
     console.log('🔧 Starting database fix...');
