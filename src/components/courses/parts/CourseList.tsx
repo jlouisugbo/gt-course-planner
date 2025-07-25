@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
-  Calendar, Plus, Eye, Bookmark
+  Calendar, Plus, Eye, Bookmark, CheckCircle2, Check
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -15,6 +15,8 @@ interface CourseListProps {
   toggleBookmark?: (courseId: string) => void;
   onViewDetails?: (course: any) => void; 
   onAddToPlan?: (course: any) => void;
+  completedCourses?: Set<string>;
+  onToggleComplete?: (courseCode: string) => void;
 }
 
 export const CourseList: React.FC<CourseListProps> = ({
@@ -24,6 +26,8 @@ export const CourseList: React.FC<CourseListProps> = ({
   toggleBookmark,
   onViewDetails,
   onAddToPlan,
+  completedCourses = new Set(),
+  onToggleComplete,
 }) => {
   // Safe array filtering
   const safeCourses = Array.isArray(courses) 
@@ -138,6 +142,31 @@ export const CourseList: React.FC<CourseListProps> = ({
                     <Eye className="h-4 w-4 mr-2" />
                     Details
                   </Button>
+                  
+                  {onToggleComplete && (
+                    <Button
+                      variant={completedCourses?.has(courseCode) ? "default" : "outline"}
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleComplete(courseCode);
+                      }}
+                      className={cn(
+                        "transition-all duration-200",
+                        completedCourses?.has(courseCode) 
+                          ? "bg-green-600 hover:bg-green-700 text-white border-green-600" 
+                          : "hover:bg-green-50 hover:border-green-300"
+                      )}
+                    >
+                      {completedCourses?.has(courseCode) ? (
+                        <CheckCircle2 className="h-4 w-4 mr-1" />
+                      ) : (
+                        <Check className="h-4 w-4 mr-1" />
+                      )}
+                      {completedCourses?.has(courseCode) ? 'Done' : 'Mark'}
+                    </Button>
+                  )}
+                  
                   <Button 
                     onClick={() => onAddToPlan && onAddToPlan(course)} 
                     className="bg-[#003057] hover:bg-[#002041] text-white cursor-pointer"

@@ -11,6 +11,7 @@ import { useProfileSetup } from "@/hooks/useProfileSetup";
 import { InfoSetup } from "./steps/InfoSetup";
 import { AcademicProgramSetup } from "./steps/AcademicProgramSetup";
 import { AcademicRecordSetup } from "./steps/AcademicRecordSetup";
+import { CourseCompletionSetup } from "./steps/CourseCompletionSetup";
 
 interface ProfileSetupProps {
     isOpen?: boolean;
@@ -50,7 +51,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
                     <h2 className="text-2xl font-bold text-slate-900">
                         Academic Profile Setup
                     </h2>
-                    <p className="text-slate-600">Step {step} of 3</p>
+                    <p className="text-slate-600">Step {step} of 4</p>
                 </div>
                 {!pageMode && onClose && (
                     <Button variant="ghost" size="sm" onClick={onClose}>
@@ -60,7 +61,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
             </div>
 
             <div className="mb-8">
-                <Progress value={(step / 3) * 100} className="h-2" />
+                <Progress value={(step / 4) * 100} className="h-2" />
 
                 <div className="relative mt-6">
                     <div className="flex items-center justify-between text-base text-slate-500 relative">
@@ -81,9 +82,17 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
                         </div>
 
                         {/* Step 3 */}
-                        <div>
+                        <div className="flex-1 flex items-center justify-center">
         <span className={step === 3 ? "text-slate-800 font-medium text-xl" : ""}>
           Academic Record
+        </span>
+                            <div className="flex-1 h-px bg-slate-300 mx-2"></div>
+                        </div>
+
+                        {/* Step 4 */}
+                        <div>
+        <span className={step === 4 ? "text-slate-800 font-medium text-xl" : ""}>
+          Course Completion
         </span>
                         </div>
                     </div>
@@ -115,6 +124,14 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
                 />
             )}
 
+            {step === 4 && (
+                <CourseCompletionSetup
+                    profile={profile}
+                    setProfile={setProfile}
+                    errors={errors}
+                />
+            )}
+
             {/* Navigation */}
             <div className="flex justify-between space-x-2 mt-8">
                 {step > 1 && (
@@ -127,7 +144,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
                     </Button>
                 )}
                 <div className="flex space-x-2 ml-auto">
-                    {step < 3 && (
+                    {step < 4 && (
                         <Button
                             onClick={handleNext}
                             className="bg-[#003057] hover:bg-[#b3a369] text-white"
@@ -135,7 +152,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
                             Next
                         </Button>
                     )}
-                    {step === 3 && (
+                    {step === 4 && (
                         <Button
                             onClick={() => handleSave()}
                             disabled={isLoading}
@@ -144,10 +161,10 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
                             {isLoading ? (
                                 <>
                                     <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                    Saving...
+                                    Completing Setup...
                                 </>
                             ) : (
-                                "Save"
+                                "Complete Setup"
                             )}
                         </Button>
                     )}
@@ -163,7 +180,9 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                    className={`bg-white rounded-xl shadow-2xl w-full max-h-[90vh] overflow-y-auto ${
+                    step === 4 ? 'max-w-5xl' : 'max-w-2xl'
+                }`}
                 >
                     {content}
                 </motion.div>
@@ -176,7 +195,9 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                className={`bg-white rounded-xl shadow-2xl w-full max-h-[90vh] overflow-y-auto ${
+                    step === 4 ? 'max-w-5xl' : 'max-w-2xl'
+                }`}
             >
                 {content}
             </motion.div>

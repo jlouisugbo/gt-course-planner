@@ -1,4 +1,10 @@
 import { MajorRequirement, MinorRequirement, ThreadRequirement } from '@/types';
+export interface SemesterGPA {
+    semester: string; // Format: "Fall 2023", "Spring 2024", etc.
+    gpa: number;
+    creditsEarned: number;
+}
+
 export interface UserProfile {
     id: number;
     name: string;
@@ -17,6 +23,10 @@ export interface UserProfile {
     totalCreditsEarned: number;
     isTransferStudent: boolean;
     transferCredits?: number;
+    completedCourses?: string[]; // Course codes that have been completed
+    completedGroups?: string[]; // Group IDs that have been satisfied
+    hasDetailedGPA?: boolean; // Whether user provided semester-by-semester GPA
+    semesterGPAs?: SemesterGPA[]; // Semester-by-semester GPA history
     createdAt: Date;
     updatedAt: Date;
 }

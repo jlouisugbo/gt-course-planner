@@ -43,10 +43,6 @@ export const useCourseFiltering = ({
               return course.code.startsWith('MATH');
             case 'Science':
               return course.code.startsWith('PHYS') || course.code.startsWith('CHEM') || course.code.startsWith('BIOL');
-            case 'Intelligence Thread':
-              return course.threads?.includes('Intelligence');
-            case 'Systems Thread':
-              return course.threads?.includes('Systems & Architecture');
             case 'Fall Offerings':
               return course.offerings?.fall;
             case 'Spring Offerings':
@@ -81,8 +77,8 @@ export const useCourseFiltering = ({
           break;
         case 'popularity':
           // Mock popularity calculation since we don't have this data
-          const aPopularity = (a.threads?.length || 0) + (5 - (a.difficulty || 3));
-          const bPopularity = (b.threads?.length || 0) + (5 - (b.difficulty || 3));
+          const aPopularity = (a.prerequisites?.length || 0) + (5 - (a.difficulty || 3));
+          const bPopularity = (b.prerequisites?.length || 0) + (5 - (b.difficulty || 3));
           comparison = bPopularity - aPopularity;
           break;
       }

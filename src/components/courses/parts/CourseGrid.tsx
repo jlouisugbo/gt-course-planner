@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
-  Calendar, Plus, Eye, Bookmark, Target
+  Calendar, Plus, Eye, Bookmark, Target, CheckCircle2, Check
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -15,6 +15,8 @@ interface CourseGridProps {
   toggleBookmark?: (courseId: string) => void;
   onViewDetails?: (course: any) => void;
   onAddToPlan?: (course: any) => void;
+  completedCourses?: Set<string>;
+  onToggleComplete?: (courseCode: string) => void;
 }
 
 export const CourseGrid: React.FC<CourseGridProps> = ({
@@ -24,6 +26,8 @@ export const CourseGrid: React.FC<CourseGridProps> = ({
   toggleBookmark,
   onViewDetails,
   onAddToPlan,
+  completedCourses = new Set(),
+  onToggleComplete,
 }) => {
   // Safe array filtering
   const safeCourses = Array.isArray(courses) 
@@ -76,8 +80,8 @@ export const CourseGrid: React.FC<CourseGridProps> = ({
         transition={{ delay: index * 0.05 }}
         className={'group'}
       >
-        <Card className="h-full hover:shadow-xl transition-all duration-300 group border-slate-300 hover:border-[#B3A369] py-2">
-          <CardHeader className="pb-2 @container">
+        <Card className="h-auto hover:shadow-lg transition-all duration-300 group border-slate-300 hover:border-[#B3A369]">
+          <CardHeader className="pb-3 p-4">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center space-x-2 mb-2">
@@ -123,48 +127,77 @@ export const CourseGrid: React.FC<CourseGridProps> = ({
               </div>
             </div>
 
-            <div className='flex flex-row justify-between'>
-              <div className='space-y-2'>
-                <div className='flex items-center space-x-2'>
-                  <Badge className={cn("border", getDifficultyColor(courseDifficulty))}>
-                    Difficulty {courseDifficulty}/5
-                  </Badge>
-                  <Badge className="flex items-center border-slate-300">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    {[courseOfferings.fall && 'Fall', courseOfferings.spring && 'Spring', courseOfferings.summer && 'Summer'].filter(Boolean).length} semester{[courseOfferings.fall && 'Fall', courseOfferings.spring && 'Spring', courseOfferings.summer && 'Summer'].filter(Boolean).length !== 1 ? 's' : ''}
-                  </Badge>
-                </div>
-                <div className="flex items-center space-x-2">
+            <div className="space-y-3 mt-3">
+              <div className="flex flex-wrap gap-2">
+                <Badge className={cn("border text-xs", getDifficultyColor(courseDifficulty))}>
+                  Difficulty {courseDifficulty}/5
+                </Badge>
+                <Badge variant="outline" className="text-xs border-slate-300">
+                  {courseCollege}
+                </Badge>
+                {(coursePrerequisites.length > 0 || courseCorequisites.length > 0) && (
                   <Badge variant="outline" className="text-xs border-slate-300">
-                    {courseCollege}
+                    Prerequisites
                   </Badge>
-                  {(coursePrerequisites.length > 0 || courseCorequisites.length > 0) && <Badge variant="outline" className="text-xs border-slate-300"><span>R</span></Badge>}
-                </div>
+                )}
               </div>
-          
-              <CardContent className="pt-0 pr-0 pl-2 space-y-4 flex justify-end">
+              
+              <div className="flex items-center space-x-1">
+                <Badge variant="outline" className="flex items-center text-xs border-slate-300">
+                  <Calendar className="h-3 w-3 mr-1" />
+                  {[courseOfferings.fall && 'F', courseOfferings.spring && 'S', courseOfferings.summer && 'Su'].filter(Boolean).join(', ')}
+                </Badge>
+                {courseThreads.length > 0 && (
+                  <Badge variant="outline" className="text-xs bg-[#B3A369]/10 border-[#B3A369] text-[#B3A369]">
+                    <Target className="h-3 w-3 mr-1" />
+                    {courseThreads[0]}
+                  </Badge>
+                )}
+              </div>
+              
+              {/* Interactive buttons */}
+              <div className="flex space-x-2 pt-2">
+                <Button 
+                  size="sm" 
+                  onClick={() => onAddToPlan && onAddToPlan(course)} 
+                  className="flex-1 cursor-pointer text-white bg-[#003057] hover:bg-[#002041]"
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Add to Plan
+                </Button>
                 
-                
-                {/* Interactive buttons */}
-                <div className="flex space-x-2 pt-2">
-                  <Button 
-                    size="sm" 
-                    onClick={() => onAddToPlan && onAddToPlan(course)} 
-                    className="flex-1 cursor-pointer active:scale-95 text-white bg-[#003057] hover:bg-[#002041]"
-                  >
-                    <Plus className="h-3 w-3" />
-                    <p className='hidden ml-1 @md:block'>Add to Plan</p>
-                  </Button>
-                  <Button 
-                    variant="outline" 
+                {onToggleComplete && (
+                  <Button
+                    variant={completedCourses.has(courseCode) ? "default" : "outline"}
                     size="sm"
-                    onClick={() => onViewDetails && onViewDetails(course)}
-                    className='cursor-pointer hover:bg-gray-200/75'
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleComplete(courseCode);
+                    }}
+                    className={cn(
+                      "transition-all duration-200",
+                      completedCourses.has(courseCode) 
+                        ? "bg-green-600 hover:bg-green-700 text-white border-green-600" 
+                        : "hover:bg-green-50 hover:border-green-300"
+                    )}
                   >
-                    <Eye className="h-3 w-3" />
+                    {completedCourses.has(courseCode) ? (
+                      <CheckCircle2 className="h-3 w-3" />
+                    ) : (
+                      <Check className="h-3 w-3" />
+                    )}
                   </Button>
-                </div>
-              </CardContent>
+                )}
+
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => onViewDetails && onViewDetails(course)}
+                  className="cursor-pointer hover:bg-gray-200/75"
+                >
+                  <Eye className="h-3 w-3" />
+                </Button>
+              </div>
             </div>
           </CardHeader>
         </Card>
@@ -178,7 +211,7 @@ export const CourseGrid: React.FC<CourseGridProps> = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6"
+      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4"
     >
       {safeCourses.map((course, index) => (
         <EnhancedCourseCard 

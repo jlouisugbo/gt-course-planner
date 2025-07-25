@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { 
-  Clock, Star, Users, Calendar, Target, Plus, Eye, Bookmark 
+  Clock, Star, Users, Calendar, Target, Plus, Eye, Bookmark, CheckCircle2, Check
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -15,6 +15,8 @@ interface CourseCardProps {
   bookmarkedCourses?: Set<string>;
   toggleBookmark?: (courseId: string) => void;
   onViewDetails?: (course: any) => void;
+  completedCourses?: Set<string>;
+  onToggleComplete?: (courseCode: string) => void;
 }
 
 export const CourseCard: React.FC<CourseCardProps> = ({
@@ -23,6 +25,8 @@ export const CourseCard: React.FC<CourseCardProps> = ({
   bookmarkedCourses = new Set(),
   toggleBookmark,
   onViewDetails,
+  completedCourses = new Set(),
+  onToggleComplete,
 }) => {
   // Early return if no course provided
   if (!course || typeof course !== 'object') {
@@ -47,6 +51,16 @@ export const CourseCard: React.FC<CourseCardProps> = ({
   const courseThreads = Array.isArray(course.threads) ? course.threads : [];
   const courseCollege = course.college || 'Unknown College';
   const courseOfferings = course.offerings || { fall: false, spring: false, summer: false };
+
+  const isCompleted = completedCourses.has(courseCode);
+  const isBookmarked = bookmarkedCourses.has(courseId);
+
+  const handleToggleComplete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onToggleComplete) {
+      onToggleComplete(courseCode);
+    }
+  };
 
   const getDifficultyColor = (difficulty: number) => {
     if (difficulty <= 2) return 'bg-green-100 text-green-800 border-green-300';
@@ -172,6 +186,27 @@ export const CourseCard: React.FC<CourseCardProps> = ({
               <Plus className="h-3 w-3 mr-1" />
               Add to Plan
             </Button>
+            
+            {onToggleComplete && (
+              <Button
+                variant={isCompleted ? "default" : "outline"}
+                size="sm"
+                onClick={handleToggleComplete}
+                className={cn(
+                  "transition-all duration-200",
+                  isCompleted 
+                    ? "bg-green-600 hover:bg-green-700 text-white border-green-600" 
+                    : "hover:bg-green-50 hover:border-green-300"
+                )}
+              >
+                {isCompleted ? (
+                  <CheckCircle2 className="h-3 w-3" />
+                ) : (
+                  <Check className="h-3 w-3" />
+                )}
+              </Button>
+            )}
+
             <Button 
               variant="outline" 
               size="sm"
@@ -179,6 +214,20 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             >
               <Eye className="h-3 w-3" />
             </Button>
+            
+            {toggleBookmark && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleBookmarkToggle}
+                className={cn(
+                  "transition-all",
+                  isBookmarked && "bg-yellow-50 border-yellow-300 text-yellow-700"
+                )}
+              >
+                <Bookmark className={cn("h-3 w-3", isBookmarked && "fill-current")} />
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>

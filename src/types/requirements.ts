@@ -92,3 +92,101 @@ export interface AcademicProgress {
     graduationDate: string;
     onTrack: boolean;
 }
+
+// Visual Requirements System Types
+export interface FootnoteRef {
+    number: number;
+    text?: string;
+}
+
+export interface BaseCourse {
+    code: string;
+    title: string;
+    isOption: boolean;
+    courseType: string;
+    footnoteRefs: number[];
+}
+
+export interface RegularCourse extends BaseCourse {
+    courseType: 'regular' | 'or_option';
+}
+
+export interface OrGroupCourse extends BaseCourse {
+    courseType: 'or_group';
+    groupId: string;
+    groupCourses: VisualCourse[];
+}
+
+export interface AndGroupCourse extends BaseCourse {
+    courseType: 'and_group';
+    groupId: string;
+    groupCourses: VisualCourse[];
+}
+
+export interface SelectionCourse extends BaseCourse {
+    courseType: 'selection';
+    groupId: string;
+    selectionCount: number;
+    selectionOptions: VisualCourse[];
+}
+
+export interface FlexibleCourse extends BaseCourse {
+    courseType: 'flexible';
+    isFlexible: boolean;
+}
+
+export type VisualCourse = RegularCourse | OrGroupCourse | AndGroupCourse | SelectionCourse | FlexibleCourse;
+
+export interface VisualRequirementCategory {
+    name: string;
+    courses: VisualCourse[];
+}
+
+export interface VisualDegreeProgram {
+    id: number;
+    name: string;
+    degreeType: string;
+    college?: string;
+    totalCredits?: number;
+    requirements: VisualRequirementCategory[];
+    footnotes?: FootnoteRef[];
+}
+
+export interface VisualMinorProgram {
+    id: number;
+    name: string;
+    requirements: VisualRequirementCategory[];
+    footnotes?: FootnoteRef[];
+}
+
+// Database course interface for querying individual course details
+export interface DatabaseCourse {
+    code: string;
+    title: string;
+    credits: number;
+    description: string;
+    prerequisites?: string;
+    course_type: string;
+    college?: string;
+    department?: string;
+}
+
+// Enhanced course interface with database data
+export interface EnhancedCourse {
+    code: string;
+    title: string;
+    isOption: boolean;
+    courseType: string;
+    footnoteRefs: number[];
+    credits?: number;
+    description?: string;
+    prerequisites?: string;
+    college?: string;
+    department?: string;
+    // Additional fields for group courses
+    groupId?: string;
+    groupCourses?: VisualCourse[];
+    selectionCount?: number;
+    selectionOptions?: VisualCourse[];
+    isFlexible?: boolean;
+}

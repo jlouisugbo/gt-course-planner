@@ -113,7 +113,7 @@ const CourseDetailsModal: React.FC<CourseDetailsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white border border-gray-200 shadow-lg rounded-lg">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white border border-gray-200 shadow-lg rounded-lg backdrop-blur-sm">
         <div className="bg-white rounded-lg">
           <DialogHeader>
             <div className="flex items-start justify-between">

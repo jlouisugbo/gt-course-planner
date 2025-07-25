@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Activity, Plus, Eye } from "lucide-react";
+import Link from "next/link";
 
 interface RecentActivityPanelProps {
     recentActivity?: any[];
@@ -33,9 +34,17 @@ const RecentActivityPanel = ({ recentActivity, delay = 0 }: RecentActivityPanelP
         >
             <Card className="border-slate-300">
                 <CardHeader>
-                    <CardTitle className="flex items-center">
-                        <Activity className="h-5 w-5 mr-2" />
-                        Recent Activity
+                    <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center">
+                            <Activity className="h-5 w-5 mr-2" />
+                            Recent Activity
+                        </div>
+                        <Link href="/planner">
+                            <Button variant="outline" size="sm">
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Course
+                            </Button>
+                        </Link>
                     </CardTitle>
                     <CardDescription>
                         Your latest planning updates and changes

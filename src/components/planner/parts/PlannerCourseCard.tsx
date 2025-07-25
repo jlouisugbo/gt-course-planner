@@ -5,9 +5,6 @@ import { useDrag } from 'react-dnd';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
-  CheckCircle,
-  Clock,
-  Calendar,
   GripVertical,
   MoreVertical,
   Edit,
@@ -72,17 +69,6 @@ const CourseCard: React.FC<CourseCardProps> = ({
     );
   }  
 
-  const getStatusIcon = (status: PlannedCourse['status']) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle className="h-3 w-3 text-green-600" />;
-      case 'in-progress':
-        return <Clock className="h-3 w-3 text-blue-600" />;
-      default:
-        return <Calendar className="h-3 w-3 text-slate-400" />;
-    }
-  };
-
   const getStatusColor = (status: PlannedCourse['status']) => {
     switch (status) {
       case 'completed':
@@ -92,11 +78,6 @@ const CourseCard: React.FC<CourseCardProps> = ({
       default:
         return 'bg-slate-50 border-slate-300';
     }
-  };
-
-  const handleStatusClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setShowCompletionModal(true);
   };
 
   const handleRemove = (e: React.MouseEvent) => {
@@ -160,7 +141,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
                   <MoreVertical className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className={"bg-white"}>
+              <DropdownMenuContent align="end" className="bg-white min-w-48 w-auto">
                 <DropdownMenuItem onClick={(e) => {
                   e.stopPropagation();
                   setShowCompletionModal(true);

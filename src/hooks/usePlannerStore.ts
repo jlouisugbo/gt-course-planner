@@ -10,10 +10,11 @@ import {
     PlannedCourse,
     RequirementCategory,
     UserProfile,
-    DegreeProgram,
+    DegreeProgramDisplay,
     Deadline,
     ProgressItem,
 } from "@/types";
+import { VisualDegreeProgram, VisualMinorProgram } from "@/types/requirements";
 
 interface PlannerState {
     // User data
@@ -24,7 +25,8 @@ interface PlannerState {
     semesters: Record<number, SemesterData>;
 
     // Database data
-    degreePrograms: DegreeProgram[];
+    degreePrograms: DegreeProgramDisplay[];
+    minorPrograms: DegreeProgramDisplay[];
     deadlines: Deadline[];
     selectedThreads: number[];
     selectedMinors: number[];
@@ -83,17 +85,19 @@ interface PlannerState {
         credits: number;
     }>;
 
-    // Database integration methods
-    fetchDegreePrograms: () => Promise<void>;
     fetchDeadlines: () => Promise<void>;
+    
+    // New methods for visual requirements system
+    fetchDegreeProgramRequirements: () => Promise<VisualDegreeProgram | null>;
+    fetchMinorProgramsRequirements: () => Promise<VisualMinorProgram[]>;
     getThreadProgress: () => ProgressItem[];
     getThreadMinorProgress: () => ProgressItem[];
     getUpcomingDeadlines: () => (Deadline & {
         daysLeft: number;
         formattedDate: string;
     })[];
-    getAvailableThreads: () => DegreeProgram[];
-    getAvailableMinors: () => DegreeProgram[];
+    getAvailableThreads: () => DegreeProgramDisplay[];
+    getAvailableMinors: () => DegreeProgramDisplay[];
     setSelectedThreads: (threadIds: number[]) => void;
     setSelectedMinors: (minorIds: number[]) => void;
     initializeStore: () => Promise<void>;
@@ -177,6 +181,7 @@ export const usePlannerStore = create<PlannerState>()(
 
             // Database data
             degreePrograms: [],
+            minorPrograms: [],
             deadlines: [],
             selectedThreads: [],
             selectedMinors: [],
@@ -227,27 +232,6 @@ export const usePlannerStore = create<PlannerState>()(
                 return Object.values(state.semesters || {}).filter(ensureSemesterIntegrity);
             },
 
-            // Fetch degree programs from database
-            fetchDegreePrograms: async () => {
-                set({ isLoadingPrograms: true });
-                try {
-                    const { data: programs, error } = await supabase
-                        .from("degree_programs")
-                        .select("*")
-                        .in("degree_type", ["Thread", "Minor"]);
-
-                    if (error) throw error;
-
-                    set({
-                        degreePrograms: programs || [],
-                        isLoadingPrograms: false,
-                    });
-                } catch (error) {
-                    console.error("Failed to fetch degree programs:", error);
-                    set({ isLoadingPrograms: false });
-                }
-            },
-
             // Fetch deadlines
             fetchDeadlines: async () => {
                 set({ isLoadingDeadlines: true });
@@ -293,7 +277,7 @@ export const usePlannerStore = create<PlannerState>()(
                 const allCourses = state.getAllCourses(); // Use safe method
 
                 const calculateProgress = (
-                    program: DegreeProgram,
+                    program: DegreeProgramDisplay,
                 ): ProgressItem => {
                     let completedCredits = 0;
                     const completedCourses: number[] = [];
@@ -449,9 +433,192 @@ export const usePlannerStore = create<PlannerState>()(
             initializeStore: async () => {
                 const state = get();
                 await Promise.all([
-                    state.fetchDegreePrograms(),
                     state.fetchDeadlines(),
                 ]);
+            },
+
+            // Fetch degree program requirements for visual system (NEW: using major column)
+            fetchDegreeProgramRequirements: async (): Promise<VisualDegreeProgram | null> => {
+                try {
+                    // Get the current user
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) {
+                        console.error('No authenticated user found');
+                        return null;
+                    }
+
+                    // Get user's major from users table (new approach using major text column)
+                    const { data: userRecord, error: userError } = await supabase
+                        .from('users')
+                        .select('major')
+                        .eq('auth_id', user.id)
+                        .single();
+
+                    if (userError) {
+                        console.error('Error fetching user record:', userError);
+                        return null;
+                    }
+
+                    if (!userRecord?.major) {
+                        console.error('User has no major assigned. User needs to complete profile setup.');
+                        return null;
+                    }
+
+                    const majorName = userRecord.major;
+                    console.log('Fetching degree program requirements for major:', majorName);
+
+                    // Query degree program by major name with college information
+                    const { data: program, error: programError } = await supabase
+                        .from('degree_programs')
+                        .select(`
+                            id, 
+                            name, 
+                            degree_type, 
+                            total_credits, 
+                            requirements,
+                            colleges!degree_programs_college_id_fkey(name)
+                        `)
+                        .eq('name', majorName)
+                        .eq('is_active', true)
+                        .single();
+
+                    if (programError) {
+                        console.error('Error fetching degree program:', programError);
+                        console.error('Query details:', {
+                            majorName,
+                            errorCode: programError.code,
+                            errorMessage: programError.message
+                        });
+
+                        // Try case-insensitive fallback
+                        console.log('Trying case-insensitive fallback...');
+                        const { data: fallbackProgram, error: fallbackError } = await supabase
+                            .from('degree_programs')
+                            .select(`
+                                id, 
+                                name, 
+                                degree_type, 
+                                total_credits, 
+                                requirements,
+                                colleges!degree_programs_college_id_fkey(name)
+                            `)
+                            .ilike('name', majorName)
+                            .eq('is_active', true)
+                            .single();
+
+                        if (fallbackError) {
+                            console.error('Case-insensitive fallback also failed:', fallbackError);
+                            
+                            // Debug: Show available programs
+                            const { data: availablePrograms } = await supabase
+                                .from('degree_programs')
+                                .select('name, degree_type')
+                                .eq('is_active', true)
+                                .limit(10);
+                            
+                            console.log('Available degree programs:', availablePrograms?.map(p => `${p.name} (${p.degree_type})`));
+                            return null;
+                        }
+
+                        console.log('Found program via case-insensitive match:', fallbackProgram?.name);
+                        
+                        // Convert fallback program to visual format
+                        const visualProgram: VisualDegreeProgram = {
+                            id: fallbackProgram.id,
+                            name: fallbackProgram.name,
+                            degreeType: fallbackProgram.degree_type,
+                            college: (fallbackProgram.colleges as any)?.name || undefined,
+                            totalCredits: fallbackProgram.total_credits || undefined,
+                            requirements: Array.isArray(fallbackProgram.requirements) ? fallbackProgram.requirements : [],
+                            footnotes: []
+                        };
+                        
+                        return visualProgram;
+                    }
+
+                    if (!program) {
+                        console.error(`No degree program found for major: ${majorName}`);
+                        return null;
+                    }
+
+                    console.log('Successfully found degree program:', program.name);
+
+                    // Convert to visual program format
+                    const visualProgram: VisualDegreeProgram = {
+                        id: program.id,
+                        name: program.name,
+                        degreeType: program.degree_type,
+                        college: (program.colleges as any)?.name || undefined,
+                        totalCredits: program.total_credits || undefined,
+                        requirements: Array.isArray(program.requirements) ? program.requirements : [],
+                        footnotes: []
+                    };
+
+                    return visualProgram;
+
+                } catch (error) {
+                    console.error('Error in fetchDegreeProgramRequirements:', error);
+                    return null;
+                }
+            },
+
+            // Fetch minor program requirements for visual system (NEW: using minors JSON column)
+            fetchMinorProgramsRequirements: async (): Promise<VisualMinorProgram[]> => {
+                try {
+                    // Get the current user
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) {
+                        console.error('No authenticated user found');
+                        return [];
+                    }
+
+                    // Get user's minors from users table (NEW: using minors JSON column)
+                    const { data: userRecord, error: userError } = await supabase
+                        .from('users')
+                        .select('minors')
+                        .eq('auth_id', user.id)
+                        .single();
+
+                    if (userError) {
+                        console.error('Error fetching user record:', userError);
+                        return [];
+                    }
+
+                    if (!userRecord?.minors || !Array.isArray(userRecord.minors) || userRecord.minors.length === 0) {
+                        console.log('User has no minors selected');
+                        return [];
+                    }
+
+                    const minorNames = userRecord.minors;
+                    console.log('Fetching minor program requirements for minors:', minorNames);
+
+                    // Query minor programs by names
+                    const { data: programs, error: programError } = await supabase
+                        .from('degree_programs')
+                        .select('id, name, requirements')
+                        .eq('degree_type', 'Minor')
+                        .in('name', minorNames)
+                        .eq('is_active', true);
+
+                    if (programError) {
+                        console.error('Error fetching minor programs:', programError);
+                        return [];
+                    }
+
+                    // Transform the database structure to match VisualMinorProgram[]
+                    const visualMinors: VisualMinorProgram[] = (programs || []).map(program => ({
+                        id: program.id,
+                        name: program.name,
+                        requirements: Array.isArray(program.requirements) ? program.requirements : [],
+                        footnotes: [] // You can add footnotes logic here if needed
+                    }));
+
+                    return visualMinors;
+
+                } catch (error) {
+                    console.error('Error in fetchMinorProgramsRequirements:', error);
+                    return [];
+                }
             },
 
             updateStudentInfo: (info: Partial<StudentInfo>) => {
@@ -979,15 +1146,17 @@ export const usePlannerStore = create<PlannerState>()(
                     return {};
                 }
 
-                while (
-                    currentYear < parseInt(gradYear) ||
-                    (currentYear === parseInt(gradYear) &&
-                        seasons[currentSeasonIndex] !== gradSeason)
-                ) {
+                const finalYear = parseInt(gradYear);
+                const finalSeasonIndex = seasons.indexOf(gradSeason);
+                
+                // Add extra semesters beyond graduation to ensure all options are available
+                const extendedFinalYear = finalYear + 1;
+
+                // Generate ALL semesters from start to extended final year
+                while (currentYear <= extendedFinalYear) {
                     const season = seasons[currentSeasonIndex];
-                    // Better semester ID generation to avoid collisions
-                    // Format: YYYYS where S is season (0=Fall, 1=Spring, 2=Summer)
-                    const semesterId = currentYear * 10 + currentSeasonIndex;
+                    // Unique semester ID generation: YYYYSS (year + season index)
+                    const semesterId = currentYear * 100 + currentSeasonIndex;
 
                     semesters[semesterId] = {
                         id: semesterId,
@@ -1000,13 +1169,15 @@ export const usePlannerStore = create<PlannerState>()(
                         gpa: 0,
                     };
 
-                    currentSeasonIndex = (currentSeasonIndex + 1) % seasons.length;
-                    if (currentSeasonIndex === 0) currentYear++;
                     semesterCount++;
+                    currentSeasonIndex = (currentSeasonIndex + 1) % seasons.length;
+                    if (currentSeasonIndex === 0) {
+                        currentYear++;
+                    }
 
                     // Safety break to prevent infinite loops
-                    if (semesterCount > 20) {
-                        console.warn("Semester generation stopped after 20 semesters to prevent infinite loop");
+                    if (semesterCount > 25) {
+                        console.warn("Semester generation stopped after 25 semesters to prevent infinite loop");
                         break;
                     }
                 }

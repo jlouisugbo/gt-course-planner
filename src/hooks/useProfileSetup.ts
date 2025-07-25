@@ -35,6 +35,8 @@ export const useProfileSetup = (
         transferCredits: 0,
         isDoubleMajor: false,
         year: "",
+        completedCourses: [],
+        completedGroups: [],
         createdAt: new Date(),
         updatedAt: new Date(),
         ...existingProfile,
@@ -73,6 +75,10 @@ export const useProfileSetup = (
                     newErrors.expectedGraduation = "Expected graduation is required";
                 // GPA and credits are optional, so no validation needed
                 break;
+            
+            case 4: // Course Completion Step
+                // No validation needed - all fields are optional
+                break;
         }
 
         setErrors(newErrors);
@@ -80,9 +86,9 @@ export const useProfileSetup = (
     }, [profile]);
 
     const handleSave = useCallback(async () => {
-        // Validate the final step (step 3) before saving
-        if (!validateStep(3)) {
-            console.error('Validation failed for step 3');
+        // Validate the final step (step 4) before saving
+        if (!validateStep(4)) {
+            console.error('Validation failed for step 4');
             return;
         }
 
@@ -161,7 +167,7 @@ export const useProfileSetup = (
                 console.warn(`Could not find degree program for major: ${profile.major}`);
             }
 
-            // Update the users table with profile information
+            // Update the users table with profile information (NEW: using major text and minors JSON)
             const { data, error: updateError } = await supabase
                 .from('users')
                 .update({
@@ -169,8 +175,11 @@ export const useProfileSetup = (
                     gt_username: profile.gtId,
                     graduation_year: profile.expectedGraduation ? 
                         parseInt(profile.expectedGraduation.split(' ')[1]) : null,
-                    degree_program_id: degreeId,
+                    major: profile.major || null, // Save major as text
+                    minors: profile.minors || [], // Save minors as JSON array
                     selected_threads: profile.threads || [],
+                    completed_courses: profile.completedCourses || [], // Save completed courses
+                    completed_groups: profile.completedGroups || [], // Save completed groups
                     plan_settings: {
                         ...profile,
                         plan_name: "My 4-Year Plan",
@@ -209,6 +218,8 @@ export const useProfileSetup = (
                 totalCreditsEarned: profile.totalCreditsEarned || 0,
                 isTransferStudent: profile.isTransferStudent || false,
                 transferCredits: profile.transferCredits,
+                completedCourses: profile.completedCourses || [],
+                completedGroups: profile.completedGroups || [],
 
                 createdAt: profile.createdAt || new Date(),
                 updatedAt: new Date(),

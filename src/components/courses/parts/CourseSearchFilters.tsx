@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/providers/AuthProvider';
+import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -19,8 +21,8 @@ interface CourseSearchFiltersProps {
   setViewMode?: (mode: 'grid' | 'list') => void;
 }
 
-const filterOptions = [
-  'CS Core', 'Math', 'Science', 'Intelligence Thread', 'Systems Thread',
+// Default filter options as fallback
+const defaultFilterOptions = [
   'Fall Offerings', 'Spring Offerings', 'Summer Offerings',
   'Easy (1-2)', 'Medium (3)', 'Hard (4-5)'
 ];
@@ -37,6 +39,53 @@ export const CourseSearchFilters: React.FC<CourseSearchFiltersProps> = ({
   viewMode = 'grid',
   setViewMode,
 }) => {
+  const { user } = useAuth();
+  const [requirementCategories, setRequirementCategories] = useState<string[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+
+  // Fetch requirement categories from degree program
+  useEffect(() => {
+    const fetchRequirementCategories = async () => {
+      if (!user) {
+        setIsLoadingCategories(false);
+        return;
+      }
+
+      try {
+        // Get user's major
+        const { data: userRecord, error: userError } = await supabase
+          .from('users')
+          .select('major')
+          .eq('auth_id', user.id)
+          .single();
+
+        if (userError || !userRecord?.major) return;
+
+        // Get degree program requirements
+        const degreeResponse = await fetch(`/api/degree-programs?major=${encodeURIComponent(userRecord.major)}`);
+        if (!degreeResponse.ok) return;
+        
+        const degreeData = await degreeResponse.json();
+        
+        if (degreeData.requirements && Array.isArray(degreeData.requirements)) {
+          const categories = degreeData.requirements.map((req: any) => req.name).filter(Boolean);
+          setRequirementCategories(categories);
+        }
+      } catch (error) {
+        console.warn('Failed to fetch requirement categories:', error);
+      } finally {
+        setIsLoadingCategories(false);
+      }
+    };
+
+    fetchRequirementCategories();
+  }, [user]);
+
+  // Combine requirement categories with default options
+  const filterOptions = [
+    ...requirementCategories,
+    ...defaultFilterOptions
+  ];
   const toggleFilter = (filter: string) => {
     if (setSelectedFilters) {
       setSelectedFilters(prev => {

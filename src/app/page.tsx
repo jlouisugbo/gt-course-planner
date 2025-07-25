@@ -21,7 +21,10 @@ export default function HomePage() {
 
     // Single effect with simple logic
     useEffect(() => {
-        if (!mounted || loading || !user) return;
+        if (!mounted || loading) return;
+        
+        // If no user, let middleware handle the redirect
+        if (!user) return;
 
         // User is authenticated, check their setup status
         const checkUserSetup = async () => {

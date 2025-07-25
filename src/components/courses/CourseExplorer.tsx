@@ -12,6 +12,8 @@ import { CourseGrid } from './parts/CourseGrid';
 import { CourseList } from './parts/CourseList';
 import { usePlannerStore } from '@/hooks/usePlannerStore';
 import { useCoursesPaginated } from '@/data/courses';
+import { useAllCourses } from '@/hooks/useAllCourses';
+import { useCompletionTracking } from '@/hooks/useCompletionTracking';
 
 const CourseExplorer = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -27,90 +29,27 @@ const CourseExplorer = () => {
   const [plannedSemester, setPlannedSemester] = useState<any>(null);
   
   const { semesters, addCourseToSemester } = usePlannerStore();
+  const { completedCourses, toggleCourseCompletion } = useCompletionTracking();
   const semesterArray = Object.values(semesters || {});
 
-  // Fetch courses using the proper data service
+  // Use optimized all courses hook
   const { 
-    data: coursesResponse, 
-    isLoading, 
-  } = useCoursesPaginated(
-    { 
-      search: searchQuery || undefined,
-    },
-    { 
-      page: 1, 
-      limit: 100 // Get more courses for client-side filtering
-    }
-  );
-
-  // Transform database courses to match expected format
-  const transformCourse = (dbCourse: any) => ({
-    id: dbCourse.id || Math.random(),
-    code: dbCourse.code || 'Unknown',
-    title: dbCourse.title || 'No title available',
-    credits: typeof dbCourse.credits === 'number' ? dbCourse.credits : 3,
-    description: dbCourse.description || 'No description available',
-    difficulty: Math.floor(Math.random() * 5) + 1, // Since difficulty isn't in DB, use random for demo
-    college: 'College of Computing', // Default since not in current DB structure
-    prerequisites: Array.isArray(dbCourse.prerequisite_courses) 
-      ? dbCourse.prerequisite_courses.map((p: string) => ({ type: 'course', courses: [p], logic: 'AND' }))
-      : [],
-    corequisites: [],
-    threads: [], // Would need to be determined based on course code/attributes
-    attributes: Array.isArray(dbCourse.attributes) ? dbCourse.attributes : [],
-    offerings: dbCourse.offerings || { fall: true, spring: true, summer: false },
+    courses: allCoursesData,
+    filteredCourses,
+    isLoading,
+    error,
+    hasMore,
+    loadMore,
+    totalCount
+  } = useAllCourses({
+    search: searchQuery || undefined
   });
 
-  // Get base courses from API
-  const baseCourses = coursesResponse?.data?.map(transformCourse) || [];
+  // Use courses directly from the optimized hook
+  const baseCourses = searchQuery ? filteredCourses : allCoursesData;
 
-  const fallbackCourses = [
-    {
-      id: 1,
-      code: "CS 1301",
-      title: "Intro to Computing",
-      credits: 3,
-      description: "Introduction to computing principles and programming practices with an emphasis on the design, construction and implementation of problem solutions use of software tools.",
-      difficulty: 2,
-      college: "College of Computing",
-      prerequisites: [],
-      corequisites: [],
-      threads: [],
-      attributes: ["CORE"],
-      offerings: { fall: true, spring: true, summer: true },
-    },
-    {
-      id: 2,
-      code: "CS 1331",
-      title: "Intro-Object Orient Prog",
-      credits: 3,
-      description: "Introduction to techniques and methods of object-oriented programming such an encapsulation, inheritance, and polymorphism. Emphasis on software development and individual programming skills.",
-      difficulty: 3,
-      college: "College of Computing",
-      prerequisites: [{ type: 'course', courses: ['CS 1301'], logic: 'AND' }],
-      corequisites: [],
-      threads: [],
-      attributes: ["CORE"],
-      offerings: { fall: true, spring: true, summer: false },
-    },
-    {
-      id: 3,
-      code: "CS 1332",
-      title: "Data Struct & Algorithms",
-      credits: 3,
-      description: "Computer data structures and algorithms in the context of object-oriented programming. Focus on software development towards applications.",
-      difficulty: 4,
-      college: "College of Computing",
-      prerequisites: [{ type: 'course', courses: ['CS 1331'], logic: 'AND' }],
-      corequisites: [],
-      threads: ["Systems & Architecture"],
-      attributes: ["CORE"],
-      offerings: { fall: true, spring: true, summer: false },
-    },
-  ];
-
-  // Use fetched courses or fallback
-  let courses = baseCourses.length > 0 ? baseCourses : fallbackCourses;
+  // Use the courses directly from the API hook
+  let courses = baseCourses;
 
   // Apply filters
   if (selectedFilters.length > 0) {
@@ -383,22 +322,39 @@ const CourseExplorer = () => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
             <p className="text-sm text-slate-600">
-              Showing <span className="font-medium">{displayCourses.length}</span> course{displayCourses.length !== 1 ? 's' : ''}
+              Showing <span className="font-medium">{displayCourses.length}</span>
+              {totalCount > displayCourses.length && (
+                <span> of <span className="font-medium">{totalCount}</span></span>
+              )} course{displayCourses.length !== 1 ? 's' : ''}
+              {searchQuery && <span> matching "{searchQuery}"</span>}
               {selectedFilters.length > 0 && (
                 <span> with <span className="font-medium">{selectedFilters.length}</span> filter{selectedFilters.length !== 1 ? 's' : ''}</span>
               )}
             </p>
             
-            {displayCourses.length > 0 && (
-              <div className="flex items-center space-x-2 text-xs text-slate-500">
+            {hasMore && (
+              <div className="flex items-center space-x-2 text-xs text-blue-600">
                 <TrendingUp className="h-3 w-3" />
-                <span>Avg difficulty: {(displayCourses.reduce((sum, c) => sum + c.difficulty, 0) / displayCourses.length).toFixed(1)}/5</span>
+                <span>{totalCount - displayCourses.length} more available</span>
               </div>
             )}
           </div>
         </div>
 
         <AnimatePresence mode="wait">
+          {error && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-12 text-red-600"
+            >
+              <h3 className="text-lg font-medium mb-2">Error loading courses</h3>
+              <p className="text-sm mb-4">{error}</p>
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                Retry
+              </Button>
+            </motion.div>
+          )}
           {isLoading ? (
             <motion.div
               initial={{ opacity: 0 }}
@@ -407,7 +363,15 @@ const CourseExplorer = () => {
               className="text-center py-12"
             >
               <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#003057] mx-auto mb-4"></div>
-              <h3 className="text-lg font-medium text-slate-900 mb-2">Loading courses...</h3>
+              <h3 className="text-lg font-medium text-slate-900 mb-2">Loading all courses...</h3>
+              {totalCount > 0 && (
+                <p className="text-sm text-slate-500">
+                  {allCoursesData.length} of {totalCount} courses loaded
+                </p>
+              )}
+              <p className="text-sm text-slate-500">
+                {searchQuery ? 'Filtering results...' : 'Fetching course catalog...'}
+              </p>
               <p className="text-slate-600">Fetching the latest course information</p>
             </motion.div>
           ) : displayCourses.length === 0 ? (
@@ -430,24 +394,45 @@ const CourseExplorer = () => {
                 Clear search and filters
               </Button>
             </motion.div>
-          ) : viewMode === 'grid' ? (
-            <CourseGrid
-              courses={displayCourses}
-              bookmarkedCourses={bookmarkedCourses}
-              toggleBookmark={toggleBookmark}
-              onViewDetails={handleViewDetails}
-              onAddToPlan={handleAddToPlan}
-              animate={animate}
-            />
           ) : (
-            <CourseList
-              courses={displayCourses}
-              bookmarkedCourses={bookmarkedCourses}
-              toggleBookmark={toggleBookmark}
-              onViewDetails={handleViewDetails}
-              onAddToPlan={handleAddToPlan}
-              animate={animate}
-            />
+            <div className="space-y-6">
+              {viewMode === 'grid' ? (
+                <CourseGrid
+                  courses={displayCourses}
+                  bookmarkedCourses={bookmarkedCourses}
+                  toggleBookmark={toggleBookmark}
+                  onViewDetails={handleViewDetails}
+                  onAddToPlan={handleAddToPlan}
+                  animate={animate}
+                  completedCourses={completedCourses}
+                  onToggleComplete={toggleCourseCompletion}
+                />
+              ) : (
+                <CourseList
+                  courses={displayCourses}
+                  bookmarkedCourses={bookmarkedCourses}
+                  toggleBookmark={toggleBookmark}
+                  onViewDetails={handleViewDetails}
+                  onAddToPlan={handleAddToPlan}
+                  animate={animate}
+                  completedCourses={completedCourses}
+                  onToggleComplete={toggleCourseCompletion}
+                />
+              )}
+              
+              {/* Load More Button */}
+              {hasMore && displayCourses.length > 0 && (
+                <div className="text-center pt-6">
+                  <Button 
+                    variant="outline" 
+                    onClick={loadMore}
+                    className="bg-slate-50 hover:bg-slate-100 border-slate-200 px-8 py-3"
+                  >
+                    Load More Courses ({totalCount - allCoursesData.length} remaining)
+                  </Button>
+                </div>
+              )}
+            </div>
           )}
         </AnimatePresence>
       </div>

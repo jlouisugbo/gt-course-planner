@@ -14,7 +14,6 @@ import {
   Calendar,
   Star,
   Award,
-  X,
   AlertCircle
 } from 'lucide-react';
 import { PlannedCourse } from '@/types';

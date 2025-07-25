@@ -186,30 +186,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log('SignOut function called');
     
     try {
-      console.log('Clearing local state...');
-      setUser(null);
-      setSession(null);
-      setUserRecord(null);
-      
       console.log('Calling supabase signOut...');
       await authService.signOut();
       console.log('Supabase signOut successful');
       
-      // Small delay to ensure state is cleared
-      await new Promise(resolve => setTimeout(resolve, 100));
+      console.log('Clearing local state...');
+      setUser(null);
+      setSession(null);
+      setUserRecord(null);
+      setLoading(false);
+      
+      // Clear any cached data from localStorage/sessionStorage
+      if (typeof window !== 'undefined') {
+        // Clear any auth-related localStorage items
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('supabase.') || key.startsWith('sb-')) {
+            localStorage.removeItem(key);
+          }
+        });
+      }
       
       console.log('Redirecting to landing page...');
-      window.location.replace('/landing');
+      // Use a more forceful redirect approach
+      if (typeof window !== 'undefined') {
+        window.location.replace('/');
+      }
       
     } catch (error) {
       console.error("Error signing out:", error);
-      // Force redirect even on error
-      window.location.replace('/landing');
+      // Clear state even on error
+      setUser(null);
+      setSession(null);
+      setUserRecord(null);
+      setLoading(false);
+      
+      // Force redirect even on error with fallback
+      if (typeof window !== 'undefined') {
+        window.location.replace('/');
+      }
     } finally {
       // Reset the ref after a delay to handle any race conditions
       setTimeout(() => {
         signOutRef.current = false;
-      }, 1000);
+      }, 500);
     }
   };
 

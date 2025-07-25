@@ -4,7 +4,8 @@ export interface Course {
     title: string;
     description: string;
     credits: number;
-    prerequisites: Prerequisite[];
+    prerequisites: any; // JSON structure from database
+    postrequisites?: any; // JSON structure from database  
     college: string;
     offerings: SemesterOffering;
     difficulty: number;

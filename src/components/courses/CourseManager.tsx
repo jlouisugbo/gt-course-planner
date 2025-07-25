@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
     Card,
     CardContent,
@@ -27,11 +27,17 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, Filter, BookOpen, Star } from "lucide-react";
+import { Plus, Search, Filter, BookOpen, Star, Lock, AlertTriangle } from "lucide-react";
 import { Course, PlannedCourse } from "@/types/courses";
 import { usePlannerStore } from "@/hooks/usePlannerStore";
 import { motion, AnimatePresence } from "framer-motion";
-import { useCoursesPaginated } from '@/data/courses'; 
+import { useCoursesPaginated } from '@/data/courses';
+import { useAllCourses } from '@/hooks/useAllCourses';
+import { useAuth } from '@/providers/AuthProvider';
+import { supabase } from '@/lib/supabaseClient';
+import { PrereqModal } from './PrereqModal';
+import { evaluatePrerequisites } from '@/lib/prereqUtils';
+import { useCompletionTracking } from '@/hooks/useCompletionTracking'; 
 
 interface CourseManagerProps {
     semesterId: number; 
@@ -49,8 +55,21 @@ const CourseManager: React.FC<CourseManagerProps> = ({
     onClose,
 }) => {
     const { addCourseToSemester, semesters } = usePlannerStore();
+    const { user } = useAuth();
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+    const [programCourses, setProgramCourses] = useState<string[]>([]);
+    const [isLoadingProgram, setIsLoadingProgram] = useState(true);
+    const [activeTab, setActiveTab] = useState("program");
+    const [prereqModalCourse, setPrereqModalCourse] = useState<Course | null>(null);
+    const { completedCourses } = useCompletionTracking();
+    
+    // Get planned courses from planner store
+    const plannedCourseCodes = new Set(
+        Object.values(semesters)
+            .flatMap(semester => semester.courses)
+            .map(course => course.code)
+    );
     const [customCourse, setCustomCourse] = useState({
         code: "",
         title: "",
@@ -62,26 +81,122 @@ const CourseManager: React.FC<CourseManagerProps> = ({
         type: "elective" as "core" | "elective" | "free",
     });
 
-    // Fetch courses using your existing service with search filtering
+    // Use optimized all courses hook with memoization
     const { 
-        data: coursesResponse, 
+        courses: allCoursesData,
+        filteredCourses: allFilteredCourses,
         isLoading, 
-        error 
-    } = useCoursesPaginated(
-        { 
-            search: searchQuery || undefined, // Only pass search if there's a query
-        },
-        { 
-            page: 1, 
-            limit: 20 
-        }
-    );
+        error,
+        hasMore,
+        loadMore,
+        totalCount
+    } = useAllCourses({
+        search: searchQuery || undefined
+    });
 
-    const courses = coursesResponse?.data || [];
+    const courses = searchQuery ? allFilteredCourses : allCoursesData;
     const semester = semesters[semesterId];
     
-    // Since we're using server-side filtering, we don't need to filter again
-    const filteredCourses = courses;
+    // Fetch program requirements and extract course codes
+    useEffect(() => {
+        const fetchProgramCourses = async () => {
+            if (!user) {
+                setIsLoadingProgram(false);
+                return;
+            }
+
+            try {
+                // Get user's major
+                const { data: userRecord, error: userError } = await supabase
+                    .from('users')
+                    .select('major')
+                    .eq('auth_id', user.id)
+                    .single();
+
+                if (userError || !userRecord?.major) {
+                    setIsLoadingProgram(false);
+                    return;
+                }
+
+                // Get degree program requirements
+                const degreeResponse = await fetch(`/api/degree-programs?major=${encodeURIComponent(userRecord.major)}`);
+                if (!degreeResponse.ok) {
+                    setIsLoadingProgram(false);
+                    return;
+                }
+                
+                const degreeData = await degreeResponse.json();
+                
+                // Extract all course codes from requirements (including OR groups and SELECT groups)
+                const allCourseCodes = new Set<string>();
+                
+                const extractCoursesRecursively = (courseObj: any) => {
+                    if (typeof courseObj === 'string') {
+                        allCourseCodes.add(courseObj);
+                    } else if (courseObj && typeof courseObj === 'object') {
+                        // Regular course with code
+                        if (courseObj.code && courseObj.code !== 'OR_GROUP' && courseObj.code !== 'SELECT_GROUP') {
+                            allCourseCodes.add(courseObj.code);
+                        }
+                        
+                        // Handle OR groups
+                        if (courseObj.courseType === 'or_group' && courseObj.groupCourses) {
+                            courseObj.groupCourses.forEach((subCourse: any) => {
+                                extractCoursesRecursively(subCourse);
+                            });
+                        }
+                        
+                        // Handle AND groups
+                        if (courseObj.courseType === 'and_group' && courseObj.groupCourses) {
+                            courseObj.groupCourses.forEach((subCourse: any) => {
+                                extractCoursesRecursively(subCourse);
+                            });
+                        }
+                        
+                        // Handle SELECT groups
+                        if (courseObj.courseType === 'selection' && courseObj.selectionOptions) {
+                            courseObj.selectionOptions.forEach((option: any) => {
+                                extractCoursesRecursively(option);
+                            });
+                        }
+                    }
+                };
+                
+                if (degreeData.requirements && Array.isArray(degreeData.requirements)) {
+                    degreeData.requirements.forEach((requirement: any) => {
+                        if (requirement.courses && Array.isArray(requirement.courses)) {
+                            requirement.courses.forEach((course: any) => {
+                                extractCoursesRecursively(course);
+                            });
+                        }
+                    });
+                }
+                
+                setProgramCourses(Array.from(allCourseCodes));
+            } catch (error) {
+                console.warn('Failed to fetch program courses:', error);
+            } finally {
+                setIsLoadingProgram(false);
+            }
+        };
+
+        fetchProgramCourses();
+    }, [user]);
+    
+    // Filter courses based on active tab
+    const filteredCourses = useMemo(() => {
+        if (activeTab === "program" && programCourses.length > 0) {
+            // Show only courses that are in the user's degree program
+            return courses.filter(course => 
+                programCourses.some(programCode => 
+                    course.code === programCode || 
+                    course.code.startsWith(programCode.split(' ')[0]) // Match subject prefix
+                )
+            );
+        }
+        // For "all" tab or when no program courses loaded, show all courses
+        return courses;
+    }, [courses, programCourses, activeTab]);
 
     const handleAddCourse = (course: Course) => {
         const plannedCourse: PlannedCourse = {
@@ -150,65 +265,98 @@ const CourseManager: React.FC<CourseManagerProps> = ({
         onClose();
     };
 
-    const CourseCard = ({ course }: { course: Course }) => (
+    const CourseCard = ({ course }: { course: Course }) => {
+        // Check if prerequisites are met
+        const prereqResult = evaluatePrerequisites(
+            course.prerequisites,
+            completedCourses,
+            plannedCourseCodes
+        );
+        
+        const hasUnmetPrereqs = !prereqResult.isValid;
+        
+        return (
         <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+            className={`border rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer relative ${
+                hasUnmetPrereqs ? 'border-orange-200 bg-orange-50' : 'border-slate-200'
+            }`}
             onClick={() => setSelectedCourse(course)}
         >
             <div className="flex items-start justify-between mb-2">
-                <div>
-                    <h4 className="font-semibold text-slate-900">
-                        {course.code}
-                    </h4>
+                <div className="flex-1">
+                    <div className="flex items-center space-x-2">
+                        <h4 className="font-semibold text-slate-900">
+                            {course.code}
+                        </h4>
+                        {hasUnmetPrereqs && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPrereqModalCourse(course);
+                                }}
+                                className="text-orange-600 hover:text-orange-800 transition-colors"
+                                title="Prerequisites not met - click to view"
+                            >
+                                <Lock className="h-4 w-4" />
+                            </button>
+                        )}
+                    </div>
                     <p className="text-sm text-slate-600 line-clamp-1">
                         {course.title}
                     </p>
+                    {hasUnmetPrereqs && (
+                        <div className="flex items-center space-x-1 mt-1">
+                            <AlertTriangle className="h-3 w-3 text-orange-600" />
+                            <span className="text-xs text-orange-600">
+                                {prereqResult.missingCourses.length} prereq(s) missing
+                            </span>
+                        </div>
+                    )}
                 </div>
                 <Badge variant="secondary">{course.credits}cr</Badge>
             </div>
 
-            <div className="flex items-center space-x-2 text-xs text-slate-500 mb-2">
+            <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
                 <span className="flex items-center">
                     <Star className="h-3 w-3 mr-1" />
                     {course.difficulty}/5
                 </span>
+                <div className="flex space-x-1">
+                    {course.offerings?.fall && <Badge variant="outline" className="text-xs px-1">F</Badge>}
+                    {course.offerings?.spring && <Badge variant="outline" className="text-xs px-1">S</Badge>}
+                    {course.offerings?.summer && <Badge variant="outline" className="text-xs px-1">Su</Badge>}
+                </div>
             </div>
 
             <div className="flex items-center justify-between">
-                <div className="flex space-x-1">
-                    {course.offerings.fall && (
-                        <Badge variant="outline" className="text-xs">
-                            Fall
-                        </Badge>
-                    )}
-                    {course.offerings.spring && (
-                        <Badge variant="outline" className="text-xs">
-                            Spring
-                        </Badge>
-                    )}
-                    {course.offerings.summer && (
-                        <Badge variant="outline" className="text-xs">
-                            Summer
-                        </Badge>
-                    )}
-                </div>
-
                 <Button
                     size="sm"
                     onClick={(e) => {
                         e.stopPropagation();
                         handleAddCourse(course);
                     }}
-                    className="bg-[#003057] hover:bg-[#002041]"
+                    className="bg-[#003057] hover:bg-[#002041] flex-1 mr-2"
                 >
                     <Plus className="h-3 w-3 mr-1" />
                     Add
                 </Button>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedCourse(course);
+                    }}
+                    className="px-2"
+                >
+                    <BookOpen className="h-3 w-3" />
+                </Button>
             </div>
         </motion.div>
-    );
+        );
+    };
 
     if (!semester) {
         return (
@@ -228,7 +376,7 @@ const CourseManager: React.FC<CourseManagerProps> = ({
 
     return (
         <Dialog open={true} onOpenChange={onClose}>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
+            <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
                 <DialogHeader>
                     <DialogTitle className="flex items-center">
                         <BookOpen className="h-5 w-5 mr-2" />
@@ -240,13 +388,121 @@ const CourseManager: React.FC<CourseManagerProps> = ({
                     </DialogDescription>
                 </DialogHeader>
 
-                <Tabs defaultValue="search" className="flex-1 overflow-hidden">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="search">Search Courses</TabsTrigger>
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden">
+                    <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="program" className="relative">
+                            Program Courses
+                            {!isLoadingProgram && programCourses.length > 0 && (
+                                <Badge variant="secondary" className="ml-2 text-xs">
+                                    {programCourses.length}
+                                </Badge>
+                            )}
+                        </TabsTrigger>
+                        <TabsTrigger value="search">All Courses</TabsTrigger>
                         <TabsTrigger value="custom">
-                            Add Custom Course
+                            Add Custom
                         </TabsTrigger>
                     </TabsList>
+
+                    <TabsContent
+                        value="program"
+                        className="space-y-4 overflow-hidden"
+                    >
+                        {/* Program Courses Interface */}
+                        <div className="flex space-x-2">
+                            <div className="flex-1 relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                <Input
+                                    placeholder="Search program courses..."
+                                    value={searchQuery}
+                                    onChange={(e) =>
+                                        setSearchQuery(e.target.value)
+                                    }
+                                    className="pl-10"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Loading State */}
+                        {(isLoading || isLoadingProgram) && (
+                            <div className="text-center py-8 text-slate-500">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-400 mx-auto mb-2"></div>
+                                <div className="space-y-1">
+                                    <div>Loading program courses...</div>
+                                    {totalCount > 0 && (
+                                        <div className="text-xs text-slate-400">
+                                            {courses.length} of {totalCount} courses loaded
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Error State */}
+                        {error && (
+                            <div className="text-center text-red-500 py-8">
+                                <div className="mb-2">Error loading courses</div>
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={() => window.location.reload()}
+                                >
+                                    Retry
+                                </Button>
+                            </div>
+                        )}
+
+                        {/* Program Course Results */}
+                        {!isLoading && !isLoadingProgram && !error && (
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto">
+                                    <AnimatePresence>
+                                        {filteredCourses.map((course) => (
+                                            <CourseCard
+                                                key={course.id}
+                                                course={course}
+                                            />
+                                        ))}
+                                    </AnimatePresence>
+                                </div>
+                                
+                                {/* Load More Button for Program Tab */}
+                                {hasMore && filteredCourses.length > 0 && (
+                                    <div className="text-center pt-4">
+                                        <Button 
+                                            variant="outline" 
+                                            onClick={loadMore}
+                                            className="bg-blue-50 hover:bg-blue-100 border-blue-200"
+                                        >
+                                            Load More Program Courses
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {!isLoading && !isLoadingProgram && !error && filteredCourses.length === 0 && programCourses.length > 0 && (
+                            <div className="text-center py-8 text-slate-500">
+                                <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                <p>
+                                    No program courses found matching "{searchQuery}"
+                                </p>
+                                <p className="text-sm">
+                                    Try a different search term or check the "All Courses" tab
+                                </p>
+                            </div>
+                        )}
+
+                        {!isLoading && !isLoadingProgram && !error && programCourses.length === 0 && (
+                            <div className="text-center py-8 text-slate-500">
+                                <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                <p>No degree program found</p>
+                                <p className="text-sm">
+                                    Check your profile settings or use the "All Courses" tab
+                                </p>
+                            </div>
+                        )}
+                    </TabsContent>
 
                     <TabsContent
                         value="search"
@@ -275,7 +531,17 @@ const CourseManager: React.FC<CourseManagerProps> = ({
                         {isLoading && (
                             <div className="text-center py-8 text-slate-500">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-400 mx-auto mb-2"></div>
-                                Loading courses...
+                                <div className="space-y-1">
+                                    <div>Loading all courses...</div>
+                                    {totalCount > 0 && (
+                                        <div className="text-xs text-slate-400">
+                                            {courses.length} of {totalCount} courses loaded
+                                        </div>
+                                    )}
+                                    <div className="text-xs text-slate-400">
+                                        {searchQuery ? 'Filtering results...' : 'Fetching course catalog...'}
+                                    </div>
+                                </div>
                             </div>
                         )}
 
@@ -293,21 +559,51 @@ const CourseManager: React.FC<CourseManagerProps> = ({
                             </div>
                         )}
 
-                        {/* Course Results */}
+                        {/* All Course Results */}
                         {!isLoading && !error && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
-                                <AnimatePresence>
-                                    {filteredCourses.map((course) => (
-                                        <CourseCard
-                                            key={course.id}
-                                            course={course}
-                                        />
-                                    ))}
-                                </AnimatePresence>
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between text-sm text-slate-600 bg-slate-50 rounded-lg p-3">
+                                    <div>
+                                        Showing <span className="font-semibold text-slate-900">{courses.length}</span> 
+                                        {totalCount > courses.length && (
+                                            <span> of <span className="font-semibold text-slate-900">{totalCount}</span></span>
+                                        )} courses
+                                        {searchQuery && <span> matching "{searchQuery}"</span>}
+                                    </div>
+                                    {hasMore && (
+                                        <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                                            More available
+                                        </Badge>
+                                    )}
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto">
+                                    <AnimatePresence>
+                                        {courses.map((course) => (
+                                            <CourseCard
+                                                key={course.id}
+                                                course={course}
+                                            />
+                                        ))}
+                                    </AnimatePresence>
+                                </div>
+                                
+                                {/* Load More Button */}
+                                {hasMore && courses.length > 0 && (
+                                    <div className="text-center pt-4">
+                                        <Button 
+                                            variant="outline" 
+                                            onClick={loadMore}
+                                            className="bg-slate-50 hover:bg-slate-100 border-slate-200"
+                                        >
+                                            Load More Courses ({totalCount - courses.length} remaining)
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                         )}
 
-                        {!isLoading && !error && filteredCourses.length === 0 && searchQuery && (
+                        {!isLoading && !error && courses.length === 0 && searchQuery && (
                             <div className="text-center py-8 text-slate-500">
                                 <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
                                 <p>
@@ -321,12 +617,12 @@ const CourseManager: React.FC<CourseManagerProps> = ({
                             </div>
                         )}
 
-                        {!isLoading && !error && filteredCourses.length === 0 && !searchQuery && (
+                        {!isLoading && !error && courses.length === 0 && !searchQuery && (
                             <div className="text-center py-8 text-slate-500">
                                 <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                <p>Start typing to search courses</p>
+                                <p>Loading complete course catalog...</p>
                                 <p className="text-sm">
-                                    Or add a custom course using the other tab
+                                    All courses will appear here when loaded
                                 </p>
                             </div>
                         )}
@@ -609,6 +905,16 @@ const CourseManager: React.FC<CourseManagerProps> = ({
                         </DialogContent>
                     </Dialog>
                 )}
+                
+                {/* Prerequisites Modal */}
+                <PrereqModal
+                    course={prereqModalCourse}
+                    isOpen={!!prereqModalCourse}
+                    onClose={() => setPrereqModalCourse(null)}
+                    completedCourses={completedCourses}
+                    plannedCourses={plannedCourseCodes}
+                    allCourses={courses}
+                />
             </DialogContent>
         </Dialog>
     );

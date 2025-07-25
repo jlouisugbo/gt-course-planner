@@ -3,6 +3,7 @@
 
 import React from "react";
 import { usePlannerStore } from "@/hooks/usePlannerStore";
+import { useDashboardData } from "@/hooks/useDashboardData";
 
 import WelcomeHeader from "./parts/WelcomeHeader";
 import StatsGrid from "./parts/StatsGrid";
@@ -20,6 +21,9 @@ const Dashboard = () => {
         getGPAHistory,
         getThreadProgress,
     } = usePlannerStore();
+
+    // Get real user data for enhanced experience
+    const dashboardData = useDashboardData();
 
     const allCourses = Object.values(semesters).flatMap(
         (semester) => semester.courses,
@@ -39,10 +43,16 @@ const Dashboard = () => {
     const progressPercentage = (academicProgress.creditsCompleted / academicProgress.totalCreditsRequired) * 100;
     const remainingCourses = plannedCourses.length + (academicProgress.totalCreditsRequired - academicProgress.creditsCompleted - academicProgress.creditsInProgress - academicProgress.creditsPlanned) / 3;
 
-    const dashboardData = {
-        studentInfo,
+    // Combine planner store data with real user data
+    const combinedData = {
+        studentInfo: dashboardData.user ? {
+            ...studentInfo,
+            name: dashboardData.user.name,
+            major: dashboardData.user.major,
+            expectedGraduation: `Spring ${dashboardData.user.graduationYear}`,
+        } : studentInfo,
         academicProgress,
-        recentActivity,
+        recentActivity: dashboardData.activities.length > 0 ? dashboardData.activities : recentActivity,
         semesters,
         allCourses,
         completedCourses,
@@ -52,16 +62,17 @@ const Dashboard = () => {
         threadProgress,
         progressPercentage,
         remainingCourses,
+        upcomingDeadlines: dashboardData.upcomingDeadlines,
     };
 
     return (
         <div className="space-y-8">
-            <WelcomeHeader data={dashboardData} />
-            <StatsGrid data={dashboardData} />
-            <ChartsRow data={dashboardData} />
-            <AnalyticsRow data={dashboardData} />
-            <InsightsAndActivityRow data={dashboardData} />
-            <TimelineOverview data={dashboardData} />
+            <WelcomeHeader data={combinedData} />
+            <StatsGrid data={combinedData} />
+            <ChartsRow data={combinedData} />
+            <AnalyticsRow data={combinedData} />
+            <InsightsAndActivityRow data={combinedData} />
+            <TimelineOverview data={combinedData} />
         </div>
     );
 };

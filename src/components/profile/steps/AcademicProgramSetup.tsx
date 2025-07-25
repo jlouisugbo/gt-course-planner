@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { GraduationCap, Plus } from "lucide-react";
 import { UserProfile } from "@/types";
 import { CS_THREADS, COE_THREADS, CM_THREADS, getAllMajors, getAllMinors } from "@/lib/constants";
+import { useCompletionTracking } from "@/hooks/useCompletionTracking";
 
 interface AcademicProgramSetupProps {
   profile: Partial<UserProfile>;
@@ -22,6 +23,7 @@ export const AcademicProgramSetup: React.FC<AcademicProgramSetupProps> = ({
 }) => {
   const MAJORS = getAllMajors();
   const MINORS = getAllMinors();
+  const { preserveCompletionsOnMajorChange } = useCompletionTracking();
 
   const getAvailableThreads = useCallback((major: string): string[] => {
     switch (major) {
@@ -113,13 +115,20 @@ export const AcademicProgramSetup: React.FC<AcademicProgramSetupProps> = ({
         </Label>
         <Select
           value={profile.major || ""}
-          onValueChange={(value) =>
+          onValueChange={async (value) => {
+            const oldMajor = profile.major;
+            
+            // Preserve completion data when major changes
+            if (oldMajor && oldMajor !== value) {
+              await preserveCompletionsOnMajorChange(value, oldMajor);
+            }
+            
             setProfile(prev => ({
               ...prev,
               major: value,
               threads: [],
-            }))
-          }
+            }));
+          }}
         >
           <SelectTrigger className={`bg-white ${errors.major ? "border-red-500" : ""}`}>
             <SelectValue placeholder="Select your major" />
@@ -143,13 +152,20 @@ export const AcademicProgramSetup: React.FC<AcademicProgramSetupProps> = ({
           <Label htmlFor="secondMajor">Second Major *</Label>
           <Select
             value={profile.secondMajor || ""}
-            onValueChange={(value) =>
+            onValueChange={async (value) => {
+              const oldSecondMajor = profile.secondMajor;
+              
+              // Preserve completion data when second major changes
+              if (oldSecondMajor && oldSecondMajor !== value) {
+                await preserveCompletionsOnMajorChange(value, oldSecondMajor);
+              }
+              
               setProfile(prev => ({
                 ...prev,
                 secondMajor: value,
                 threads: [],
-              }))
-            }
+              }));
+            }}
           >
             <SelectTrigger className={errors.secondMajor ? "border-red-500" : ""}>
               <SelectValue placeholder="Select your second major" />

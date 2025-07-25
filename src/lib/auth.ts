@@ -20,8 +20,17 @@ export const authService = {
     },
 
     async signOut() {
-        const { error } = await supabase.auth.signOut();
-        if (error) throw error;
+        console.log('authService.signOut called');
+        const { error } = await supabase.auth.signOut({
+            scope: 'global'  // Clear all sessions across all tabs
+        });
+        
+        if (error) {
+            console.error('Error in authService.signOut:', error);
+            throw error;
+        }
+        
+        console.log('authService.signOut completed successfully');
     },
 
     // FIX: Return the full response object, not just the session

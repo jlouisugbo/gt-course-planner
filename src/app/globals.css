@@ -1,6 +1,19 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Line clamp utilities */
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* GT Theme */
+.gt-gradient {
+  background: linear-gradient(135deg, #003057 0%, #B3A369 100%);
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

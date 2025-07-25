@@ -48,9 +48,13 @@ const PlannerGrid = () => {
         semesterArray.forEach((semester) => {
             let academicYear: string;
 
+            // Academic year starts with Fall semester
+            // Fall 2024 -> 2024-2025 academic year
+            // Spring 2025 -> 2024-2025 academic year  
+            // Summer 2025 -> 2024-2025 academic year
             if (semester.season === "Fall") {
                 academicYear = `${semester.year}-${semester.year + 1}`;
-            } else {
+            } else { // Spring or Summer
                 academicYear = `${semester.year - 1}-${semester.year}`;
             }
 
@@ -61,7 +65,28 @@ const PlannerGrid = () => {
             academicYears[academicYear].push(semester);
         });
 
-        return academicYears;
+        // Sort each academic year's semesters properly
+        Object.keys(academicYears).forEach(year => {
+            academicYears[year].sort((a, b) => {
+                if (a.year !== b.year) return a.year - b.year;
+                const seasonOrder: Record<string, number> = { Fall: 0, Spring: 1, Summer: 2 };
+                return (seasonOrder[a.season] || 0) - (seasonOrder[b.season] || 0);
+            });
+        });
+
+        // Sort academic years chronologically
+        const sortedAcademicYears: { [key: string]: any[] } = {};
+        Object.keys(academicYears)
+            .sort((a, b) => {
+                const yearA = parseInt(a.split('-')[0]);
+                const yearB = parseInt(b.split('-')[0]);
+                return yearA - yearB;
+            })
+            .forEach(year => {
+                sortedAcademicYears[year] = academicYears[year];
+            });
+
+        return sortedAcademicYears;
     }, [safeSemesters]);
 
     // Memoize calculations with safety checks
