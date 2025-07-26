@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, TrendingUp, Download, Share2, Bookmark } from 'lucide-react';
+import { BookOpen, TrendingUp, Download, Share2, Bookmark, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Course } from '@/types/courses';
@@ -11,9 +11,9 @@ import { CourseSearchFilters } from './parts/CourseSearchFilters';
 import { CourseGrid } from './parts/CourseGrid';
 import { CourseList } from './parts/CourseList';
 import { usePlannerStore } from '@/hooks/usePlannerStore';
-import { useCoursesPaginated } from '@/data/courses';
-import { useAllCourses } from '@/hooks/useAllCourses';
 import { useCompletionTracking } from '@/hooks/useCompletionTracking';
+import { useGlobalCourses } from '@/providers/CoursesProvider';
+import { useDebounce } from '@/hooks/useDebounce';
 
 const CourseExplorer = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -28,85 +28,67 @@ const CourseExplorer = () => {
   const [animate, setAnimate] = useState<boolean>(true);
   const [plannedSemester, setPlannedSemester] = useState<any>(null);
   
+  // Debounce search query for smoother typing experience
+  const debouncedSearchQuery = useDebounce(searchQuery, 150);
+  
   const { semesters, addCourseToSemester } = usePlannerStore();
   const { completedCourses, toggleCourseCompletion } = useCompletionTracking();
+  const { allCourses, isLoading, error, loadCourses, filterCourses, isLoaded } = useGlobalCourses();
   const semesterArray = Object.values(semesters || {});
 
-  // Use optimized all courses hook
-  const { 
-    courses: allCoursesData,
-    filteredCourses,
-    isLoading,
-    error,
-    hasMore,
-    loadMore,
-    totalCount
-  } = useAllCourses({
-    search: searchQuery || undefined
-  });
-
-  // Use courses directly from the optimized hook
-  const baseCourses = searchQuery ? filteredCourses : allCoursesData;
-
-  // Use the courses directly from the API hook
-  let courses = baseCourses;
-
-  // Apply filters
-  if (selectedFilters.length > 0) {
-    courses = courses.filter(course => {
-      return selectedFilters.some(filter => {
-        switch (filter) {
-          case 'CS Core':
-            return ['CS 1301', 'CS 1331', 'CS 1332', 'CS 2110', 'CS 2340', 'CS 3510'].includes(course.code);
-          case 'Math':
-            return course.code.startsWith('MATH');
-          case 'Science':
-            return course.code.startsWith('PHYS') || course.code.startsWith('CHEM') || course.code.startsWith('BIOL');
-          case 'Intelligence Thread':
-            return course.threads.includes('Intelligence');
-          case 'Systems Thread':
-            return course.threads.includes('Systems & Architecture');
-          case 'Fall Offerings':
-            return course.offerings.fall;
-          case 'Spring Offerings':
-            return course.offerings.spring;
-          case 'Summer Offerings':
-            return course.offerings.summer;
-          case 'Easy (1-2)':
-            return course.difficulty <= 2;
-          case 'Medium (3)':
-            return course.difficulty === 3;
-          case 'Hard (4-5)':
-            return course.difficulty >= 4;
-          default:
-            return false;
-        }
-      });
-    });
-  }
-
-  // Apply sorting
-  courses = [...courses].sort((a, b) => {
-    let comparison = 0;
-    switch (sortBy) {
-      case 'code':
-        comparison = a.code.localeCompare(b.code);
-        break;
-      case 'difficulty':
-        comparison = a.difficulty - b.difficulty;
-        break;
-      case 'credits':
-        comparison = a.credits - b.credits;
-        break;
-      case 'popularity':
-        // Mock popularity based on course level and threads
-        const aPopularity = a.threads.length + (5 - a.difficulty);
-        const bPopularity = b.threads.length + (5 - b.difficulty);
-        comparison = bPopularity - aPopularity;
-        break;
+  // Load courses when component mounts
+  useEffect(() => {
+    if (!isLoaded) {
+      loadCourses();
     }
-    return sortOrder === 'asc' ? comparison : -comparison;
-  });
+  }, [isLoaded, loadCourses]);
+
+  // Create filter object from current state (using debounced search)
+  const filters = useMemo(() => ({
+    search: debouncedSearchQuery.trim() || undefined,
+    difficulty: selectedFilters.filter(f => ['Easy (1-2)', 'Medium (3)', 'Hard (4-5)'].includes(f)),
+    subjects: selectedFilters.filter(f => ['CS Core', 'Math', 'Science'].includes(f) || /^[A-Z]{2,4}$/.test(f)),
+    offerings: selectedFilters.filter(f => f.includes('Offerings')),
+    credits: selectedFilters.filter(f => /^\d+ Credit/.test(f)).map(f => parseInt(f)),
+    types: selectedFilters.filter(f => ['Lecture', 'Lab', 'Seminar'].includes(f))
+  }), [debouncedSearchQuery, selectedFilters]);
+
+  // Filter courses using the optimized function
+  const filteredCourses = useMemo(() => {
+    if (!isLoaded) return [];
+    return filterCourses(filters);
+  }, [isLoaded, filterCourses, filters]);
+
+  // Apply sorting to filtered courses (filtering is handled by provider)
+  const sortedCourses = useMemo(() => {
+    if (!isLoaded) return [];
+    
+    const coursesToSort = [...filteredCourses];
+    
+    return coursesToSort.sort((a, b) => {
+      let comparison = 0;
+      switch (sortBy) {
+        case 'code':
+          comparison = a.code.localeCompare(b.code);
+          break;
+        case 'difficulty':
+          comparison = (a.difficulty || 3) - (b.difficulty || 3);
+          break;
+        case 'credits':
+          comparison = a.credits - b.credits;
+          break;
+        case 'popularity':
+          // Mock popularity calculation
+          const aPopularity = (a.prerequisites?.length || 0) + (5 - (a.difficulty || 3));
+          const bPopularity = (b.prerequisites?.length || 0) + (5 - (b.difficulty || 3));
+          comparison = bPopularity - aPopularity;
+          break;
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+  }, [isLoaded, filteredCourses, sortBy, sortOrder]);
+
+  const courses = sortedCourses;
 
   // Apply bookmark filtering
   let displayCourses = courses;
@@ -323,19 +305,19 @@ const CourseExplorer = () => {
           <div className="flex items-center space-x-4">
             <p className="text-sm text-slate-600">
               Showing <span className="font-medium">{displayCourses.length}</span>
-              {totalCount > displayCourses.length && (
-                <span> of <span className="font-medium">{totalCount}</span></span>
+              {allCourses.length > displayCourses.length && (
+                <span> of <span className="font-medium">{allCourses.length}</span></span>
               )} course{displayCourses.length !== 1 ? 's' : ''}
-              {searchQuery && <span> matching "{searchQuery}"</span>}
+              {debouncedSearchQuery && <span> matching &quot;{debouncedSearchQuery}&quot;</span>}
               {selectedFilters.length > 0 && (
                 <span> with <span className="font-medium">{selectedFilters.length}</span> filter{selectedFilters.length !== 1 ? 's' : ''}</span>
               )}
             </p>
             
-            {hasMore && (
+            {isLoaded && allCourses.length > 0 && (
               <div className="flex items-center space-x-2 text-xs text-blue-600">
                 <TrendingUp className="h-3 w-3" />
-                <span>{totalCount - displayCourses.length} more available</span>
+                <span>✨ Instant filtering enabled</span>
               </div>
             )}
           </div>
@@ -363,16 +345,11 @@ const CourseExplorer = () => {
               className="text-center py-12"
             >
               <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#003057] mx-auto mb-4"></div>
-              <h3 className="text-lg font-medium text-slate-900 mb-2">Loading all courses...</h3>
-              {totalCount > 0 && (
-                <p className="text-sm text-slate-500">
-                  {allCoursesData.length} of {totalCount} courses loaded
-                </p>
-              )}
+              <h3 className="text-lg font-medium text-slate-900 mb-2">Loading courses...</h3>
               <p className="text-sm text-slate-500">
-                {searchQuery ? 'Filtering results...' : 'Fetching course catalog...'}
+                Preparing instant filtering experience
               </p>
-              <p className="text-slate-600">Fetching the latest course information</p>
+              <p className="text-slate-600">This will only take a moment</p>
             </motion.div>
           ) : displayCourses.length === 0 ? (
             <motion.div
@@ -384,7 +361,7 @@ const CourseExplorer = () => {
               <BookOpen className="h-16 w-16 mx-auto mb-4 text-slate-300" />
               <h3 className="text-lg font-medium text-slate-900 mb-2">No courses found</h3>
               <p className="text-slate-600 mb-4">
-                {searchQuery ? `No courses match "${searchQuery}"` : 'No courses match your current filters'}
+                {debouncedSearchQuery ? `No courses match &quot;${debouncedSearchQuery}&quot;` : 'No courses match your current filters'}
               </p>
               <Button
                 variant="outline"
@@ -420,18 +397,6 @@ const CourseExplorer = () => {
                 />
               )}
               
-              {/* Load More Button */}
-              {hasMore && displayCourses.length > 0 && (
-                <div className="text-center pt-6">
-                  <Button 
-                    variant="outline" 
-                    onClick={loadMore}
-                    className="bg-slate-50 hover:bg-slate-100 border-slate-200 px-8 py-3"
-                  >
-                    Load More Courses ({totalCount - allCoursesData.length} remaining)
-                  </Button>
-                </div>
-              )}
             </div>
           )}
         </AnimatePresence>

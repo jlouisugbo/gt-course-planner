@@ -8,7 +8,12 @@ import {
     ArrowRight,
     GraduationCap,
     Loader2,
+    Sparkles,
+    TrendingUp,
+    Clock,
+    Users,
 } from "lucide-react";
+import { motion } from "framer-motion";
 
 export function LandingPage() {
     const { signInWithGoogle, loading } = useAuth();
@@ -27,73 +32,203 @@ export function LandingPage() {
     const isLoading = loading || isAuthLoading;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-yellow-50 flex items-center justify-center">
-            <div className="max-w-4xl mx-auto text-center px-6">
-                {/* Logo */}
-                <div className="flex items-center justify-center space-x-3 mb-8">
-                    <GraduationCap className="h-16 w-16 text-yellow-600" />
-                    <span className="text-4xl font-bold bg-gradient-to-r from-blue-900 to-yellow-600 bg-clip-text text-transparent">
-                        GT Course Planner
-                    </span>
+        <div className="h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-slate-100">
+            {/* Animated background elements */}
+            <div className="absolute inset-0 overflow-hidden">
+                <div className="absolute -top-20 -right-20 w-60 h-60 bg-gradient-to-br from-[#003057]/10 to-[#B3A369]/10 rounded-full blur-3xl animate-pulse" />
+                <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-gradient-to-tr from-[#B3A369]/10 to-[#003057]/10 rounded-full blur-3xl animate-pulse" />
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-[#003057]/5 to-[#B3A369]/5 rounded-full blur-3xl" />
+            </div>
+
+            <div className="relative z-10 h-full flex flex-col justify-between px-6 py-8">
+                <div className="flex-1 flex items-center justify-center">
+                    <div className="max-w-6xl mx-auto w-full">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8 }}
+                        className="text-center mb-8"
+                    >
+                        {/* Logo Badge */}
+                        <motion.div
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ delay: 0.2, duration: 0.6 }}
+                            className="inline-flex items-center space-x-3 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-full px-4 py-2 mb-6 shadow-lg"
+                        >
+                            <div className="w-6 h-6 bg-gradient-to-br from-[#003057] to-[#B3A369] rounded-full flex items-center justify-center">
+                                <GraduationCap className="h-4 w-4 text-white" />
+                            </div>
+                            <span className="text-base font-bold bg-gradient-to-r from-[#003057] to-[#B3A369] bg-clip-text text-transparent">
+                                GT Course Planner
+                            </span>
+                        </motion.div>
+
+                        {/* Main Heading */}
+                        <motion.h1
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.4, duration: 0.8 }}
+                            className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 mb-4 leading-tight"
+                        >
+                            Master Your
+                            <br />
+                            <span className="relative">
+                                <span className="bg-gradient-to-r from-[#003057] to-[#B3A369] bg-clip-text text-transparent">
+                                    Academic Path
+                                </span>
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: "100%" }}
+                                    transition={{ delay: 1.2, duration: 0.8 }}
+                                    className="absolute -bottom-1 left-0 h-1 bg-gradient-to-r from-[#003057] to-[#B3A369] rounded-full"
+                                />
+                            </span>
+                        </motion.h1>
+
+                        {/* Description */}
+                        <motion.p
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.6, duration: 0.8 }}
+                            className="text-lg text-slate-600 mb-8 leading-relaxed max-w-2xl mx-auto"
+                        >
+                            The intelligent planning companion for Georgia Tech students. Navigate requirements, 
+                            optimize your schedule, and graduate with confidence.
+                        </motion.p>
+
+                        {/* CTA Button */}
+                        <motion.button
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.8, duration: 0.8 }}
+                            onClick={handleGetStarted}
+                            disabled={isLoading}
+                            className="group relative bg-gradient-to-r from-[#003057] to-[#B3A369] text-white px-6 py-3 rounded-2xl font-bold text-base hover:shadow-2xl hover:shadow-[#003057]/25 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:transform-none mb-8"
+                        >
+                            <div className="flex items-center space-x-3">
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        <span>Getting Started...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Sparkles className="h-4 w-4" />
+                                        <span>Begin Your Journey</span>
+                                        <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                                    </>
+                                )}
+                            </div>
+                            <div className="absolute inset-0 bg-gradient-to-r from-[#004080] to-[#D4C284] opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl -z-10" />
+                        </motion.button>
+                    </motion.div>
+
+                        {/* Feature Grid - Compact */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 1.0, duration: 0.8 }}
+                            className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6"
+                        >
+                        {[
+                            {
+                                icon: Calendar,
+                                title: "Smart Planning",
+                                color: "from-blue-500 to-blue-600"
+                            },
+                            {
+                                icon: Target,
+                                title: "Progress Tracking",
+                                color: "from-emerald-500 to-emerald-600"
+                            },
+                            {
+                                icon: TrendingUp,
+                                title: "GPA Optimization",
+                                color: "from-purple-500 to-purple-600"
+                            },
+                            {
+                                icon: Clock,
+                                title: "Time Management",
+                                color: "from-amber-500 to-amber-600"
+                            }
+                        ].map((feature, index) => (
+                            <motion.div
+                                key={feature.title}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 1.2 + index * 0.1, duration: 0.6 }}
+                                className="group"
+                            >
+                                <div className="bg-white/60 backdrop-blur-sm border border-slate-200 rounded-xl p-4 text-center hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300 hover:scale-105">
+                                    <div className={`w-8 h-8 bg-gradient-to-br ${feature.color} rounded-lg flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform`}>
+                                        <feature.icon className="h-4 w-4 text-white" />
+                                    </div>
+                                    <h3 className="font-semibold text-slate-900 text-sm">{feature.title}</h3>
+                                </div>
+                            </motion.div>
+                        ))}
+                        </motion.div>
+
+                        {/* Stats Section - Inline */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 1.4, duration: 0.8 }}
+                            className="bg-gradient-to-r from-[#003057]/5 to-[#B3A369]/5 backdrop-blur-sm border border-slate-200 rounded-2xl p-4"
+                        >
+                            <div className="grid grid-cols-4 gap-4 text-center">
+                            {[
+                                { number: "1000+", label: "Courses" },
+                                { number: "15+", label: "Programs" },
+                                { number: "99%", label: "Accuracy" },
+                                { number: "24/7", label: "Available" }
+                            ].map((stat, index) => (
+                                <motion.div
+                                    key={stat.label}
+                                    initial={{ scale: 0.8, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    transition={{ delay: 1.6 + index * 0.1, duration: 0.6 }}
+                                >
+                                        <div className="text-xl font-bold bg-gradient-to-r from-[#003057] to-[#B3A369] bg-clip-text text-transparent mb-1">
+                                            {stat.number}
+                                        </div>
+                                        <div className="text-slate-600 text-xs font-medium">{stat.label}</div>
+                                </motion.div>
+                            ))}
+                            </div>
+                        </motion.div>
+                    </div>
                 </div>
 
-                {/* Main Heading */}
-                <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-                    Plan Your Perfect
-                    <span className="bg-gradient-to-r from-blue-900 to-yellow-600 bg-clip-text text-transparent">
-                        {" "}
-                        GT Journey
-                    </span>
-                </h1>
-
-                {/* Description */}
-                <p className="text-xl md:text-2xl text-gray-600 mb-12 leading-relaxed max-w-3xl mx-auto">
-                    Smart course planning for Georgia Tech students. Track requirements, 
-                    manage prerequisites, and stay on track to graduate on time.
-                </p>
-
-                {/* Feature highlights */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                    <div className="flex flex-col items-center space-y-3 p-6 bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200">
-                        <Calendar className="h-8 w-8 text-blue-600" />
-                        <h3 className="font-semibold text-gray-900">4-Year Planning</h3>
-                        <p className="text-sm text-gray-600 text-center">Map your entire academic journey</p>
-                    </div>
-                    <div className="flex flex-col items-center space-y-3 p-6 bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200">
-                        <Target className="h-8 w-8 text-blue-600" />
-                        <h3 className="font-semibold text-gray-900">Requirement Tracking</h3>
-                        <p className="text-sm text-gray-600 text-center">Monitor graduation progress</p>
-                    </div>
-                    <div className="flex flex-col items-center space-y-3 p-6 bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200">
-                        <BookOpen className="h-8 w-8 text-blue-600" />
-                        <h3 className="font-semibold text-gray-900">Course Recommendations</h3>
-                        <p className="text-sm text-gray-600 text-center">Get personalized suggestions</p>
-                    </div>
-                </div>
-
-                {/* Single CTA Button */}
-                <button
-                    onClick={handleGetStarted}
-                    disabled={isLoading}
-                    className="bg-gradient-to-r from-blue-900 to-yellow-600 text-white px-12 py-4 rounded-xl font-bold text-xl hover:from-blue-800 hover:to-yellow-500 transition-all transform hover:scale-105 flex items-center space-x-3 mx-auto shadow-lg disabled:opacity-50 disabled:transform-none"
+                {/* Footer */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1.8, duration: 0.8 }}
+                    className="text-center pt-4 border-t border-slate-200/50"
                 >
-                    {isLoading ? (
-                        <>
-                            <Loader2 className="h-6 w-6 animate-spin" />
-                            <span>Loading...</span>
-                        </>
-                    ) : (
-                        <>
-                            <span>Start Planning</span>
-                            <ArrowRight className="h-6 w-6" />
-                        </>
-                    )}
-                </button>
-
-                {/* Footer text */}
-                <p className="text-gray-500 mt-6 text-sm">
-                    &copy; 2025 GT Course Planner • Not affiliated with Georgia Institute of Technology
-                </p>
+                    <p className="text-slate-500 text-xs">
+                        Created and designed by{" "}
+                        <a 
+                            href="https://www.joelcodes.dev" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-[#003057] hover:text-[#B3A369] font-medium transition-colors duration-200"
+                        >
+                            Joel Louis-Ugbo
+                        </a>
+                        {" "}and{" "}
+                        <a 
+                            href="https://github.com/jlouisugbo/gt-course-planner" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-[#003057] hover:text-[#B3A369] font-medium transition-colors duration-200"
+                        >
+                            other important contributors
+                        </a>
+                    </p>
+                </motion.div>
             </div>
         </div>
     );

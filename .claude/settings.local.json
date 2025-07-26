@@ -13,7 +13,9 @@
       "Bash(grep:*)",
       "Bash(ls:*)",
       "Bash(node:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(mv:*)",
+      "Bash(move:*)"
     ],
     "deny": []
   }

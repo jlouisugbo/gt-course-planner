@@ -6,7 +6,8 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { QueryClient } from '@tanstack/react-query';
-import { AuthProvider } from './AuthProvider'; 
+import { AuthProvider } from './AuthProvider';
+import { CoursesProvider } from './CoursesProvider'; 
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,12 +32,14 @@ export function AppProviders({ children }: AppProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <DndProvider backend={HTML5Backend}>
-          {children}
-          {process.env.NODE_ENV === 'development' && (
-            <ReactQueryDevtools initialIsOpen={false} />
-          )}
-        </DndProvider>
+        <CoursesProvider>
+          <DndProvider backend={HTML5Backend}>
+            {children}
+            {process.env.NODE_ENV === 'development' && (
+              <ReactQueryDevtools initialIsOpen={false} />
+            )}
+          </DndProvider>
+        </CoursesProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
