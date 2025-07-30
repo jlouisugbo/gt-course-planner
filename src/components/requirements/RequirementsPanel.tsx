@@ -22,6 +22,7 @@ const RequirementsPanel: React.FC = () => {
     // Use centralized completion tracking
     const { 
         completedCourses, 
+        plannedCourses,
         completedGroups, 
         toggleCourseCompletion, 
         setGroupCompletion
@@ -76,10 +77,11 @@ const RequirementsPanel: React.FC = () => {
                 // Handle minors if they exist
                 const minorPrograms: VisualMinorProgram[] = [];
                 if (userRecord.minors && Array.isArray(userRecord.minors) && userRecord.minors.length > 0) {
-                    // Fetch minor programs
+                    console.log('Loading minors:', userRecord.minors);
+                    // Fetch minor programs with degree_type = 'Minor'
                     for (const minorName of userRecord.minors) {
                         try {
-                            const minorResponse = await fetch(`/api/degree-programs?major=${encodeURIComponent(minorName)}`);
+                            const minorResponse = await fetch(`/api/degree-programs?major=${encodeURIComponent(minorName)}&degree_type=Minor`);
                             if (minorResponse.ok) {
                                 const minorData = await minorResponse.json();
                                 minorPrograms.push({
@@ -88,9 +90,12 @@ const RequirementsPanel: React.FC = () => {
                                     requirements: Array.isArray(minorData.requirements) ? minorData.requirements : [],
                                     footnotes: Array.isArray(minorData.footnotes) ? minorData.footnotes : []
                                 });
+                                console.log(`✅ Successfully loaded minor: ${minorName}`);
+                            } else {
+                                console.warn(`❌ Failed to load minor ${minorName}: ${minorResponse.statusText}`);
                             }
                         } catch (minorError) {
-                            console.warn(`Failed to load minor: ${minorName}`, minorError);
+                            console.warn(`❌ Error loading minor: ${minorName}`, minorError);
                         }
                     }
                 }
@@ -275,6 +280,7 @@ const RequirementsPanel: React.FC = () => {
                                                 program={degreeProgram}
                                                 type="degree"
                                                 completedCourses={completedCourses}
+                                                plannedCourses={plannedCourses}
                                                 completedGroups={completedGroups}
                                                 onCourseToggle={toggleCourseCompletion}
                                                 onGroupCompletion={setGroupCompletion}
@@ -304,6 +310,7 @@ const RequirementsPanel: React.FC = () => {
                                                 program={minor}
                                                 type="minor"
                                                 completedCourses={completedCourses}
+                                                plannedCourses={plannedCourses}
                                                 completedGroups={completedGroups}
                                                 onCourseToggle={toggleCourseCompletion}
                                                 onGroupCompletion={setGroupCompletion}

@@ -28,13 +28,21 @@ interface CourseModalProps {
     isOpen: boolean;
     onClose: () => void;
     programType: 'degree' | 'minor';
+    isCompleted?: boolean;
+    isPlanned?: boolean;
+    onToggleComplete?: (courseCode: string) => void;
+    onAddToPlanner?: (courseCode: string) => void;
 }
 
 export const CourseModal: React.FC<CourseModalProps> = ({
     course,
     isOpen,
     onClose,
-    programType
+    programType,
+    isCompleted = false,
+    isPlanned = false,
+    onToggleComplete,
+    onAddToPlanner
 }) => {
     const getThemeColors = () => {
         return programType === 'degree' 
@@ -68,7 +76,7 @@ export const CourseModal: React.FC<CourseModalProps> = ({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Credits */}
                         <Card className={`${border} ${bg}`}>
-                            <CardContent className="p-4">
+                            <CardContent className="py-2 px-2">
                                 <div className="flex items-center space-x-3">
                                     <Clock className={`h-5 w-5 ${accent}`} />
                                     <div>
@@ -84,7 +92,7 @@ export const CourseModal: React.FC<CourseModalProps> = ({
                         {/* Department */}
                         {course.department && (
                             <Card className={`${border} ${bg}`}>
-                                <CardContent className="p-4">
+                                <CardContent className="py-2 px-2">
                                     <div className="flex items-center space-x-3">
                                         <Users className={`h-5 w-5 ${accent}`} />
                                         <div>
@@ -101,7 +109,7 @@ export const CourseModal: React.FC<CourseModalProps> = ({
                         {/* College */}
                         {course.college && (
                             <Card className={`${border} ${bg}`}>
-                                <CardContent className="p-4">
+                                <CardContent className="py-2 px-2">
                                     <div className="flex items-center space-x-3">
                                         <Building className={`h-5 w-5 ${accent}`} />
                                         <div>
@@ -117,7 +125,7 @@ export const CourseModal: React.FC<CourseModalProps> = ({
 
                         {/* Course Type */}
                         <Card className={`${border} ${bg}`}>
-                            <CardContent className="p-4">
+                            <CardContent className="py-2 px-2">
                                 <div className="flex items-center space-x-3">
                                     <BookOpen className={`h-5 w-5 ${accent}`} />
                                     <div>
@@ -141,7 +149,7 @@ export const CourseModal: React.FC<CourseModalProps> = ({
                                 Course Description
                             </h3>
                             <Card>
-                                <CardContent className="p-4">
+                                <CardContent className="py-2 px-2">
                                     <p className="text-slate-700 leading-relaxed">
                                         {course.description}
                                     </p>
@@ -158,7 +166,7 @@ export const CourseModal: React.FC<CourseModalProps> = ({
                                 Prerequisites
                             </h3>
                             <Card className="border-orange-200 bg-orange-50">
-                                <CardContent className="p-4">
+                                <CardContent className="py-2 px-2">
                                     <p className="text-slate-700">
                                         {course.prerequisites}
                                     </p>
@@ -177,7 +185,7 @@ export const CourseModal: React.FC<CourseModalProps> = ({
                             <div className="space-y-3">
                                 {course.isOption && (
                                     <Card className="border-orange-200 bg-orange-50">
-                                        <CardContent className="p-4">
+                                        <CardContent className="py-2 px-2">
                                             <div className="flex items-center space-x-2">
                                                 <Badge variant="outline" className="bg-orange-100 text-orange-800">
                                                     Option Course
@@ -192,7 +200,7 @@ export const CourseModal: React.FC<CourseModalProps> = ({
                                 
                                 {course.footnoteRefs.length > 0 && (
                                     <Card>
-                                        <CardContent className="p-4">
+                                        <CardContent className="py-2 px-2">
                                             <div className="space-y-2">
                                                 <div className="font-medium text-slate-900">Footnote References:</div>
                                                 <div className="flex flex-wrap gap-2">
@@ -218,6 +226,34 @@ export const CourseModal: React.FC<CourseModalProps> = ({
                             Click outside to close this dialog
                         </div>
                         <div className="flex space-x-2">
+                            {/* Completion Toggle Button */}
+                            {onToggleComplete && (
+                                <Button
+                                    variant={isCompleted ? "default" : "outline"}
+                                    onClick={() => onToggleComplete(course.code)}
+                                    className={`flex items-center space-x-2 ${
+                                        isCompleted 
+                                            ? "bg-green-600 hover:bg-green-700 text-white" 
+                                            : "border-green-600 text-green-600 hover:bg-green-50"
+                                    }`}
+                                >
+                                    <CheckCircle className="h-4 w-4" />
+                                    <span>{isCompleted ? "Completed" : "Mark Complete"}</span>
+                                </Button>
+                            )}
+                            
+                            {/* Add to Planner Button */}
+                            {onAddToPlanner && !isPlanned && (
+                                <Button
+                                    variant="outline"
+                                    onClick={() => onAddToPlanner(course.code)}
+                                    className="flex items-center space-x-2 border-blue-600 text-blue-600 hover:bg-blue-50"
+                                >
+                                    <Building className="h-4 w-4" />
+                                    <span>Add to Planner</span>
+                                </Button>
+                            )}
+                            
                             <Button
                                 variant="outline"
                                 onClick={() => {

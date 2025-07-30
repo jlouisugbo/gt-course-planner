@@ -20,6 +20,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/AuthProvider";
 import { usePlannerStore } from "@/hooks/usePlannerStore";
+import { CookieConsent } from "@/components/legal/CookieConsent";
 
 interface AppLayoutProps {
     children: React.ReactNode;
@@ -352,6 +353,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
             {/* Main Content */}
             <main className="flex-1">{children}</main>
+            
+            {/* Cookie Consent Banner */}
+            <CookieConsent />
         </div>
     );
 }

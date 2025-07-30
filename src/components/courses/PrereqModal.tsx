@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle, XCircle, Clock, Lock, AlertTriangle } from 'lucide-react';
 import { Course } from '@/types/courses';
-import { parsePrerequisites, evaluatePrerequisites, PrereqValidationResult } from '@/lib/prereqUtils';
+import { evaluatePrerequisites, PrereqValidationResult } from '@/lib/prereqUtils';
 import { cn } from '@/lib/utils';
 
 interface PrereqModalProps {
@@ -35,20 +35,7 @@ export const PrereqModal: React.FC<PrereqModalProps> = ({
         plannedCourses
     );
 
-    const prereqCourses = parsePrerequisites(course.prerequisites);
     
-    // Get course details for each prerequisite
-    const prereqDetails = prereqCourses.map(prereq => {
-        const courseDetail = allCourses.find(c => c.code === prereq.id);
-        return {
-            ...prereq,
-            title: courseDetail?.title || 'Course not found',
-            credits: courseDetail?.credits || 3,
-            isCompleted: completedCourses.has(prereq.id),
-            isPlanned: plannedCourses.has(prereq.id),
-            isMissing: !completedCourses.has(prereq.id) && !plannedCourses.has(prereq.id)
-        };
-    });
 
     const renderPrereqStructure = (prereqData: any, level = 0) => {
         if (!prereqData || !Array.isArray(prereqData) || prereqData.length === 0) {
@@ -81,7 +68,6 @@ export const PrereqModal: React.FC<PrereqModalProps> = ({
                             if (typeof req === 'object' && req.id) {
                                 const isCompleted = completedCourses.has(req.id);
                                 const isPlanned = plannedCourses.has(req.id);
-                                const isMissing = !isCompleted && !isPlanned;
                                 const courseDetail = allCourses.find(c => c.code === req.id);
                                 
                                 return (

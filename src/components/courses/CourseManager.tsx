@@ -31,7 +31,6 @@ import { Plus, Search, Filter, BookOpen, Star, Lock, AlertTriangle } from "lucid
 import { Course, PlannedCourse } from "@/types/courses";
 import { usePlannerStore } from "@/hooks/usePlannerStore";
 import { motion, AnimatePresence } from "framer-motion";
-import { useCoursesPaginated } from '@/data/courses';
 import { useAllCourses } from '@/hooks/useAllCourses';
 import { useAuth } from '@/providers/AuthProvider';
 import { supabase } from '@/lib/supabaseClient';
@@ -485,10 +484,10 @@ const CourseManager: React.FC<CourseManagerProps> = ({
                             <div className="text-center py-8 text-slate-500">
                                 <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
                                 <p>
-                                    No program courses found matching "{searchQuery}"
+                                    No program courses found matching &quot;{searchQuery}&quot;
                                 </p>
                                 <p className="text-sm">
-                                    Try a different search term or check the "All Courses" tab
+                                    Try a different search term or check the &quot;All Courses&quot; tab
                                 </p>
                             </div>
                         )}
@@ -498,7 +497,7 @@ const CourseManager: React.FC<CourseManagerProps> = ({
                                 <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
                                 <p>No degree program found</p>
                                 <p className="text-sm">
-                                    Check your profile settings or use the "All Courses" tab
+                                    Check your profile settings or use the &quot;All Courses&quot; tab
                                 </p>
                             </div>
                         )}
@@ -568,7 +567,7 @@ const CourseManager: React.FC<CourseManagerProps> = ({
                                         {totalCount > courses.length && (
                                             <span> of <span className="font-semibold text-slate-900">{totalCount}</span></span>
                                         )} courses
-                                        {searchQuery && <span> matching "{searchQuery}"</span>}
+                                        {searchQuery && <span> matching &quot;{searchQuery}&quot;</span>}
                                     </div>
                                     {hasMore && (
                                         <Badge variant="outline" className="bg-blue-100 text-blue-800">

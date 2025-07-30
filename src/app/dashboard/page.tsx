@@ -1,7 +1,10 @@
-import  Dashboard  from '@/components/dashboard/Dashboard'
+import Dashboard from '@/components/dashboard/Dashboard'
+import { AsyncErrorBoundary } from '@/components/error/AsyncErrorBoundary';
 
 export default function DashboardPage() {
     return (
-        <Dashboard />
+        <AsyncErrorBoundary context="dashboard">
+            <Dashboard />
+        </AsyncErrorBoundary>
     )
 }

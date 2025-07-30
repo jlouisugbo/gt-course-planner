@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { VisualRequirementCategory, VisualCourse } from "@/types/requirements";
 import { CourseCard } from "./CourseCard";
 import { CourseGroup } from "./CourseGroup";
@@ -8,11 +8,16 @@ import { FlexibleCourseCard } from "./FlexibleCourseCard";
 import { CompletableCourseCard } from "./CompletableCourseCard";
 import { CompletableGroupCard } from "./CompletableGroupCard";
 import { FlexibleTextCard } from "./FlexibleTextCard";
+import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface RequirementCategoryProps {
     category: VisualRequirementCategory;
     programType: 'degree' | 'minor';
     completedCourses?: Set<string>;
+    plannedCourses?: Set<string>;
     completedGroups?: Set<string>;
     onCourseToggle?: (courseCode: string) => void;
     onGroupCompletion?: (groupId: string, isSatisfied: boolean) => void;
@@ -22,10 +27,12 @@ export const RequirementCategory: React.FC<RequirementCategoryProps> = ({
     category, 
     programType,
     completedCourses,
+    plannedCourses,
     completedGroups,
     onCourseToggle,
     onGroupCompletion
 }) => {
+    const [isExpanded, setIsExpanded] = useState(true); // Start expanded by default
     // Function to check if a group is satisfied
     const isGroupSatisfied = (course: VisualCourse): boolean => {
         if (!completedCourses) return false;
@@ -69,14 +76,15 @@ export const RequirementCategory: React.FC<RequirementCategoryProps> = ({
         
         // Check all groups in this category for satisfaction changes
         category.courses.forEach(course => {
-            if (!course.groupId) return;
+            const groupId = 'groupId' in course ? course.groupId : undefined;
+            if (!groupId) return;
             
             const satisfied = isGroupSatisfied(course);
-            const wasCompleted = completedGroups?.has(course.groupId);
+            const wasCompleted = completedGroups?.has(groupId);
             
             // If satisfaction status changed, update it
             if (satisfied !== wasCompleted) {
-                onGroupCompletion(course.groupId, satisfied);
+                onGroupCompletion(groupId, satisfied);
             }
         });
     }, [completedCourses, completedGroups, category.courses, onGroupCompletion]);
@@ -88,11 +96,13 @@ export const RequirementCategory: React.FC<RequirementCategoryProps> = ({
                 case 'or_group':
                 case 'and_group':
                 case 'selection':
+                    const selectionGroupId = 'groupId' in course ? course.groupId : `selection-${index}`;
                     return (
                         <CompletableGroupCard
-                            key={`${course.groupId}-${index}`}
+                            key={`${selectionGroupId}-${index}`}
                             course={course}
                             completedCourses={completedCourses}
+                            plannedCourses={plannedCourses}
                             onCourseToggle={onCourseToggle}
                             isGroupSatisfied={isCourseSatisfied(course)}
                             programType={programType}
@@ -100,41 +110,28 @@ export const RequirementCategory: React.FC<RequirementCategoryProps> = ({
                     );
                 
                 case 'flexible':
-                    // Check if this is a text-only flexible requirement
-                    if (!course.code || course.code === 'FLEXIBLE_TEXT' || course.isTextOnly) {
-                        return (
-                            <FlexibleTextCard
-                                key={`${course.text || course.title}-${index}`}
-                                text={course.text || course.title || 'Flexible requirement'}
-                                code={course.code !== 'FLEXIBLE_TEXT' ? course.code : undefined}
-                                programType={programType}
-                                isCompleted={completedCourses.has(course.text || course.title || course.code)}
-                                onToggleComplete={onCourseToggle}
-                            />
-                        );
-                    }
-                    // Otherwise, treat as regular course
                     return (
                         <CompletableCourseCard
                             key={`${course.code}-${index}`}
                             course={course}
                             programType={programType}
-                            isOption={course.courseType === 'or_option' || course.isOption}
+                            isOption={course.isOption}
                             isCompleted={completedCourses.has(course.code)}
+                            isPlanned={plannedCourses?.has(course.code) || false}
                             onToggleComplete={onCourseToggle}
                         />
                     );
                 
                 case 'regular':
-                case 'or_option':
                 default:
                     return (
                         <CompletableCourseCard
                             key={`${course.code}-${index}`}
                             course={course}
                             programType={programType}
-                            isOption={course.courseType === 'or_option' || course.isOption}
+                            isOption={course.isOption}
                             isCompleted={completedCourses.has(course.code)}
+                            isPlanned={plannedCourses?.has(course.code) || false}
                             onToggleComplete={onCourseToggle}
                         />
                     );
@@ -143,9 +140,10 @@ export const RequirementCategory: React.FC<RequirementCategoryProps> = ({
             // Original non-completable versions
             switch (course.courseType) {
                 case 'or_group':
+                    const orGroupId = 'groupId' in course ? course.groupId : `or-${index}`;
                     return (
                         <CourseGroup
-                            key={`${course.groupId}-${index}`}
+                            key={`${orGroupId}-${index}`}
                             course={course}
                             programType={programType}
                             type="or"
@@ -153,9 +151,10 @@ export const RequirementCategory: React.FC<RequirementCategoryProps> = ({
                     );
                 
                 case 'and_group':
+                    const andGroupId = 'groupId' in course ? course.groupId : `and-${index}`;
                     return (
                         <CourseGroup
-                            key={`${course.groupId}-${index}`}
+                            key={`${andGroupId}-${index}`}
                             course={course}
                             programType={programType}
                             type="and"
@@ -163,9 +162,10 @@ export const RequirementCategory: React.FC<RequirementCategoryProps> = ({
                     );
                 
                 case 'selection':
+                    const selGroupId = 'groupId' in course ? course.groupId : `sel-${index}`;
                     return (
                         <CourseGroup
-                            key={`${course.groupId}-${index}`}
+                            key={`${selGroupId}-${index}`}
                             course={course}
                             programType={programType}
                             type="selection"
@@ -173,20 +173,6 @@ export const RequirementCategory: React.FC<RequirementCategoryProps> = ({
                     );
                 
                 case 'flexible':
-                    // Check if this is a text-only flexible requirement
-                    if (!course.code || course.code === 'FLEXIBLE_TEXT' || course.isTextOnly) {
-                        return (
-                            <FlexibleTextCard
-                                key={`${course.text || course.title}-${index}`}
-                                text={course.text || course.title || 'Flexible requirement'}
-                                code={course.code !== 'FLEXIBLE_TEXT' ? course.code : undefined}
-                                programType={programType}
-                                isCompleted={false}
-                                onToggleComplete={undefined}
-                            />
-                        );
-                    }
-                    // Otherwise, use the regular flexible course card
                     return (
                         <FlexibleCourseCard
                             key={`${course.code}-${index}`}
@@ -196,14 +182,13 @@ export const RequirementCategory: React.FC<RequirementCategoryProps> = ({
                     );
                 
                 case 'regular':
-                case 'or_option':
                 default:
                     return (
                         <CourseCard
                             key={`${course.code}-${index}`}
                             course={course}
                             programType={programType}
-                            isOption={course.courseType === 'or_option' || course.isOption}
+                            isOption={course.isOption}
                         />
                     );
             }
@@ -211,16 +196,57 @@ export const RequirementCategory: React.FC<RequirementCategoryProps> = ({
     };
 
     return (
-        <div className="space-y-3">
-            {category.courses.length === 0 ? (
-                <div className="text-center py-8 text-slate-500">
-                    <p>No courses defined for this requirement</p>
+        <div className="space-y-1">
+            {/* Category Header with Collapse Toggle */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-1">
+                    <span className="text-xs text-slate-600">
+                        {category.courses.length} course{category.courses.length !== 1 ? 's' : ''}
+                    </span>
                 </div>
-            ) : (
-                <div className="grid gap-3">
-                    {category.courses.map((course, index) => renderCourse(course, index))}
-                </div>
-            )}
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-4 w-4 p-0"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                >
+                    {isExpanded ? (
+                        <ChevronDown className="h-3 w-3" />
+                    ) : (
+                        <ChevronRight className="h-3 w-3" />
+                    )}
+                </Button>
+            </div>
+
+            {/* Collapsible Content */}
+            <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+                <CollapsibleContent>
+                    <AnimatePresence>
+                        {isExpanded && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                {category.courses.length === 0 ? (
+                                    <div className="text-center py-2 text-slate-500">
+                                        <p className="text-xs">No courses defined for this requirement</p>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-wrap gap-1">
+                                        {category.courses.map((course, index) => (
+                                            <div key={index} className="flex-shrink-0 min-w-0">
+                                                {renderCourse(course, index)}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </CollapsibleContent>
+            </Collapsible>
         </div>
     );
 };

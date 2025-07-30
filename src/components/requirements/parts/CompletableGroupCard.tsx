@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 interface CompletableGroupCardProps {
   course: VisualCourse;
   completedCourses: Set<string>;
+  plannedCourses?: Set<string>;
   onCourseToggle: (courseCode: string) => void;
   isGroupSatisfied: boolean;
   programType: 'degree' | 'minor';
@@ -22,6 +23,7 @@ interface CompletableGroupCardProps {
 export const CompletableGroupCard: React.FC<CompletableGroupCardProps> = ({
   course,
   completedCourses,
+  plannedCourses,
   onCourseToggle,
   isGroupSatisfied,
   programType
@@ -62,46 +64,40 @@ export const CompletableGroupCard: React.FC<CompletableGroupCardProps> = ({
     if (course.courseType === 'or_group' && 'groupCourses' in course) {
       return (
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            {isGroupSatisfied && <CheckCircle2 className="h-5 w-5 text-green-600" />}
-            <GitBranch className={`h-5 w-5 ${accent}`} />
+          <div className="flex items-center space-x-2">
+            {isGroupSatisfied && <CheckCircle2 className="h-4 w-4 text-green-600" />}
+            <GitBranch className={`h-4 w-4 ${accent}`} />
             <div>
-              <CardTitle className={cn("text-base", isGroupSatisfied && "line-through text-green-700")}>
-                Choose One Option
+              <CardTitle className={cn("text-sm font-semibold", isGroupSatisfied && "line-through text-green-700")}>
+                {course.title || "Choose One Option"}
               </CardTitle>
-              <p className={cn("text-sm text-slate-600 mt-1", isGroupSatisfied && "line-through text-green-600")}>
-                Select any one of the following courses
-              </p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Badge className={`${badgeBg} ${badgeText} border-0`}>
-              {course.groupCourses.length} options
+          <div className="flex items-center space-x-1">
+            <Badge className={`${badgeBg} ${badgeText} border-0 text-xs px-1 py-0 h-4`}>
+              {course.groupCourses.length} opts
             </Badge>
-            <Badge variant="outline">OR Group</Badge>
+            <Badge variant="outline" className="text-xs px-1 py-0 h-4">OR</Badge>
           </div>
         </div>
       );
     } else if (course.courseType === 'and_group' && 'groupCourses' in course) {
       return (
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            {isGroupSatisfied && <CheckCircle2 className="h-5 w-5 text-green-600" />}
-            <Link className={`h-5 w-5 ${accent}`} />
+          <div className="flex items-center space-x-2">
+            {isGroupSatisfied && <CheckCircle2 className="h-4 w-4 text-green-600" />}
+            <Link className={`h-4 w-4 ${accent}`} />
             <div>
-              <CardTitle className={cn("text-base", isGroupSatisfied && "line-through text-green-700")}>
-                All Required
+              <CardTitle className={cn("text-sm font-semibold", isGroupSatisfied && "line-through text-green-700")}>
+                {course.title || "All Required"}
               </CardTitle>
-              <p className={cn("text-sm text-slate-600 mt-1", isGroupSatisfied && "line-through text-green-600")}>
-                All of the following courses are required
-              </p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Badge className={`${badgeBg} ${badgeText} border-0`}>
-              {course.groupCourses.length} required
+          <div className="flex items-center space-x-1">
+            <Badge className={`${badgeBg} ${badgeText} border-0 text-xs px-1 py-0 h-4`}>
+              {course.groupCourses.length} req
             </Badge>
-            <Badge variant="outline">AND Group</Badge>
+            <Badge variant="outline" className="text-xs px-1 py-0 h-4">AND</Badge>
           </div>
         </div>
       );
@@ -112,23 +108,20 @@ export const CompletableGroupCard: React.FC<CompletableGroupCardProps> = ({
       
       return (
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            {isGroupSatisfied && <CheckCircle2 className="h-5 w-5 text-green-600" />}
-            <CheckSquare className={`h-5 w-5 ${accent}`} />
+          <div className="flex items-center space-x-2">
+            {isGroupSatisfied && <CheckCircle2 className="h-4 w-4 text-green-600" />}
+            <CheckSquare className={`h-4 w-4 ${accent}`} />
             <div>
-              <CardTitle className={cn("text-base", isGroupSatisfied && "line-through text-green-700")}>
-                {course.title || `Select ${course.selectionCount} Courses`}
+              <CardTitle className={cn("text-sm font-semibold", isGroupSatisfied && "line-through text-green-700")}>
+                {course.title || `Select ${course.selectionCount}`}
               </CardTitle>
-              <p className={cn("text-sm text-slate-600 mt-1", isGroupSatisfied && "line-through text-green-600")}>
-                Choose {course.selectionCount} from the available options
-              </p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Badge className={`${badgeBg} ${badgeText} border-0`}>
-              {completedCount}/{course.selectionCount} selected
+          <div className="flex items-center space-x-1">
+            <Badge className={`${badgeBg} ${badgeText} border-0 text-xs px-1 py-0 h-4`}>
+              {completedCount}/{course.selectionCount}
             </Badge>
-            <Badge variant="outline">Selection</Badge>
+            <Badge variant="outline" className="text-xs px-1 py-0 h-4">SEL</Badge>
           </div>
         </div>
       );
@@ -171,21 +164,21 @@ export const CompletableGroupCard: React.FC<CompletableGroupCardProps> = ({
   };
 
   return (
-    <Card className={cn(`${border} ${bg} transition-all duration-200`, isGroupSatisfied && "ring-2 ring-green-200")}>
+    <Card className={cn(`py-1 w-52 ${border} ${bg} transition-all duration-200`, isGroupSatisfied && "ring-2 ring-green-200")}>
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleTrigger asChild>
-          <CardHeader className="pb-4 cursor-pointer hover:bg-white/50 transition-colors rounded-t-lg">
+          <CardHeader className="py-1 cursor-pointer hover:bg-white/50 transition-colors rounded-t-lg">
             <div className="flex items-center justify-between w-full">
               {renderGroupHeader()}
               <Button
                 variant="ghost"
                 size="sm"
-                className="ml-2 p-1 h-8 w-8"
+                className="ml-1 p-1 h-5 w-5"
               >
                 {isOpen ? (
-                  <ChevronDown className="h-4 w-4" />
+                  <ChevronDown className="h-3 w-3" />
                 ) : (
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-3 w-3" />
                 )}
               </Button>
             </div>
@@ -201,11 +194,11 @@ export const CompletableGroupCard: React.FC<CompletableGroupCardProps> = ({
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.2 }}
               >
-                <CardContent className="pt-0">
-                  <div className="space-y-3">
+                <CardContent className="py-1">
+                  <div className="space-y-1">
                     {courses.length === 0 ? (
-                      <div className="text-center py-6 text-slate-500">
-                        <p>No courses available in this group</p>
+                      <div className="text-center py-2 text-slate-500">
+                        <p className="text-xs">No courses available in this group</p>
                       </div>
                     ) : (
                       courses.map((groupCourse, index) => (
@@ -222,6 +215,7 @@ export const CompletableGroupCard: React.FC<CompletableGroupCardProps> = ({
                             <CompletableGroupCard
                               course={groupCourse}
                               completedCourses={completedCourses}
+                              plannedCourses={plannedCourses}
                               onCourseToggle={onCourseToggle}
                               isGroupSatisfied={isCourseSatisfied(groupCourse)}
                               programType={programType}
@@ -231,29 +225,13 @@ export const CompletableGroupCard: React.FC<CompletableGroupCardProps> = ({
                               course={groupCourse}
                               programType={programType}
                               isCompleted={completedCourses.has(groupCourse.code)}
+                              isPlanned={plannedCourses?.has(groupCourse.code) || false}
                               onToggleComplete={() => onCourseToggle(groupCourse.code)}
                             />
                           )}
                         </motion.div>
                       ))
                     )}
-                  </div>
-                  
-                  {/* Group Footer Information */}
-                  <div className="mt-4 pt-4 border-t border-slate-200">
-                    <div className="flex items-center justify-between text-sm text-slate-600">
-                      <span>
-                        {course.courseType === 'or_group' 
-                          ? 'Any one course from this group satisfies the requirement'
-                          : course.courseType === 'and_group'
-                          ? 'All courses in this group are required'
-                          : `${'selectionCount' in course ? course.selectionCount : 1} courses must be selected from this group`
-                        }
-                      </span>
-                      <Badge variant="outline" className="text-xs">
-                        {courses.length} total options
-                      </Badge>
-                    </div>
                   </div>
                 </CardContent>
               </motion.div>

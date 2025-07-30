@@ -4,7 +4,15 @@
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": false,
+    // Gradually enable strict mode features for better error catching
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": false, // Enable later when ready
+    "exactOptionalPropertyTypes": false, // Enable later when ready
     "noEmit": true,
     "incremental": true,
     "module": "esnext",

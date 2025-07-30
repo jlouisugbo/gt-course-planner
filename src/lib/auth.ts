@@ -1,6 +1,12 @@
-// lib/auth.ts - authService (CORRECTED)
+// lib/auth.ts - Client-side authService ONLY (server functions moved to separate file)
 import { supabase } from "@/lib/supabaseClient";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
+
+export interface AuthenticatedUser {
+  id: string;
+  email: string;
+  gtUserId?: string;
+}
 
 export const authService = {
     async signInWithGoogle() {
@@ -53,3 +59,5 @@ export const authService = {
         return supabase.auth.onAuthStateChange(callback);
     },
 };
+
+// Server-side functions moved to auth-server.ts to prevent client-side execution

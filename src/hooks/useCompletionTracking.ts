@@ -1,16 +1,25 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
-import { supabase } from '@/lib/supabaseClient';
-
+import { usePlannerStore } from './usePlannerStore';
 
 export const useCompletionTracking = () => {
   const { user } = useAuth();
-  const [completedCourses, setCompletedCourses] = useState<Set<string>>(new Set());
+  const { getCoursesByStatus } = usePlannerStore();
   const [completedGroups, setCompletedGroups] = useState<Set<string>>(new Set());
-  const [isLoading, setIsLoading] = useState(true);
+  const [flexibleCourseSelections, setFlexibleCourseSelections] = useState<Record<string, string>>({}); // requirementType -> courseCode
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load completion data from database
+  // Get completed and planned courses from Zustand store instead of database
+  const completedCourses = useMemo(() => new Set(
+    getCoursesByStatus('completed').map(course => course.code)
+  ), [getCoursesByStatus]);
+  
+  const plannedCourses = useMemo(() => new Set(
+    getCoursesByStatus('planned').map(course => course.code)
+  ), [getCoursesByStatus]);
+
+  // Load completion data from Zustand store (no longer from database)
   const loadCompletionData = useCallback(async () => {
     if (!user) {
       setIsLoading(false);
@@ -21,82 +30,74 @@ export const useCompletionTracking = () => {
       setIsLoading(true);
       setError(null);
 
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('completed_courses, completed_groups')
-        .eq('auth_id', user.id)
-        .single();
-
-      if (userError) {
-        console.error('Error loading completion data:', userError);
-        if (userError.message?.includes('column') || userError.message?.includes('does not exist')) {
-          console.warn('Database schema missing columns. Using empty completion data.');
-          setCompletedCourses(new Set());
-          setCompletedGroups(new Set());
-        } else {
-          setError('Failed to load completion data');
-        }
-      } else if (userData) {
-        const courses = userData.completed_courses || [];
-        const groups = userData.completed_groups || [];
-        
-        setCompletedCourses(new Set(Array.isArray(courses) ? courses : []));
-        setCompletedGroups(new Set(Array.isArray(groups) ? groups : []));
-        
-        console.log('✅ Loaded completion data:', {
-          courses: courses.length,
-          groups: groups.length
-        });
-      }
-    } catch (dbError) {
-      console.error('Database error loading completion data:', dbError);
-      setError('Database connection failed');
-      setCompletedCourses(new Set());
-      setCompletedGroups(new Set());
+      // Completion data now comes from Zustand store
+      // completedCourses is computed from store state above
+      // completedGroups remains local state for UI groups
+      
+      console.log('✅ Loaded completion data from Zustand store:', {
+        completedCourses: completedCourses.size,
+        plannedCourses: plannedCourses.size,
+        groups: completedGroups.size
+      });
+      
+    } catch (err) {
+      console.error('Error loading completion data:', err);
+      setError('Error loading completion data');
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, completedCourses.size, plannedCourses.size, completedGroups.size]);
 
-  // Toggle course completion
+  // Toggle course completion using Zustand store
   const toggleCourseCompletion = useCallback(async (courseCode: string) => {
     if (!user) return;
 
-    const newCompletedCourses = new Set(completedCourses);
-    const wasCompleted = newCompletedCourses.has(courseCode);
+    const { getAllCourses, updateCourseStatus, addCourseToSemester, getSafeSemesters } = usePlannerStore.getState();
+    const allCourses = getAllCourses();
+    const course = allCourses.find(c => c.code === courseCode);
+    
+    if (!course) {
+      // Course not in planner yet - we need to add it first
+      console.log(`Course ${courseCode} not found in planner, adding as completed`);
+      
+      // Find the earliest available semester to add the course
+      const semesters = getSafeSemesters();
+      const earliestSemester = semesters.find(s => s.year <= new Date().getFullYear()) || semesters[0];
+      
+      if (!earliestSemester) {
+        console.warn('No semesters available to add course');
+        return;
+      }
+
+      // Create a placeholder course object for the requirement course
+      const newCourse = {
+        id: Date.now(), // Temporary ID
+        code: courseCode,
+        title: `${courseCode} (From Requirements)`,
+        credits: 3, // Default credits
+        semesterId: earliestSemester.id,
+        status: 'completed' as const,
+        grade: 'A'
+      };
+
+      addCourseToSemester(newCourse);
+      console.log(`✅ Added and marked course as completed: ${courseCode}`);
+      return;
+    }
+
+    const wasCompleted = course.status === 'completed';
     
     if (wasCompleted) {
-      newCompletedCourses.delete(courseCode);
-      console.log(`❌ Removed course: ${courseCode}`);
+      updateCourseStatus(course.id, course.semesterId, 'planned');
+      console.log(`❌ Marked course as planned: ${courseCode}`);
     } else {
-      newCompletedCourses.add(courseCode);
-      console.log(`✅ Added course: ${courseCode}`);
+      updateCourseStatus(course.id, course.semesterId, 'completed', 'A'); // Default grade
+      console.log(`✅ Marked course as completed: ${courseCode}`);
     }
     
-    setCompletedCourses(newCompletedCourses);
+  }, [user]);
 
-    // Save to database
-    try {
-      const { error } = await supabase
-        .from('users')
-        .update({ completed_courses: Array.from(newCompletedCourses) })
-        .eq('auth_id', user.id);
-        
-      if (error) {
-        console.error('Error saving completed courses:', error);
-        // Revert on error
-        setCompletedCourses(completedCourses);
-      } else {
-        console.log('💾 Saved completed courses to database');
-      }
-    } catch (error) {
-      console.error('Error saving completed courses:', error);
-      // Revert on error
-      setCompletedCourses(completedCourses);
-    }
-  }, [user, completedCourses]);
-
-  // Set group completion (for automatic group satisfaction)
+  // Set group completion (local state only - no database persistence needed)
   const setGroupCompletion = useCallback(async (groupId: string, isSatisfied: boolean) => {
     if (!user) return;
 
@@ -114,55 +115,46 @@ export const useCompletionTracking = () => {
     }
     
     setCompletedGroups(newCompletedGroups);
-
-    // Save to database
-    try {
-      const { error } = await supabase
-        .from('users')
-        .update({ completed_groups: Array.from(newCompletedGroups) })
-        .eq('auth_id', user.id);
-        
-      if (error) {
-        console.error('Error saving completed groups:', error);
-        // Revert on error
-        setCompletedGroups(completedGroups);
-      } else {
-        console.log('💾 Saved completed groups to database');
-      }
-    } catch (error) {
-      console.error('Error saving completed groups:', error);
-      // Revert on error
-      setCompletedGroups(completedGroups);
-    }
+    console.log('💾 Updated completed groups in local state');
   }, [user, completedGroups]);
 
-  // Auto-fill completed courses when major changes (preserve cross-major completions)
+  // Preserve completed courses when major changes (now handled by Zustand persistence)
   const preserveCompletionsOnMajorChange = useCallback(async (newMajor: string, oldMajor?: string) => {
     if (!user) return;
     
     try {
-      // Load existing completion data to ensure we preserve it
-      await loadCompletionData();
-      
-      console.log(`🔄 Major changed from "${oldMajor}" to "${newMajor}". Completed courses preserved.`);
-      console.log(`✅ Preserved ${completedCourses.size} completed courses and ${completedGroups.size} completed groups`);
-      
-      // The completed courses and groups remain in the database
-      // They will automatically apply to requirements in the new major if applicable
-      // This ensures persistence across major changes as requested
+      // Completion data is now preserved automatically in Zustand store
+      console.log(`🔄 Major changed from "${oldMajor}" to "${newMajor}". Completed and planned courses preserved in Zustand store.`);
+      console.log(`✅ Preserved ${completedCourses.size} completed courses, ${plannedCourses.size} planned courses, and ${completedGroups.size} completed groups`);
       
       return {
         preservedCourses: Array.from(completedCourses),
+        preservedPlannedCourses: Array.from(plannedCourses),
         preservedGroups: Array.from(completedGroups)
       };
     } catch (error) {
       console.error('Error preserving completions on major change:', error);
       return {
         preservedCourses: [],
+        preservedPlannedCourses: [],
         preservedGroups: []
       };
     }
-  }, [user, completedCourses, completedGroups, loadCompletionData]);
+  }, [user, completedCourses, plannedCourses, completedGroups]);
+
+  // Set flexible course selection
+  const setFlexibleCourseSelection = useCallback((requirementType: string, courseCode: string) => {
+    setFlexibleCourseSelections(prev => ({
+      ...prev,
+      [requirementType]: courseCode
+    }));
+    console.log(`🔗 Linked flexible course: ${courseCode} for requirement: ${requirementType}`);
+  }, []);
+
+  // Get flexible course selection
+  const getFlexibleCourseSelection = useCallback((requirementType: string): string | undefined => {
+    return flexibleCourseSelections[requirementType];
+  }, [flexibleCourseSelections]);
 
   // Load data on mount and user change
   useEffect(() => {
@@ -171,11 +163,15 @@ export const useCompletionTracking = () => {
 
   return {
     completedCourses,
+    plannedCourses,
     completedGroups,
+    flexibleCourseSelections,
     isLoading,
     error,
     toggleCourseCompletion,
     setGroupCompletion,
+    setFlexibleCourseSelection,
+    getFlexibleCourseSelection,
     preserveCompletionsOnMajorChange,
     reloadCompletionData: loadCompletionData,
   };

@@ -8,7 +8,6 @@ import {
     GraduationCap, 
     TrendingUp, 
     BookOpen, 
-    Clock,
     CheckCircle,
     Target
 } from "lucide-react";

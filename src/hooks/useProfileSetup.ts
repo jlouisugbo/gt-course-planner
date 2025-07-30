@@ -35,8 +35,7 @@ export const useProfileSetup = (
         transferCredits: 0,
         isDoubleMajor: false,
         year: "",
-        completedCourses: [],
-        completedGroups: [],
+        // completedCourses and completedGroups now handled by Zustand
         createdAt: new Date(),
         updatedAt: new Date(),
         ...existingProfile,
@@ -167,7 +166,7 @@ export const useProfileSetup = (
                 console.warn(`Could not find degree program for major: ${profile.major}`);
             }
 
-            // Update the users table with profile information (NEW: using major text and minors JSON)
+            // Update the users table with profile information (cleaned schema)
             const { data, error: updateError } = await supabase
                 .from('users')
                 .update({
@@ -178,8 +177,7 @@ export const useProfileSetup = (
                     major: profile.major || null, // Save major as text
                     minors: profile.minors || [], // Save minors as JSON array
                     selected_threads: profile.threads || [],
-                    completed_courses: profile.completedCourses || [], // Save completed courses
-                    completed_groups: profile.completedGroups || [], // Save completed groups
+                    // Note: completed_courses and completed_groups are now handled by Zustand
                     plan_settings: {
                         ...profile,
                         plan_name: "My 4-Year Plan",
@@ -218,9 +216,7 @@ export const useProfileSetup = (
                 totalCreditsEarned: profile.totalCreditsEarned || 0,
                 isTransferStudent: profile.isTransferStudent || false,
                 transferCredits: profile.transferCredits,
-                completedCourses: profile.completedCourses || [],
-                completedGroups: profile.completedGroups || [],
-
+                // completedCourses and completedGroups handled by Zustand now
                 createdAt: profile.createdAt || new Date(),
                 updatedAt: new Date(),
             };

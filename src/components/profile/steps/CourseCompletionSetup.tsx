@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { VisualDegreeProgram, VisualCourse } from "@/types/requirements";
 import { supabase } from "@/lib/supabaseClient";
 import { CompletableCourseCard } from "../components/CompletableCourseCard";
 import { CompletableGroupCard } from "../components/CompletableGroupCard";
+import { useCompletionTracking } from "@/hooks/useCompletionTracking";
 
 interface CourseCompletionSetupProps {
   profile: Partial<UserProfile>;
@@ -22,43 +23,45 @@ export const CourseCompletionSetup: React.FC<CourseCompletionSetupProps> = ({
 }) => {
   const [degreeProgram, setDegreeProgram] = useState<VisualDegreeProgram | null>(null);
   const [loading, setLoading] = useState(true);
-  const [completedCourses, setCompletedCourses] = useState<Set<string>>(
-    new Set(profile.completedCourses || [])
-  );
-  const [completedGroups] = useState<Set<string>>(
-    new Set(profile.completedGroups || [])
-  );
+  
+  // Use the completion tracking hook instead of local state
+  const { 
+    completedCourses, 
+    completedGroups, 
+    toggleCourseCompletion
+  } = useCompletionTracking();
 
   // Fetch degree program based on user's major
   useEffect(() => {
+    console.log('🔍 CourseCompletionSetup useEffect triggered');
+    console.log('📋 Profile data:', { 
+      major: profile.major, 
+      name: profile.name,
+      hasProfile: !!profile
+    });
+    
+    // Add debugger for debugging
+    debugger;
+    
     const fetchDegreeProgram = async () => {
       if (!profile.major) {
+        console.log('❌ No major found in profile, skipping degree program fetch');
+        console.log('🔍 Full profile object:', profile);
         setLoading(false);
         return;
       }
 
+      console.log('✅ Major found, starting degree program fetch');
       setLoading(true);
       try {
-        // First, let's try to find available degree programs to debug
         console.log('Looking for degree program with major:', profile.major);
-        
-        // Query all degree programs first to see what's available
-        const { data: allPrograms, error: allError } = await supabase
-          .from('degree_programs')
-          .select('name, degree_type, is_active')
-          .eq('is_active', true);
-          
-        if (allError) {
-          console.error('Error fetching all degree programs:', allError);
-        } else {
-          console.log('Available degree programs:', allPrograms?.map(p => p.name));
-        }
 
         // Query degree program that matches the major title
         const { data, error } = await supabase
           .from('degree_programs')
           .select('*')
           .eq('name', profile.major)
+          .eq('degree_type', 'BS')
           .eq('is_active', true)
           .single();
 
@@ -82,8 +85,8 @@ export const CourseCompletionSetup: React.FC<CourseCompletionSetupProps> = ({
               id: data.id,
               name: data.name,
               degreeType: data.degree_type || 'Major',
-              college: data.college,
-              totalCredits: data.required_credits,
+              college: data.college_id ? `College ${data.college_id}` : undefined,
+              totalCredits: data.total_credits,
               requirements: requirements,
               footnotes: []
             };
@@ -98,8 +101,8 @@ export const CourseCompletionSetup: React.FC<CourseCompletionSetupProps> = ({
             id: data.id,
             name: data.name,
             degreeType: data.degree_type || 'Major',
-            college: data.college,
-            totalCredits: data.required_credits,
+            college: data.college_id ? `College ${data.college_id}` : undefined,
+            totalCredits: data.total_credits,
             requirements: requirements,
             footnotes: []
           };
@@ -114,33 +117,29 @@ export const CourseCompletionSetup: React.FC<CourseCompletionSetupProps> = ({
     };
 
     fetchDegreeProgram();
-  }, [profile.major]);
+  }, [profile.major, profile]);
 
-  // Update profile when completed courses/groups change
+  // Completion data is now handled by useCompletionTracking hook
+  // No need to update profile with completion data
   useEffect(() => {
-    setProfile(prev => ({
-      ...prev,
-      completedCourses: Array.from(completedCourses),
-      completedGroups: Array.from(completedGroups)
-    }));
+    // This effect is no longer needed as completion tracking is handled by Zustand
+    console.log('Completion data updated:', {
+      courses: completedCourses.size,
+      groups: completedGroups.size
+    });
   }, [completedCourses, completedGroups, setProfile]);
 
   const handleCourseToggle = (courseCode: string) => {
-    setCompletedCourses(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(courseCode)) {
-        newSet.delete(courseCode);
-      } else {
-        newSet.add(courseCode);
-      }
-      return newSet;
-    });
+    toggleCourseCompletion(courseCode);
   };
 
 
-  // Function to check if a group is satisfied
-  const isGroupSatisfied = (course: VisualCourse): boolean => {
-    if (course.courseType === 'and_group') {
+
+  // Function to check if a course/group is satisfied (recursive for nested groups)
+  const isCourseSatisfied = useCallback((course: VisualCourse): boolean => {
+    if (course.courseType === 'regular' || course.courseType === 'flexible') {
+      return completedCourses.has(course.code);
+    } else if (course.courseType === 'and_group') {
       // For AND groups, all nested courses must be completed
       return course.groupCourses?.every(subCourse => 
         isCourseSatisfied(subCourse)
@@ -158,16 +157,7 @@ export const CourseCompletionSetup: React.FC<CourseCompletionSetupProps> = ({
       return satisfiedCount >= (course.selectionCount || 1);
     }
     return false;
-  };
-
-  // Function to check if a course/group is satisfied (recursive for nested groups)
-  const isCourseSatisfied = (course: VisualCourse): boolean => {
-    if (course.courseType === 'regular' || course.courseType === 'flexible') {
-      return completedCourses.has(course.code);
-    } else {
-      return isGroupSatisfied(course);
-    }
-  };
+  }, [completedCourses]);
 
   // Calculate completion statistics
   const completionStats = useMemo(() => {

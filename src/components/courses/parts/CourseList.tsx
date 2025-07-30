@@ -193,7 +193,7 @@ export const CourseList: React.FC<CourseListProps> = ({
     >
       {safeCourses.map((course, index) => (
         <EnhancedCourseListItem
-          key={course?.id || `course-${index}`}
+          key={course?.id || `${course?.code || 'unknown'}-${course?.title?.substring(0, 10) || 'notitle'}-${index}`}
           course={course}
           index={index}
         />

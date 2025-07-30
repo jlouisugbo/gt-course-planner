@@ -19,6 +19,7 @@ interface CompletableCourseCardProps {
     programType: 'degree' | 'minor';
     isOption?: boolean;
     isCompleted?: boolean;
+    isPlanned?: boolean;
     onToggleComplete?: (courseCode: string) => void;
 }
 
@@ -27,6 +28,7 @@ export const CompletableCourseCard: React.FC<CompletableCourseCardProps> = ({
     programType, 
     isOption = false,
     isCompleted = false,
+    isPlanned = false,
     onToggleComplete
 }) => {
     const { semesters } = usePlannerStore();
@@ -54,7 +56,7 @@ export const CompletableCourseCard: React.FC<CompletableCourseCardProps> = ({
         return plannedCourse || null;
     }, [semesters, course.code]);
     
-    const isPlanned = !!plannedCourseInfo;
+    const isCourseActuallyPlanned = isPlanned || !!plannedCourseInfo;
 
     useEffect(() => {
         const fetchCourseDetails = async () => {
@@ -68,7 +70,7 @@ export const CompletableCourseCard: React.FC<CompletableCourseCardProps> = ({
                         ...course,
                         credits: 3, // fallback
                         description: 'Flexible requirement - choose from approved courses'
-                    });
+                    } as EnhancedCourse);
                     setLoading(false);
                     return;
                 }
@@ -94,11 +96,11 @@ export const CompletableCourseCard: React.FC<CompletableCourseCardProps> = ({
                         ...course,
                         title: course.title || `${course.code} (Course details unavailable)`,
                         credits: 3, // fallback
-                        description: course.description || `Course ${course.code} - Details not available in course catalog`,
-                        prerequisites: [],
+                        description: `Course ${course.code} - Details not available in course catalog`,
+                        prerequisites: '[]',
                         college: 'Unknown',
                         department: course.code.split(' ')[0] // Extract department from course code
-                    });
+                    } as EnhancedCourse);
                     setError(null); // Don't show as error to user
                 } else {
                     // Merge course data with original course structure
@@ -106,11 +108,11 @@ export const CompletableCourseCard: React.FC<CompletableCourseCardProps> = ({
                         ...course,
                         title: courseData.title || course.title,
                         credits: courseData.credits || 3,
-                        description: courseData.description || course.description || `${course.code} course description not available`,
-                        prerequisites: courseData.prerequisites || [],
-                        college: courseData.colleges?.name || 'Unknown College',
+                        description: courseData.description || `${course.code} course description not available`,
+                        prerequisites: JSON.stringify(courseData.prerequisites || []),
+                        college: (courseData.colleges as any)?.name || 'Unknown College',
                         department: courseData.code?.split(' ')[0] || 'Unknown'
-                    });
+                    } as EnhancedCourse);
                 }
             } catch (err) {
                 console.error('Error in fetchCourseDetails:', err);
@@ -119,7 +121,7 @@ export const CompletableCourseCard: React.FC<CompletableCourseCardProps> = ({
                     ...course,
                     credits: 3, // fallback
                     description: 'Course details not available'
-                });
+                } as EnhancedCourse);
             } finally {
                 setLoading(false);
             }
@@ -150,7 +152,7 @@ export const CompletableCourseCard: React.FC<CompletableCourseCardProps> = ({
         if (isCompleted) {
             return 'border-green-200 bg-green-50 hover:border-green-300';
         }
-        if (isPlanned) {
+        if (isCourseActuallyPlanned) {
             return 'border-blue-300 bg-blue-50 hover:border-blue-400';
         }
         if (isFlexible) {
@@ -166,7 +168,7 @@ export const CompletableCourseCard: React.FC<CompletableCourseCardProps> = ({
 
     const getBadgeColor = () => {
         if (isCompleted) return 'bg-green-100 text-green-800';
-        if (isPlanned) return 'bg-blue-100 text-blue-800';
+        if (isCourseActuallyPlanned) return 'bg-blue-100 text-blue-800';
         if (isFlexible) return 'bg-amber-100 text-amber-800';
         if (isOption) return 'bg-orange-100 text-orange-800';
         return programType === 'degree' 
@@ -176,13 +178,13 @@ export const CompletableCourseCard: React.FC<CompletableCourseCardProps> = ({
 
     if (loading) {
         return (
-            <Card className={`${getCardTheme()} transition-all duration-200`}>
-                <CardContent className="p-4">
-                    <div className="flex items-center space-x-3">
-                        <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
+            <Card className={`py-1 ${getCardTheme()} transition-all duration-200`}>
+                <CardContent className="py-1">
+                    <div className="flex items-center space-x-2">
+                        <Loader2 className="h-3 w-3 animate-spin text-slate-500" />
                         <div>
-                            <div className="font-medium text-slate-900">{course.code}</div>
-                            <div className="text-sm text-slate-600">Loading course details...</div>
+                            <div className="font-medium text-xs text-slate-900">{course.code}</div>
+                            <div className="text-xs text-slate-600">Loading...</div>
                         </div>
                     </div>
                 </CardContent>
@@ -192,13 +194,13 @@ export const CompletableCourseCard: React.FC<CompletableCourseCardProps> = ({
 
     if (error && !enhancedCourse) {
         return (
-            <Card className="border-red-200 bg-red-50">
-                <CardContent className="p-4">
-                    <div className="flex items-center space-x-3">
-                        <AlertCircle className="h-4 w-4 text-red-500" />
+            <Card className="py-1 border-red-200 bg-red-50">
+                <CardContent className="py-1">
+                    <div className="flex items-center space-x-2">
+                        <AlertCircle className="h-3 w-3 text-red-500" />
                         <div>
-                            <div className="font-medium text-slate-900">{course.code}</div>
-                            <div className="text-sm text-red-600">{error}</div>
+                            <div className="font-medium text-xs text-slate-900">{course.code}</div>
+                            <div className="text-xs text-red-600">{error}</div>
                         </div>
                     </div>
                 </CardContent>
@@ -222,7 +224,7 @@ export const CompletableCourseCard: React.FC<CompletableCourseCardProps> = ({
             >
                 <Card 
                     className={cn(
-                        `${getCardTheme()} transition-all duration-300 cursor-pointer group relative overflow-hidden border-2 hover:shadow-xl`,
+                        `py-1 w-48 ${getCardTheme()} transition-all duration-300 cursor-pointer group relative overflow-hidden border-2 hover:shadow-xl`,
                         isCompleted && "ring-2 ring-green-200"
                     )}
                     onClick={handleCardClick}
@@ -230,64 +232,65 @@ export const CompletableCourseCard: React.FC<CompletableCourseCardProps> = ({
                     {/* Hover overlay */}
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out" />
                     
-                    <CardContent className="p-2 relative">
-                        <div className="flex items-start justify-between">
-                            <div className="flex items-start space-x-2 flex-1 min-w-0">
-                                {/* Checkbox */}
+                    <CardContent className="py-1 relative">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2 flex-1 min-w-0">
+                                {/* Enhanced Checkbox */}
                                 {onToggleComplete && (
-                                    <div onClick={handleCheckboxToggle} className="mt-1">
-                                        <Checkbox
-                                            checked={isCompleted}
-                                            className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
-                                        />
+                                    <div 
+                                        onClick={handleCheckboxToggle}
+                                        className="group cursor-pointer"
+                                    >
+                                        <div className={cn(
+                                            "w-4 h-4 rounded border-2 flex items-center justify-center transition-all duration-200",
+                                            isCompleted 
+                                                ? "bg-green-600 border-green-600 shadow-sm" 
+                                                : "border-slate-300 hover:border-green-400 bg-white group-hover:bg-green-50"
+                                        )}>
+                                            {isCompleted && (
+                                                <CheckCircle2 className="h-2.5 w-2.5 text-white" />
+                                            )}
+                                        </div>
                                     </div>
                                 )}
                                 
                                 <div className="flex-1 min-w-0">
-                                    <div className="flex items-center space-x-1 mb-1">
-                                        {isCompleted && <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />}
-                                        {isPlanned && <Calendar className="h-4 w-4 text-blue-600 flex-shrink-0" />}
-                                        {isFlexible && <Sparkles className="h-4 w-4 text-amber-600 flex-shrink-0" />}
+                                    <div className="flex items-center space-x-1 mb-0.5">
+                                        {isCompleted && <CheckCircle2 className="h-3 w-3 text-green-600 flex-shrink-0" />}
+                                        {isCourseActuallyPlanned && !isCompleted && <Calendar className="h-3 w-3 text-blue-600 flex-shrink-0" />}
+                                        {isFlexible && <Sparkles className="h-3 w-3 text-amber-600 flex-shrink-0" />}
                                         
                                         <span className={cn(
-                                            "font-bold text-sm cursor-pointer hover:text-blue-600 transition-colors",
+                                            "font-bold text-xs cursor-pointer hover:text-blue-600 transition-colors truncate",
                                             isCompleted ? "text-green-700 line-through" : 
-                                            isPlanned ? "text-blue-700" :
+                                            isCourseActuallyPlanned ? "text-blue-700" :
                                             isFlexible ? "text-amber-800" : "text-slate-900"
                                         )}>
                                             {enhancedCourse.code}
                                         </span>
                                         
-                                        {isPlanned && <span className="text-xs text-blue-600">📅</span>}
-                                        {isOption && <Badge variant="outline" className="text-xs px-1 py-0 h-4 bg-orange-100 text-orange-700">Opt</Badge>}
-                                        {isFlexible && <Badge variant="outline" className="text-xs px-1 py-0 h-4 bg-amber-100 text-amber-700">Flex</Badge>}
+                                        <span className="text-xs text-slate-500">({enhancedCourse.credits || 3}cr)</span>
+                                        
+                                        {isOption && <Badge variant="outline" className="text-xs px-1 py-0 h-3 bg-orange-100 text-orange-700">Opt</Badge>}
+                                        {isFlexible && <Badge variant="outline" className="text-xs px-1 py-0 h-3 bg-amber-100 text-amber-700">Flex</Badge>}
                                     </div>
                                     
                                     <h4 className={cn(
-                                        "font-medium text-xs mb-1 line-clamp-1 leading-tight",
-                                        isCompleted ? "text-green-700 line-through" : 
-                                        isPlanned ? "text-blue-700" :
-                                        isFlexible ? "text-amber-800" : "text-slate-900"
+                                        "font-medium text-xs line-clamp-1 leading-tight",
+                                        isCompleted ? "text-green-600 line-through" : 
+                                        isCourseActuallyPlanned ? "text-blue-600" :
+                                        isFlexible ? "text-amber-700" : "text-slate-700"
                                     )}>
                                         {enhancedCourse.title}
                                     </h4>
-                                    
-                                    <div className="flex items-center space-x-2 text-xs text-slate-600 mb-1">
-                                        <span>{enhancedCourse.credits || 3}cr</span>
-                                        {enhancedCourse.department && <span>• {enhancedCourse.department}</span>}
-                                        {isCompleted && enhancedCourse.postrequisites && enhancedCourse.postrequisites.length > 0 && (
-                                            <span className="text-green-600">• Unlocks courses</span>
-                                        )}
-                                    </div>
-                                    
                                 </div>
                             </div>
                             
-                            <div className="ml-2 flex-shrink-0">
+                            <div className="ml-1 flex-shrink-0">
                                 <div className={cn(
-                                    "w-1.5 h-1.5 rounded-full",
+                                    "w-2 h-2 rounded-full",
                                     isCompleted ? "bg-green-500" :
-                                    isPlanned ? "bg-blue-500" :
+                                    isCourseActuallyPlanned ? "bg-blue-500" :
                                     isFlexible ? "bg-amber-500" :
                                     "bg-slate-400"
                                 )} />
@@ -304,6 +307,10 @@ export const CompletableCourseCard: React.FC<CompletableCourseCardProps> = ({
                     isOpen={showModal}
                     onClose={() => setShowModal(false)}
                     programType={programType}
+                    isCompleted={isCompleted}
+                    isPlanned={isCourseActuallyPlanned}
+                    onToggleComplete={onToggleComplete}
+                    onAddToPlanner={onToggleComplete} // For now, use the same function
                 />
             )}
         </>

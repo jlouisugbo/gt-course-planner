@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
 import { supabase } from '@/lib/supabaseClient';
 import { usePlannerStore } from '@/hooks/usePlannerStore';
@@ -60,10 +60,8 @@ export interface DashboardData {
 export const useDashboardData = (): DashboardData => {
     const { user: authUser } = useAuth();
     const { 
-        semesters, 
         academicProgress, 
         recentActivity,
-        getAllCourses,
         getCoursesByStatus,
         calculateGPA,
         getGPAHistory,
@@ -75,6 +73,12 @@ export const useDashboardData = (): DashboardData => {
     const [courseCredits, setCourseCredits] = useState<Map<string, number>>(new Map());
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    
+    // Use ref to track previous completed codes to avoid unnecessary fetches
+    const prevCompletedCodes = useRef<string>('');
+    
+    // Create stable reference for completed codes to prevent infinite re-renders
+    const completedCodesString = Array.from(completedCourseCodes).sort().join(',');
 
     // Fetch user profile data
     useEffect(() => {
@@ -128,7 +132,17 @@ export const useDashboardData = (): DashboardData => {
     // Fetch credits for completed courses
     useEffect(() => {
         const fetchCourseCredits = async () => {
-            if (completedCourseCodes.size === 0) {
+            const completedCodesArray = Array.from(completedCourseCodes);
+            const currentCompletedCodes = completedCodesArray.join(',');
+            
+            // Only fetch if codes have actually changed
+            if (prevCompletedCodes.current === currentCompletedCodes) {
+                return;
+            }
+            
+            prevCompletedCodes.current = currentCompletedCodes;
+            
+            if (completedCodesArray.length === 0) {
                 setCourseCredits(new Map());
                 return;
             }
@@ -137,7 +151,7 @@ export const useDashboardData = (): DashboardData => {
                 const { data: courses, error } = await supabase
                     .from('courses')
                     .select('code, credits')
-                    .in('code', Array.from(completedCourseCodes));
+                    .in('code', completedCodesArray);
 
                 if (error) {
                     console.error('Error fetching course credits:', error);
@@ -150,7 +164,7 @@ export const useDashboardData = (): DashboardData => {
                 });
 
                 // Add default credits for courses not found in database
-                completedCourseCodes.forEach(courseCode => {
+                completedCodesArray.forEach(courseCode => {
                     if (!creditsMap.has(courseCode)) {
                         creditsMap.set(courseCode, 3); // Default 3 credits
                     }
@@ -163,11 +177,10 @@ export const useDashboardData = (): DashboardData => {
         };
 
         fetchCourseCredits();
-    }, [completedCourseCodes]);
+    }, [completedCodesString, completedCourseCodes]);
 
     // Calculate dashboard stats using completion tracking data
     const stats: DashboardStats = useMemo(() => {
-        const allCourses = getAllCourses();
         const inProgressCourses = getCoursesByStatus('in-progress');
         const plannedCourses = getCoursesByStatus('planned');
 
@@ -178,7 +191,6 @@ export const useDashboardData = (): DashboardData => {
         
         const creditsInProgress = inProgressCourses.reduce((sum, course) => sum + (course.credits || 0), 0);
         const creditsPlanned = plannedCourses.reduce((sum, course) => sum + (course.credits || 0), 0);
-        const totalCredits = creditsCompleted + creditsInProgress + creditsPlanned;
         
         const requiredCredits = academicProgress.totalCreditsRequired || 126;
         const progressPercentage = requiredCredits > 0 ? (creditsCompleted / requiredCredits) * 100 : 0;
@@ -207,7 +219,7 @@ export const useDashboardData = (): DashboardData => {
             progressPercentage: Math.min(progressPercentage, 100),
             onTrackForGraduation
         };
-    }, [getAllCourses, getCoursesByStatus, academicProgress, calculateGPA, user, completedCourseCodes, courseCredits]);
+    }, [getCoursesByStatus, academicProgress, calculateGPA, user, courseCredits, completedCourseCodes]);
 
     // Transform recent activities
     const activities: DashboardActivity[] = useMemo(() => {

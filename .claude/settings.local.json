@@ -15,7 +15,17 @@
       "Bash(node:*)",
       "Bash(curl:*)",
       "Bash(mv:*)",
-      "Bash(move:*)"
+      "Bash(move:*)",
+      "Bash(rg:*)",
+      "Bash(del test-minors.js)",
+      "Bash(rm:*)",
+      "Bash(npx next lint:*)",
+      "Bash(NODE_ENV=production npm run build)",
+      "Bash(cat:*)",
+      "Bash(psql:*)",
+      "Bash(npx supabase:*)",
+      "Bash(taskkill:*)",
+      "Bash(wmic:*)"
     ],
     "deny": []
   }

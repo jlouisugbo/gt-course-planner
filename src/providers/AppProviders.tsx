@@ -7,7 +7,8 @@ import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { QueryClient } from '@tanstack/react-query';
 import { AuthProvider } from './AuthProvider';
-import { CoursesProvider } from './CoursesProvider'; 
+import { CoursesProvider } from './CoursesProvider';
+import { AsyncErrorBoundary } from '@/components/error/AsyncErrorBoundary'; 
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,17 +31,29 @@ interface AppProvidersProps {
 
 export function AppProviders({ children }: AppProvidersProps) {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <CoursesProvider>
-          <DndProvider backend={HTML5Backend}>
-            {children}
-            {process.env.NODE_ENV === 'development' && (
-              <ReactQueryDevtools initialIsOpen={false} />
-            )}
-          </DndProvider>
-        </CoursesProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <AsyncErrorBoundary 
+      context="general"
+      onError={(error) => {
+        console.error('AppProviders error:', error);
+        // In production, report to error monitoring service
+      }}
+    >
+      <QueryClientProvider client={queryClient}>
+        <AsyncErrorBoundary context="auth">
+          <AuthProvider>
+            <AsyncErrorBoundary context="courses">
+              <CoursesProvider>
+                <DndProvider backend={HTML5Backend}>
+                  {children}
+                  {process.env.NODE_ENV === 'development' && (
+                    <ReactQueryDevtools initialIsOpen={false} />
+                  )}
+                </DndProvider>
+              </CoursesProvider>
+            </AsyncErrorBoundary>
+          </AuthProvider>
+        </AsyncErrorBoundary>
+      </QueryClientProvider>
+    </AsyncErrorBoundary>
   );
 }

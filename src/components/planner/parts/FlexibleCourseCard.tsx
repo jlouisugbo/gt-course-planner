@@ -10,31 +10,50 @@ import { Sparkles, Search, Plus, BookOpen } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Course } from "@/types/courses";
+import { useAuth } from "@/providers/AuthProvider";
 
 interface FlexibleCourseCardProps {
     title: string;
     requirementType: string;
     description?: string;
     onSelectCourse?: (course: Course) => void;
+    selectedCourse?: Course | null;
+    minCredits?: number;
+    currentCredits?: number;
+    selectionCount?: number;
+    onRemoveCourse?: () => void;
 }
 
 export const FlexibleCourseCard: React.FC<FlexibleCourseCardProps> = ({
     title,
     requirementType,
     description,
-    onSelectCourse
+    onSelectCourse,
+    selectedCourse = null,
+    minCredits = 0,
+    currentCredits = 0,
+    selectionCount = 0,
+    onRemoveCourse
 }) => {
+    const { user } = useAuth();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [searchResults, setSearchResults] = useState<Course[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
     const handleSearch = async () => {
-        if (!searchTerm.trim()) return;
-        
         setIsLoading(true);
         try {
-            const response = await fetch(`/api/flexible-courses?type=${encodeURIComponent(requirementType)}&search=${encodeURIComponent(searchTerm)}`);
+            const params = new URLSearchParams({
+                type: requirementType,
+                search: searchTerm.trim(),
+            });
+            
+            if (user?.id) {
+                params.append('userId', user.id);
+            }
+            
+            const response = await fetch(`/api/flexible-courses?${params}`);
             const data = await response.json();
             
             if (response.ok) {
@@ -49,6 +68,15 @@ export const FlexibleCourseCard: React.FC<FlexibleCourseCardProps> = ({
         }
     };
 
+    // Load default courses when dialog opens if no search term
+    const handleDialogOpen = async (open: boolean) => {
+        setIsDialogOpen(open);
+        if (open && searchResults.length === 0) {
+            // Load default courses for this requirement type
+            await handleSearch();
+        }
+    };
+
     const handleCourseSelect = (course: Course) => {
         onSelectCourse?.(course);
         setIsDialogOpen(false);
@@ -56,54 +84,149 @@ export const FlexibleCourseCard: React.FC<FlexibleCourseCardProps> = ({
         setSearchResults([]);
     };
 
+    // Calculate progress
+    const creditsRemaining = Math.max(0, minCredits - currentCredits);
+    const isComplete = currentCredits >= minCredits;
+    const progressPercentage = minCredits > 0 ? Math.min(100, (currentCredits / minCredits) * 100) : 0;
+
     return (
         <>
             <motion.div
                 initial={{ opacity: 0, y: 2 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="group bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-dashed border-amber-300 rounded-md p-3 transition-all duration-200 hover:shadow-md cursor-pointer"
+                className={cn(
+                    "group transition-all duration-200 hover:shadow-md cursor-pointer rounded-md p-3",
+                    selectedCourse 
+                        ? "bg-white border-2 border-slate-200 hover:border-[#B3A369]" 
+                        : "bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-dashed border-amber-300"
+                )}
                 onClick={() => setIsDialogOpen(true)}
             >
-                <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center space-x-2">
-                        <Sparkles className="h-4 w-4 text-amber-600" />
-                        <Badge variant="outline" className="text-xs bg-amber-100 text-amber-800 border-amber-200 font-medium">
-                            Flexible
-                        </Badge>
-                    </div>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
-                    >
-                        <Search className="h-3 w-3" />
-                    </Button>
-                </div>
+                {selectedCourse ? (
+                    // Show selected course
+                    <>
+                        <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                                <Sparkles className="h-4 w-4 text-[#B3A369]" />
+                                <Badge variant="outline" className="text-xs bg-green-100 text-green-800 border-green-200 font-medium">
+                                    Selected
+                                </Badge>
+                                <Badge variant="secondary" className="text-xs">
+                                    {selectedCourse.credits}cr
+                                </Badge>
+                            </div>
+                            {onRemoveCourse && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onRemoveCourse();
+                                    }}
+                                >
+                                    ×
+                                </Button>
+                            )}
+                        </div>
 
-                <h4 className="font-semibold text-amber-800 mb-2 text-sm">
-                    {title}
-                </h4>
+                        <h4 className="font-semibold text-slate-800 mb-1 text-sm">
+                            {selectedCourse.code}
+                        </h4>
+                        <p className="text-xs text-slate-600 line-clamp-2 mb-2">
+                            {selectedCourse.title}
+                        </p>
 
-                {description && (
-                    <p className="text-xs text-amber-700 line-clamp-2 mb-2">
-                        {description}
-                    </p>
+                        {/* Progress indicator */}
+                        {minCredits > 0 && (
+                            <div className="mb-2">
+                                <div className="flex justify-between text-xs text-slate-500 mb-1">
+                                    <span>{title}</span>
+                                    <span>{currentCredits}/{minCredits} credits</span>
+                                </div>
+                                <div className="w-full bg-slate-200 rounded-full h-1.5">
+                                    <div 
+                                        className={cn(
+                                            "h-1.5 rounded-full transition-all duration-300",
+                                            isComplete ? "bg-green-500" : "bg-[#B3A369]"
+                                        )}
+                                        style={{ width: `${progressPercentage}%` }}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full text-xs h-6 hover:bg-slate-50"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setIsDialogOpen(true);
+                            }}
+                        >
+                            <Search className="h-3 w-3 mr-1" />
+                            Change Course
+                        </Button>
+                    </>
+                ) : (
+                    // Show flexible placeholder
+                    <>
+                        <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                                <Sparkles className="h-4 w-4 text-amber-600" />
+                                <Badge variant="outline" className="text-xs bg-amber-100 text-amber-800 border-amber-200 font-medium">
+                                    Flexible
+                                </Badge>
+                            </div>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
+                            >
+                                <Search className="h-3 w-3" />
+                            </Button>
+                        </div>
+
+                        <h4 className="font-semibold text-amber-800 mb-2 text-sm">
+                            {title}
+                        </h4>
+
+                        {/* Requirement info */}
+                        <div className="mb-2 space-y-1">
+                            {minCredits > 0 && (
+                                <p className="text-xs text-amber-700">
+                                    {minCredits} credits required
+                                </p>
+                            )}
+                            {selectionCount > 0 && (
+                                <p className="text-xs text-amber-700">
+                                    Choose {selectionCount} course{selectionCount !== 1 ? 's' : ''}
+                                </p>
+                            )}
+                            {description && (
+                                <p className="text-xs text-amber-700 line-clamp-2">
+                                    {description}
+                                </p>
+                            )}
+                        </div>
+
+                        <Button
+                            size="sm"
+                            className="w-full text-xs h-6 bg-amber-600 hover:bg-amber-700"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setIsDialogOpen(true);
+                            }}
+                        >
+                            <Search className="h-3 w-3 mr-1" />
+                            Find Courses
+                        </Button>
+                    </>
                 )}
-
-                <Button
-                    size="sm"
-                    className="w-full text-xs h-6 bg-amber-600 hover:bg-amber-700"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        setIsDialogOpen(true);
-                    }}
-                >
-                    <Search className="h-3 w-3 mr-1" />
-                    Find Courses
-                </Button>
             </motion.div>
 
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isDialogOpen} onOpenChange={handleDialogOpen}>
                 <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
                     <DialogHeader>
                         <DialogTitle className="flex items-center space-x-2">

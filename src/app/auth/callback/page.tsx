@@ -1,11 +1,11 @@
 // app/auth/callback/page.tsx
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Loader2, GraduationCap } from 'lucide-react'
 
-export default function AuthCallbackPage() {
+function AuthCallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -41,5 +41,25 @@ export default function AuthCallbackPage() {
         <p className="text-gray-600">Setting up your account...</p>
       </div>
     </div>
+  )
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-r from-blue-900 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <GraduationCap className="text-white" size={32} />
+          </div>
+          <div className="flex items-center justify-center space-x-2 mb-4">
+            <Loader2 className="h-6 w-6 animate-spin text-blue-900" />
+            <h2 className="text-2xl font-bold text-gray-900">Loading...</h2>
+          </div>
+        </div>
+      </div>
+    }>
+      <AuthCallbackContent />
+    </Suspense>
   )
 }

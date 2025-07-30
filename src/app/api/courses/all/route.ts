@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { authenticateRequest } from '@/lib/auth-server';
 
 export async function GET(request: NextRequest) {
+    // SECURITY FIX: Authenticate user before accessing GT course data
+    const { user, error: authError } = await authenticateRequest(request);
+    
+    if (!user || authError) {
+        console.error('Unauthorized access attempt to /api/courses/all:', authError);
+        return NextResponse.json(
+            { error: 'Authentication required to access GT course data' }, 
+            { status: 401 }
+        );
+    }
     try {
         const url = new URL(request.url);
         const search = url.searchParams.get('search');
@@ -9,7 +20,7 @@ export async function GET(request: NextRequest) {
         const limit = parseInt(url.searchParams.get('limit') || '1000');
         const offset = parseInt(url.searchParams.get('offset') || '0');
 
-        let query = supabaseAdmin
+        let query = supabaseAdmin()
             .from('courses')
             .select(`
                 id,

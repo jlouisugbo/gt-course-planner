@@ -23,10 +23,8 @@ export interface UserProfile {
     totalCreditsEarned: number;
     isTransferStudent: boolean;
     transferCredits?: number;
-    completedCourses?: string[]; // Course codes that have been completed
-    completedGroups?: string[]; // Group IDs that have been satisfied
-    hasDetailedGPA?: boolean; // Whether user provided semester-by-semester GPA
-    semesterGPAs?: SemesterGPA[]; // Semester-by-semester GPA history
+    // Note: completedCourses and completedGroups are now handled by Zustand store
+    // hasDetailedGPA and semesterGPAs removed (not used in current implementation)
     createdAt: Date;
     updatedAt: Date;
 }

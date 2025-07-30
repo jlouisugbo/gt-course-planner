@@ -106,6 +106,28 @@ interface PlannerState {
     getAllCourses: () => PlannedCourse[];
     getCoursesByStatus: (status: PlannedCourse["status"]) => PlannedCourse[];
     getSafeSemesters: () => SemesterData[];
+    
+    // Enhanced planning state management
+    exportPlanningData: () => string;
+    importPlanningData: (data: string) => Promise<boolean>;
+    clearAllPlannedCourses: () => void;
+    getCompletionStats: () => {
+        totalCourses: number;
+        completedCourses: number;
+        inProgressCourses: number;
+        plannedCourses: number;
+        completionRate: number;
+    };
+    validateSemesterPlan: (semesterId: number) => {
+        isValid: boolean;
+        warnings: string[];
+        errors: string[];
+    };
+    
+    // User isolation methods
+    checkAndHandleUserChange: (newUserId: string) => void;
+    getCurrentStorageUserId: () => string;
+    clearUserData: () => void;
 }
 
 const createInitialSemesters = (): Record<number, SemesterData> => {
@@ -115,14 +137,8 @@ const createInitialSemesters = (): Record<number, SemesterData> => {
 const gradeToGPA = (grade: string): number => {
     const gradeMap: Record<string, number> = {
         A: 4.0,
-        "A-": 3.7,
-        "B+": 3.3,
         B: 3.0,
-        "B-": 2.7,
-        "C+": 2.3,
         C: 2.0,
-        "C-": 1.7,
-        "D+": 1.3,
         D: 1.0,
         F: 0.0,
     };
@@ -153,6 +169,39 @@ const ensureSemesterIntegrity = (semester: any): semester is SemesterData => {
         typeof semester.season === 'string' &&
         Array.isArray(semester.courses)
     );
+};
+
+// SECURITY WARNING: This function is VULNERABLE and should not be used directly
+// It relies on client-side localStorage that can be manipulated by users
+// Use useUserAwarePlannerStore instead for secure user identification
+// TODO: Remove this function once all usages are migrated to secure alternatives
+const getUserId = (): string => {
+    if (typeof window !== 'undefined') {
+        try {
+            // Try to get user from Supabase auth session
+            const supabaseAuth = localStorage.getItem('sb-localhost-auth-token');
+            if (supabaseAuth) {
+                const authData = JSON.parse(supabaseAuth);
+                if (authData?.user?.id) {
+                    return authData.user.id;
+                }
+            }
+
+            // Fallback: try alternative auth storage patterns
+            const altAuth = localStorage.getItem('supabase.auth.token');
+            if (altAuth) {
+                const authData = JSON.parse(altAuth);
+                if (authData?.user?.id) {
+                    return authData.user.id;
+                }
+            }
+        } catch (error) {
+            console.warn('Error reading auth data for user-scoped storage:', error);
+        }
+    }
+    
+    // Fallback to a session-based key if no user found
+    return 'anonymous-session';
 };
 
 export const usePlannerStore = create<PlannerState>()(
@@ -240,7 +289,7 @@ export const usePlannerStore = create<PlannerState>()(
                         .from("deadlines")
                         .select("*")
                         .eq("is_active", true)
-                        .order("due_date", { ascending: true });
+                        .order("date", { ascending: true });
 
                     if (error) throw error;
 
@@ -1097,7 +1146,7 @@ export const usePlannerStore = create<PlannerState>()(
                             await supabase
                                 .from("degree_programs")
                                 .select("*")
-                                .eq("degree_type", "Major")
+                                .eq("degree_type", "BS")
                                 .eq("name", state.studentInfo.major);
 
                         if (majorError) throw majorError;
@@ -1147,7 +1196,6 @@ export const usePlannerStore = create<PlannerState>()(
                 }
 
                 const finalYear = parseInt(gradYear);
-                const finalSeasonIndex = seasons.indexOf(gradSeason);
                 
                 // Add extra semesters beyond graduation to ensure all options are available
                 const extendedFinalYear = finalYear + 1;
@@ -1185,9 +1233,209 @@ export const usePlannerStore = create<PlannerState>()(
                 set({ semesters });
                 return semesters;
             },
+
+            // Enhanced planning state management methods
+            exportPlanningData: () => {
+                const state = get();
+                const exportData = {
+                    studentInfo: state.studentInfo,
+                    semesters: state.semesters,
+                    selectedThreads: state.selectedThreads,
+                    selectedMinors: state.selectedMinors,
+                    academicProgress: state.academicProgress,
+                    exportedAt: new Date().toISOString(),
+                    version: "1.0"
+                };
+                return JSON.stringify(exportData, null, 2);
+            },
+
+            importPlanningData: async (data: string): Promise<boolean> => {
+                try {
+                    const importedData = JSON.parse(data);
+                    
+                    // Validate the imported data structure
+                    if (!importedData.studentInfo || !importedData.semesters) {
+                        console.error("Invalid import data: missing required fields");
+                        return false;
+                    }
+
+                    // Merge imported data with current state
+                    set((state) => ({
+                        ...state,
+                        studentInfo: importedData.studentInfo,
+                        semesters: importedData.semesters || {},
+                        selectedThreads: importedData.selectedThreads || [],
+                        selectedMinors: importedData.selectedMinors || [],
+                        academicProgress: importedData.academicProgress || state.academicProgress,
+                    }));
+
+                    // Recalculate progress after import
+                    get().updateAcademicProgress();
+                    
+                    return true;
+                } catch (error) {
+                    console.error("Failed to import planning data:", error);
+                    return false;
+                }
+            },
+
+            clearAllPlannedCourses: () => {
+                set((state) => {
+                    const clearedSemesters = Object.keys(state.semesters).reduce((acc, semesterKey) => {
+                        const semesterId = parseInt(semesterKey);
+                        const semester = state.semesters[semesterId];
+                        
+                        acc[semesterId] = {
+                            ...semester,
+                            courses: semester.courses.filter(course => course.status !== 'planned'),
+                            totalCredits: semester.courses
+                                .filter(course => course.status !== 'planned')
+                                .reduce((sum, course) => sum + (course.credits || 0), 0)
+                        };
+                        
+                        return acc;
+                    }, {} as Record<number, SemesterData>);
+
+                    return {
+                        semesters: clearedSemesters,
+                    };
+                });
+
+                // Update progress after clearing
+                get().updateAcademicProgress();
+            },
+
+            getCompletionStats: () => {
+                const state = get();
+                const allCourses = state.getAllCourses();
+                
+                const completed = allCourses.filter(c => c.status === 'completed');
+                const inProgress = allCourses.filter(c => c.status === 'in-progress');
+                const planned = allCourses.filter(c => c.status === 'planned');
+                
+                return {
+                    totalCourses: allCourses.length,
+                    completedCourses: completed.length,
+                    inProgressCourses: inProgress.length,
+                    plannedCourses: planned.length,
+                    completionRate: allCourses.length > 0 ? (completed.length / allCourses.length) * 100 : 0,
+                };
+            },
+
+            validateSemesterPlan: (semesterId: number) => {
+                const state = get();
+                const semester = state.semesters[semesterId];
+                const warnings: string[] = [];
+                const errors: string[] = [];
+                
+                if (!semester) {
+                    return { isValid: false, warnings, errors: ['Semester not found'] };
+                }
+
+                const courses = semester.courses || [];
+                const totalCredits = courses.reduce((sum, c) => sum + (c.credits || 0), 0);
+
+                // Credit validation
+                if (totalCredits > semester.maxCredits) {
+                    errors.push(`Semester exceeds maximum credits (${totalCredits}/${semester.maxCredits})`);
+                }
+                
+                if (totalCredits < 12 && courses.length > 0) {
+                    warnings.push(`Semester has fewer than 12 credits (${totalCredits})`);
+                }
+
+                // Prerequisite validation (basic)
+                courses.forEach(course => {
+                    if (course.prerequisites && Array.isArray(course.prerequisites) && course.prerequisites.length > 0) {
+                        warnings.push(`Check prerequisites for ${course.code}`);
+                    }
+                });
+
+                return {
+                    isValid: errors.length === 0,
+                    warnings,
+                    errors,
+                };
+            },
+
+            // User isolation methods
+            checkAndHandleUserChange: (newUserId: string) => {
+                const state = get();
+                const currentUserId = state.studentInfo?.email || getUserId();
+                
+                if (currentUserId && currentUserId !== newUserId) {
+                    console.log('User changed detected, clearing planning data for data isolation');
+                    get().clearUserData();
+                }
+            },
+
+            getCurrentStorageUserId: () => {
+                return getUserId();
+            },
+
+            clearUserData: () => {
+                set((state) => ({
+                    ...state,
+                    studentInfo: {
+                        id: 0,
+                        name: "",
+                        email: "",
+                        major: "",
+                        threads: [],
+                        minors: [],
+                        startYear: new Date().getFullYear(),
+                        expectedGraduation: "",
+                        currentGPA: 0,
+                        majorRequirements: [],
+                        minorRequirements: [],
+                        threadRequirements: [],
+                    },
+                    semesters: {},
+                    academicProgress: {
+                        totalCreditsRequired: 126,
+                        creditsCompleted: 0,
+                        creditsInProgress: 0,
+                        creditsPlanned: 0,
+                        currentGPA: 0,
+                        projectedGPA: 0,
+                        graduationDate: "",
+                        onTrack: false,
+                        threadProgress: 0,
+                        minorProgress: 0,
+                    },
+                    recentActivity: [],
+                    selectedThreads: [],
+                    selectedMinors: [],
+                }));
+            },
         }),
         {
-            name: "gt-planner-storage",
+            name: `gt-planner-storage-${getUserId()}`,
+            // Check cookie consent before persisting
+            storage: {
+                getItem: (name: string) => {
+                    // Allow reading if necessary cookies are accepted or no consent decision made yet
+                    const consent = localStorage.getItem('gt-course-planner-cookie-consent');
+                    const settings = localStorage.getItem('gt-course-planner-cookie-settings');
+                    
+                    if (!consent || (settings && JSON.parse(settings).functional)) {
+                        return localStorage.getItem(name);
+                    }
+                    return null;
+                },
+                setItem: (name: string, value: string) => {
+                    // Only persist if functional cookies are allowed or no consent decision made
+                    const consent = localStorage.getItem('gt-course-planner-cookie-consent');
+                    const settings = localStorage.getItem('gt-course-planner-cookie-settings');
+                    
+                    if (!consent || (settings && JSON.parse(settings).functional)) {
+                        localStorage.setItem(name, value);
+                    }
+                },
+                removeItem: (name: string) => {
+                    localStorage.removeItem(name);
+                }
+            },
             partialize: (state) => ({
                 studentInfo: state.studentInfo,
                 userProfile: state.userProfile,
@@ -1195,7 +1443,24 @@ export const usePlannerStore = create<PlannerState>()(
                 academicProgress: state.academicProgress,
                 selectedThreads: state.selectedThreads,
                 selectedMinors: state.selectedMinors,
+                recentActivity: state.recentActivity,
+                // Store timestamp to track when data was last updated
+                lastUpdated: Date.now(),
+                // Store user ID to detect user changes
+                userId: getUserId(),
             }),
+            version: 1,
+            migrate: (persistedState: any, version: number) => {
+                // Handle migration from older versions
+                if (version === 0) {
+                    return {
+                        ...persistedState,
+                        lastUpdated: Date.now(),
+                        userId: getUserId(),
+                    };
+                }
+                return persistedState;
+            },
         },
     ),
 );

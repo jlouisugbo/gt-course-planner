@@ -2,7 +2,12 @@
 'use client'
 
 import PlannerGrid from '@/components/planner/PlannerGrid'
+import { AsyncErrorBoundary } from '@/components/error/AsyncErrorBoundary';
 
 export default function PlannerPage() {
-  return <PlannerGrid /> 
+  return (
+    <AsyncErrorBoundary context="planner">
+      <PlannerGrid />
+    </AsyncErrorBoundary>
+  );
 }
