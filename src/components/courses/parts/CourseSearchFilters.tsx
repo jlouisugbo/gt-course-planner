@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
+import { authService } from '@/lib/auth';
 import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -84,8 +85,16 @@ const CourseSearchFiltersComponent: React.FC<CourseSearchFiltersProps> = ({
 
         if (userError || !userRecord?.major) return;
 
-        // Get degree program requirements
-        const degreeResponse = await fetch(`/api/degree-programs?major=${encodeURIComponent(userRecord.major)}`);
+        // Get degree program requirements with authentication
+        const { data: sessionData } = await authService.getSession();
+        if (!sessionData.session?.access_token) return;
+
+        const degreeResponse = await fetch(`/api/degree-programs?major=${encodeURIComponent(userRecord.major)}&degree_type=BS`, {
+            headers: {
+                'Authorization': `Bearer ${sessionData.session.access_token}`,
+                'Content-Type': 'application/json'
+            }
+        });
         if (!degreeResponse.ok) return;
         
         const degreeData = await degreeResponse.json();

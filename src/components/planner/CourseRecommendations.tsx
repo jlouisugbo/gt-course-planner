@@ -36,6 +36,7 @@ import CourseDetailsModal from "./parts/CourseDetailsModal";
 import { FlexibleCourseCard } from "./parts/FlexibleCourseCard";
 import { usePrerequisiteValidation } from "@/hooks/usePrereqValidation";
 import { supabase } from "@/lib/supabaseClient";
+import { authService } from "@/lib/auth";
 import { useAuth } from "@/providers/AuthProvider";
 
 interface CourseRecommendationsProps {
@@ -47,7 +48,6 @@ type TabType = "program" | "recommended" | "search" | "categories";
 
 const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
     onDragStart,
-    onDragEnd,
 }) => {
     const { semesters, addCourseToSemester, removeCourseFromSemester } = usePlannerStore();
     const { user } = useAuth();
@@ -107,7 +107,20 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
                 }
 
                 // Get degree program requirements via API route
-                const response = await fetch(`/api/degree-programs?major=${encodeURIComponent(userRecord.major)}`);
+                // First get the session token for authentication
+                const { data: sessionData } = await authService.getSession();
+                if (!sessionData.session?.access_token) {
+                    setError("Authentication required. Please sign in again.");
+                    setIsLoading(false);
+                    return;
+                }
+
+                const response = await fetch(`/api/degree-programs?major=${encodeURIComponent(userRecord.major)}&degree_type=BS`, {
+                    headers: {
+                        'Authorization': `Bearer ${sessionData.session.access_token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
                 
                 if (!response.ok) {
                     console.error("No degree program found for major:", userRecord.major);
@@ -132,23 +145,30 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
                     requirements.forEach(category => {
                         if (Array.isArray(category.courses)) {
                             category.courses.forEach((course: any) => {
-                                if (course.courseType === 'regular' || course.courseType === 'flexible') {
-                                    courseCodes.push(course.code);
-                                } else if (course.courseType === 'and_group' || course.courseType === 'or_group' || course.courseType === 'AND_GROUP' || course.courseType === 'OR_GROUP') {
-                                    if (Array.isArray(course.groupCourses)) {
-                                        course.groupCourses.forEach((groupCourse: any) => {
-                                            if (groupCourse.code) {
-                                                courseCodes.push(groupCourse.code);
-                                            }
-                                        });
-                                    }
-                                } else if (course.courseType === 'selection') {
-                                    if (Array.isArray(course.selectionOptions)) {
-                                        course.selectionOptions.forEach((option: any) => {
-                                            if (option.code) {
-                                                courseCodes.push(option.code);
-                                            }
-                                        });
+                                // Handle simple string format (seeded data)
+                                if (typeof course === 'string') {
+                                    courseCodes.push(course);
+                                }
+                                // Handle complex course object format
+                                else if (typeof course === 'object' && course !== null) {
+                                    if (course.courseType === 'regular' || course.courseType === 'flexible') {
+                                        courseCodes.push(course.code);
+                                    } else if (course.courseType === 'and_group' || course.courseType === 'or_group' || course.courseType === 'AND_GROUP' || course.courseType === 'OR_GROUP') {
+                                        if (Array.isArray(course.groupCourses)) {
+                                            course.groupCourses.forEach((groupCourse: any) => {
+                                                if (groupCourse.code) {
+                                                    courseCodes.push(groupCourse.code);
+                                                }
+                                            });
+                                        }
+                                    } else if (course.courseType === 'selection') {
+                                        if (Array.isArray(course.selectionOptions)) {
+                                            course.selectionOptions.forEach((option: any) => {
+                                                if (option.code) {
+                                                    courseCodes.push(option.code);
+                                                }
+                                            });
+                                        }
                                     }
                                 }
                             });
@@ -158,7 +178,29 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
                     return [...new Set(courseCodes)]; // Remove duplicates
                 };
 
-                const courseCodesFromRequirements = extractCourseCodesFromRequirements(program.requirements);
+                // Parse requirements JSON string to array
+                let parsedRequirements;
+                try {
+                    parsedRequirements = typeof program.requirements === 'string' 
+                        ? JSON.parse(program.requirements) 
+                        : program.requirements;
+                    
+                    // Ensure parsedRequirements is an array
+                    if (!Array.isArray(parsedRequirements)) {
+                        console.error("Requirements is not an array:", parsedRequirements);
+                        setError("Invalid degree program requirements format");
+                        setIsLoading(false);
+                        return;
+                    }
+                } catch (error) {
+                    console.error("Error parsing requirements JSON:", error);
+                    setError("Error parsing degree program requirements");
+                    setIsLoading(false);
+                    return;
+                }
+
+                console.log("📋 Parsed requirements structure:", parsedRequirements);
+                const courseCodesFromRequirements = extractCourseCodesFromRequirements(parsedRequirements);
                 console.log("📚 Extracted course codes from requirements:", courseCodesFromRequirements);
 
                 // Fetch full course data from database for these codes

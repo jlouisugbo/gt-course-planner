@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Course } from '@/types/courses';
+import { authService } from '@/lib/auth';
 
 interface CoursesContextType {
   allCourses: Course[];
@@ -63,8 +64,19 @@ export const CoursesProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const batchSize = 500; // Smaller batch size
       let hasMore = true;
 
+      // Get session token for authentication
+      const { data: sessionData } = await authService.getSession();
+      if (!sessionData.session?.access_token) {
+        throw new Error('Authentication required. Please sign in again.');
+      }
+
       while (hasMore && offset < 2000) { // Limit to first 2000 courses to prevent overload
-        const response = await fetch(`/api/courses/all?limit=${batchSize}&offset=${offset}`);
+        const response = await fetch(`/api/courses/all?limit=${batchSize}&offset=${offset}`, {
+          headers: {
+            'Authorization': `Bearer ${sessionData.session.access_token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }

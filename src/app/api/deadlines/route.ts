@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { authenticateRequest } from '@/lib/auth';
+import { authenticateRequest } from '@/lib/auth-server';
 
 export async function GET(request: NextRequest) {
   // SECURITY FIX: Authenticate user before accessing GT academic deadlines
@@ -16,11 +16,11 @@ export async function GET(request: NextRequest) {
     );
   }
   try {
-    const { data: deadlines, error } = await supabaseAdmin
+    const { data: deadlines, error } = await supabaseAdmin()
       .from('deadlines')
       .select('*')
       .eq('is_active', true)
-      .order('date', { ascending: true });
+      .order('due_date', { ascending: true });
 
     if (error) {
       console.error('Database error:', error);
@@ -48,12 +48,12 @@ export async function POST(request: NextRequest) {
   try {
     const deadline = await request.json();
     
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin()
       .from('deadlines')
       .insert([{
         title: deadline.title,
         description: deadline.description,
-        date: deadline.date,
+        due_date: deadline.due_date,
         type: deadline.type,
         category: deadline.category,
         is_active: deadline.is_active ?? true

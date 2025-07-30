@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { authenticateRequest } from '@/lib/auth';
+import { authenticateRequest } from '@/lib/auth-server';
 
 export async function GET(request: NextRequest) {
     // SECURITY FIX: Authenticate user before accessing GT flexible course data

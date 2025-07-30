@@ -4,14 +4,12 @@ import { useAuth } from "@/providers/AuthProvider";
 import {
     Calendar,
     Target,
-    BookOpen,
     ArrowRight,
     GraduationCap,
     Loader2,
     Sparkles,
     TrendingUp,
     Clock,
-    Users,
 } from "lucide-react";
 import { motion } from "framer-motion";
 

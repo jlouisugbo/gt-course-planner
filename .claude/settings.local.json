@@ -25,7 +25,8 @@
       "Bash(psql:*)",
       "Bash(npx supabase:*)",
       "Bash(taskkill:*)",
-      "Bash(wmic:*)"
+      "Bash(wmic:*)",
+      "Bash(cp:*)"
     ],
     "deny": []
   }

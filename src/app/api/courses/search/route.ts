@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { authenticateRequest } from '@/lib/auth';
+import { authenticateRequest } from '@/lib/auth-server';
 
 const RESULTS_LIMIT = 50;
 
@@ -31,11 +31,11 @@ export async function GET(request: NextRequest) {
         console.log(`🔍 Searching for: "${query}"`);
         
         const allResults: any[] = [];
-        const searchType = '';
         
         // Step 1: Search by course code (most specific)
         console.log('Step 1: Searching by course code...');
         const codeResults = await searchByCode(query);
+        console.log(`📊 Code search returned: ${codeResults.length} results`);
         allResults.push(...codeResults);
         
         if (allResults.length >= RESULTS_LIMIT) {
@@ -73,13 +73,17 @@ export async function GET(request: NextRequest) {
         allResults.push(...descriptionResults);
         
         console.log(`✅ Final results: ${allResults.length} courses found`);
+        console.log(`📋 Final results sample:`, allResults.slice(0, 3).map(r => ({ code: r.code, title: r.title })));
         
-        return NextResponse.json({
+        const response = {
             data: allResults.slice(0, RESULTS_LIMIT),
             total: allResults.length,
             query,
             searchType: allResults.length > codeResults.length + titleResults.length ? 'code+title+description' : 'code+title'
-        });
+        };
+        
+        console.log(`🚀 Returning response:`, { total: response.total, dataLength: response.data.length, searchType: response.searchType });
+        return NextResponse.json(response);
 
     } catch (error) {
         console.error('🚨 Search API Error:', error);

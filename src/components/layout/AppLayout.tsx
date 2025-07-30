@@ -53,7 +53,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     const pathname = usePathname();
     {/* userRecord gives access to more detailed info than the standard user object provided
      needed in order to access info like major,graduation sem, etc*/}
-    const { user, userRecord, signOut, loading} = useAuth();
+    const { user, userRecord, signOut } = useAuth();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [isClient, setIsClient] = useState(false);
 

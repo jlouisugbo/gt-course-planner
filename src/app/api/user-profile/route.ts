@@ -13,16 +13,16 @@ export async function GET(request: NextRequest) {
         const token = authHeader.replace('Bearer ', '');
         
         // Verify the token and get user
-        const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+        const { data: { user }, error } = await supabaseAdmin().auth.getUser(token);
         
         if (error || !user) {
             return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
         }
 
         // Get user profile data
-        const { data: userRecord, error: userError } = await supabaseAdmin
+        const { data: userRecord, error: userError } = await supabaseAdmin()
             .from('users')
-            .select('major, minors, completed_courses')
+            .select('major, minors, completed_courses, degree_program_id, selected_threads, plan_settings')
             .eq('auth_id', user.id)
             .single();
 
@@ -34,7 +34,10 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
             major: userRecord.major,
             minors: userRecord.minors || [],
-            completedCourses: userRecord.completed_courses || []
+            completedCourses: userRecord.completed_courses || [],
+            degree_program_id: userRecord.degree_program_id,
+            selected_threads: userRecord.selected_threads || [],
+            plan_settings: userRecord.plan_settings || {}
         });
     } catch (error) {
         console.error('API Error:', error);

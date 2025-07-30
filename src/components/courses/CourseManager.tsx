@@ -33,6 +33,7 @@ import { usePlannerStore } from "@/hooks/usePlannerStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAllCourses } from '@/hooks/useAllCourses';
 import { useAuth } from '@/providers/AuthProvider';
+import { authService } from '@/lib/auth';
 import { supabase } from '@/lib/supabaseClient';
 import { PrereqModal } from './PrereqModal';
 import { evaluatePrerequisites } from '@/lib/prereqUtils';
@@ -117,8 +118,19 @@ const CourseManager: React.FC<CourseManagerProps> = ({
                     return;
                 }
 
-                // Get degree program requirements
-                const degreeResponse = await fetch(`/api/degree-programs?major=${encodeURIComponent(userRecord.major)}`);
+                // Get degree program requirements with authentication
+                const { data: sessionData } = await authService.getSession();
+                if (!sessionData.session?.access_token) {
+                    setIsLoadingProgram(false);
+                    return;
+                }
+
+                const degreeResponse = await fetch(`/api/degree-programs?major=${encodeURIComponent(userRecord.major)}&degree_type=BS`, {
+                    headers: {
+                        'Authorization': `Bearer ${sessionData.session.access_token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
                 if (!degreeResponse.ok) {
                     setIsLoadingProgram(false);
                     return;

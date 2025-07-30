@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Course } from '@/types/courses';
+import { authService } from '@/lib/auth';
 
 interface SearchResult {
   data: Course[];
@@ -44,7 +45,18 @@ export const useCoursePaginatedSearch = (): UseCoursePaginatedSearchReturn => {
     setHasSearched(true);
 
     try {
-      const response = await fetch(`/api/courses/search?q=${encodeURIComponent(query.trim())}`);
+      // Get session token for authentication
+      const { data: sessionData } = await authService.getSession();
+      if (!sessionData.session?.access_token) {
+        throw new Error('Authentication required. Please sign in again.');
+      }
+
+      const response = await fetch(`/api/courses/search?q=${encodeURIComponent(query.trim())}`, {
+        headers: {
+          'Authorization': `Bearer ${sessionData.session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

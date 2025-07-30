@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { authenticateRequest } from '@/lib/auth';
+import { authenticateRequest } from '@/lib/auth-server';
 
 export async function GET(request: NextRequest) {
     // SECURITY FIX: Authenticate user before accessing GT degree program data
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
         console.log(`Major name length:`, majorName.length);
         console.log(`Major name trimmed:`, majorName.trim());
 
-        const { data: program, error: programError } = await supabaseAdmin
+        const { data: program, error: programError } = await supabaseAdmin()
             .from('degree_programs')
             .select('id, name, degree_type, total_credits, requirements, footnotes')
             .eq('name', majorName.trim())
@@ -39,26 +39,26 @@ export async function GET(request: NextRequest) {
             console.log(`Looking for major:`, majorName);
             
             // Debug: Check what degree programs actually exist
-            const { data: allPrograms } = await supabaseAdmin
+            const { data: allPrograms } = await supabaseAdmin()
                 .from('degree_programs')
                 .select('id, name, degree_type, is_active');
             console.log('Available degree programs:', allPrograms);
             
             // Debug: Check specifically for Aerospace Engineering in both fields
-            const { data: nameSearch } = await supabaseAdmin
+            const { data: nameSearch } = await supabaseAdmin()
                 .from('degree_programs')
                 .select('id, name, degree_type, is_active')
                 .eq('name', 'Aerospace Engineering');
             console.log('Programs with name = "Aerospace Engineering":', nameSearch);
             
-            const { data: typeSearch } = await supabaseAdmin
+            const { data: typeSearch } = await supabaseAdmin()
                 .from('degree_programs')
                 .select('id, name, degree_type, is_active')
                 .eq('degree_type', 'BS');
             console.log('Programs with degree_type = "BS":', typeSearch);
             
             // Try case-insensitive fallback on name field with degree_type
-            const { data: fallbackProgram, error: fallbackError } = await supabaseAdmin
+            const { data: fallbackProgram, error: fallbackError } = await supabaseAdmin()
                 .from('degree_programs')
                 .select('id, name, degree_type, total_credits, requirements, footnotes')
                 .ilike('name', majorName)
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
                 console.error('Case-insensitive fallback also failed:', fallbackError);
                 
                 // Final attempt: try without is_active filter in case it's null
-                const { data: finalProgram, error: finalError } = await supabaseAdmin
+                const { data: finalProgram, error: finalError } = await supabaseAdmin()
                     .from('degree_programs')
                     .select('id, name, degree_type, total_credits, requirements, footnotes, is_active')
                     .ilike('name', majorName)

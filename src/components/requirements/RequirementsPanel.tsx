@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import { VisualDegreeProgram, VisualMinorProgram } from "@/types/requirements";
 import { RequirementSection } from "./parts/RequirementSection";
 import { supabase } from "@/lib/supabaseClient";
+import { authService } from "@/lib/auth";
 import { useAuth } from "@/providers/AuthProvider";
 import { useCompletionTracking } from "@/hooks/useCompletionTracking";
 
@@ -51,8 +52,19 @@ const RequirementsPanel: React.FC = () => {
                     return;
                 }
 
-                // Fetch degree program via API
-                const degreeResponse = await fetch(`/api/degree-programs?major=${encodeURIComponent(userRecord.major)}`);
+                // Fetch degree program via API with authentication
+                const { data: sessionData } = await authService.getSession();
+                if (!sessionData.session?.access_token) {
+                    setError("Authentication required. Please sign in again.");
+                    return;
+                }
+
+                const degreeResponse = await fetch(`/api/degree-programs?major=${encodeURIComponent(userRecord.major)}&degree_type=BS`, {
+                    headers: {
+                        'Authorization': `Bearer ${sessionData.session.access_token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
                 
                 if (!degreeResponse.ok) {
                     setError(`No degree program found for ${userRecord.major}`);

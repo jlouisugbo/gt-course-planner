@@ -1,16 +1,17 @@
 "use client";
 
 import React, { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sparkles, Search, Plus, BookOpen } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Course } from "@/types/courses";
 import { useAuth } from "@/providers/AuthProvider";
+import { authService } from "@/lib/auth";
 
 interface FlexibleCourseCardProps {
     title: string;
@@ -53,7 +54,18 @@ export const FlexibleCourseCard: React.FC<FlexibleCourseCardProps> = ({
                 params.append('userId', user.id);
             }
             
-            const response = await fetch(`/api/flexible-courses?${params}`);
+            const { data: sessionData } = await authService.getSession();
+            if (!sessionData.session?.access_token) {
+                console.error('Authentication required for flexible courses');
+                return;
+            }
+
+            const response = await fetch(`/api/flexible-courses?${params}`, {
+                headers: {
+                    'Authorization': `Bearer ${sessionData.session.access_token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
             const data = await response.json();
             
             if (response.ok) {
@@ -85,7 +97,6 @@ export const FlexibleCourseCard: React.FC<FlexibleCourseCardProps> = ({
     };
 
     // Calculate progress
-    const creditsRemaining = Math.max(0, minCredits - currentCredits);
     const isComplete = currentCredits >= minCredits;
     const progressPercentage = minCredits > 0 ? Math.min(100, (currentCredits / minCredits) * 100) : 0;
 
