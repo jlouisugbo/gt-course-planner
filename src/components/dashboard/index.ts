@@ -6,7 +6,6 @@ export { default as ChartsRow } from "./parts/ChartsRow";
 export { default as CreditDistributionChart } from "./parts/CreditDistributionChart";
 export { default as GPATrendChart } from "./parts/GPATrendChart";
 export { default as QuickActionsPanel } from "./parts/QuickActionsPanel";
-export { default as AnalyticsRow } from "./parts/AnalyticsRow";
 export { default as CourseDifficultyChart } from "./parts/CourseDifficultyChart";
 export { default as ThreadProgressChart } from "./parts/ThreadProgressChart";
 export { default as InsightsAndActivityRow } from "./parts/InsightsAndActivityRow";

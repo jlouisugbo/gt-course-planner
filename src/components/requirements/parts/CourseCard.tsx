@@ -57,7 +57,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
                         credits: courseData.credits,
                         description: courseData.description,
                         prerequisites: courseData.prerequisites,
-                        college: courseData.colleges?.name || 'Unknown College',
+                        college: (courseData.colleges as any)?.[0]?.name || 'Unknown College',
                         department: courseData.code?.split(' ')[0] || 'Unknown'
                     });
                 }

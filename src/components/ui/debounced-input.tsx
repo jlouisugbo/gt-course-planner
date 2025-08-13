@@ -48,3 +48,5 @@ export const DebouncedInput: React.FC<DebouncedInputProps> = React.memo(({
     />
   );
 });
+
+DebouncedInput.displayName = 'DebouncedInput';

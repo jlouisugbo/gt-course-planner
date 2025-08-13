@@ -1,7 +1,7 @@
 "use client";
 
-import React from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import React, { useRef } from 'react';
+import { StandardizedModal, ModalActions } from '@/components/ui/standardized-modal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -35,9 +35,11 @@ const CourseDetailsModal: React.FC<CourseDetailsModalProps> = ({
   onClose,
   onAddCourse
 }) => {
-
+  // Hooks must be called before any conditional returns
   const { semesters } = usePlannerStore();
   const { validatePrerequisites } = usePrerequisiteValidation();
+  // Focus management - hooks must be called before any conditional returns
+  const addButtonRef = useRef<HTMLButtonElement>(null);
 
   // Early return if no course provided
   if (!course || typeof course !== 'object') {
@@ -109,27 +111,20 @@ const CourseDetailsModal: React.FC<CourseDetailsModalProps> = ({
     courseOfferings.fall && 'F',
     courseOfferings.spring && 'Sp',
     courseOfferings.summer && 'Su'
-  ].filter(Boolean).join('/') || 'TBD';
+  ].filter(Boolean).join('/') || 'Varies';
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white border border-gray-200 shadow-lg rounded-lg backdrop-blur-sm">
-        <div className="bg-white rounded-lg">
-          <DialogHeader>
-            <div className="flex items-start justify-between">
-              <div>
-                <DialogTitle className="text-xl font-bold text-slate-900 flex items-center">
-                  {isBlocked && <Lock className="h-5 w-5 mr-2 text-red-600" />}
-                  {courseCode} - {courseTitle}
-                </DialogTitle>
-                <DialogDescription className="text-base mt-1 text-slate-600">
-                  {courseCredits} credits • {courseCollege}
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
+    <StandardizedModal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={`${isBlocked ? '🔒 ' : ''}${courseCode} - ${courseTitle}`}
+      description={`${courseCredits} credits • ${courseCollege}`}
+      size="lg"
+      className="bg-white"
+      initialFocus={isBlocked ? undefined : addButtonRef}
+    >
 
-          <div className="space-y-6 mt-6">
+        <div className="p-6 space-y-6">
             {/* Prerequisite Status Alert */}
             {isBlocked && (
               <Alert className="border-red-200 bg-red-50">
@@ -208,7 +203,7 @@ const CourseDetailsModal: React.FC<CourseDetailsModalProps> = ({
                             :
                           </p>
                           <div className="flex flex-wrap gap-2">
-                            {prereq.courses.map((courseCode, courseIndex) => {
+                            {prereq.courses.map((courseCode: string, courseIndex: number) => {
                               const isCompleted = completedCourses.some(
                                 c => c?.code === courseCode);
                               const isPlanned = plannedCourses.some(
@@ -272,38 +267,37 @@ const CourseDetailsModal: React.FC<CourseDetailsModalProps> = ({
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div className="flex justify-end space-x-3 pt-4 border-t border-slate-200 bg-white">
-              <Button variant="outline" onClick={handleClose} className="bg-white border-gray-300 hover:bg-gray-50">
-                Close
-              </Button>
-              <Button 
-                onClick={handleAddCourse} 
-                disabled={isBlocked || !canAdd}
-                className={cn(
-                  'flex items-center',
-                  isBlocked
-                    ? 'opacity-50 cursor-not-allowed bg-red-400 hover:bg-red-400'
-                    : 'bg-[#003057] hover:bg-[#002041] text-white'
-                )}
-              >
-                {isBlocked ? (
-                  <>
-                    <Lock className="h-4 w-4 mr-2" />
-                    Prerequisites Not Met
-                  </>
-                ) : (
-                  <>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add to Plan
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+        
+        <ModalActions>
+          <Button variant="outline" onClick={handleClose} className="bg-white border-gray-300 hover:bg-gray-50">
+            Close
+          </Button>
+          <Button 
+            ref={addButtonRef}
+            onClick={handleAddCourse} 
+            disabled={isBlocked || !canAdd}
+            className={cn(
+              'flex items-center',
+              isBlocked
+                ? 'opacity-50 cursor-not-allowed bg-red-400 hover:bg-red-400'
+                : 'bg-[#003057] hover:bg-[#002041] text-white'
+            )}
+          >
+            {isBlocked ? (
+              <>
+                <Lock className="h-4 w-4 mr-2" />
+                Prerequisites Not Met
+              </>
+            ) : (
+              <>
+                <Plus className="h-4 w-4 mr-2" />
+                Add to Plan
+              </>
+            )}
+          </Button>
+        </ModalActions>
+    </StandardizedModal>
   );
 };
 

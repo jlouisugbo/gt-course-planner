@@ -27,8 +27,14 @@ import {
     TrendingUp,
 } from "lucide-react";
 import { useDrag, useDrop } from "react-dnd";
-import { Course, PlannedCourse } from "@/types/courses";
-import { DragTypes } from "@/types/ui.types";
+import { 
+    Course, 
+    PlannedCourse, 
+    DragTypes, 
+    VisualMinorProgram, 
+    CourseRecommendationsProps,
+    TabType 
+} from "@/types";
 import { usePlannerStore } from "@/hooks/usePlannerStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -38,13 +44,6 @@ import { usePrerequisiteValidation } from "@/hooks/usePrereqValidation";
 import { supabase } from "@/lib/supabaseClient";
 import { authService } from "@/lib/auth";
 import { useAuth } from "@/providers/AuthProvider";
-
-interface CourseRecommendationsProps {
-    onDragStart?: (course: PlannedCourse) => void;
-    onDragEnd?: () => void;
-}
-
-type TabType = "program" | "recommended" | "search" | "categories";
 
 const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
     onDragStart,
@@ -96,7 +95,7 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
                 // Get user's major
                 const { data: userRecord, error: userError } = await supabase
                     .from('users')
-                    .select('major')
+                    .select('major, minors')
                     .eq('auth_id', user.id)
                     .single();
 
@@ -106,8 +105,6 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
                     return;
                 }
 
-                // Get degree program requirements via API route
-                // First get the session token for authentication
                 const { data: sessionData } = await authService.getSession();
                 if (!sessionData.session?.access_token) {
                     setError("Authentication required. Please sign in again.");
@@ -136,6 +133,31 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
                     setError(`No requirements found for ${userRecord.major}`);
                     setIsLoading(false);
                     return;
+                }
+
+                const minorPrograms: VisualMinorProgram[] = [];
+                if(userRecord.minors && Array.isArray(userRecord.minors)) {
+                    for (const minor of userRecord.minors) {
+                        try {
+                            const minorResponse = await fetch(`/api/degree-programs?major=${encodeURIComponent(minor)}&degree_type=Minor`, {
+                                headers: {
+                                    'Authorization': `Bearer ${sessionData.session.access_token}`,
+                                    'Content-Type': 'application/json'
+                                }
+                            });
+                            if(minorResponse.ok){
+                                const minorData = await minorResponse.json();
+                                minorPrograms.push({
+                                    id: minorData.id,
+                                    name: minorData.name,
+                                    requirements: Array.isArray(minorData.requirements) ? minorData.requirements : [],
+                                    footnotes: Array.isArray(minorData.footnotes) ? minorData.footnotes : []
+                                });
+                            }
+                        } catch (error) {
+                            console.error("Error fetching minor program:", error);
+                        }
+                    }
                 }
 
                 // Extract all course codes from requirements
@@ -201,14 +223,26 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
 
                 console.log("📋 Parsed requirements structure:", parsedRequirements);
                 const courseCodesFromRequirements = extractCourseCodesFromRequirements(parsedRequirements);
-                console.log("📚 Extracted course codes from requirements:", courseCodesFromRequirements);
+                
+                // Also extract courses from minor programs
+                const courseCodesFromMinors: string[] = [];
+                minorPrograms.forEach(minorProgram => {
+                    if (Array.isArray(minorProgram.requirements)) {
+                        const minorCourses = extractCourseCodesFromRequirements(minorProgram.requirements);
+                        courseCodesFromMinors.push(...minorCourses);
+                    }
+                });
+                
+                // Combine course codes from major and minors
+                const allCourseCodes = [...new Set([...courseCodesFromRequirements, ...courseCodesFromMinors])];
+                console.log("📚 Extracted course codes from requirements:", allCourseCodes);
 
                 // Fetch full course data from database for these codes
-                if (courseCodesFromRequirements.length > 0) {
+                if (allCourseCodes.length > 0) {
                     const { data: courseData, error: courseError } = await supabase
                         .from('courses')
                         .select('*')
-                        .in('code', courseCodesFromRequirements);
+                        .in('code', allCourseCodes);
 
                     if (courseError) {
                         console.error("Error fetching course data:", courseError);
@@ -537,9 +571,9 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
                     }
 
                     if (prereq.logic === "OR") {
-                        return prereq.courses.some((code) => allCompletedCourses.includes(code));
+                        return prereq.courses.some((code: string) => allCompletedCourses.includes(code));
                     } else {
-                        return prereq.courses.every((code) => allCompletedCourses.includes(code));
+                        return prereq.courses.every((code: string) => allCompletedCourses.includes(code));
                     }
                 });
             })
@@ -665,7 +699,7 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
 
         return (
             <motion.div
-                ref={drag}
+                ref={drag as any}
                 initial={{ opacity: 0, y: 2 }}
                 animate={{
                     opacity: isBlocked ? 0.6 : isDragging ? 0.5 : 1,
@@ -797,7 +831,7 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
                     <Alert className="mb-1 py-1 border-yellow-200 bg-yellow-50">
                         <AlertTriangle className="h-2 w-2 text-yellow-600" />
                         <AlertDescription className="text-xs text-yellow-700">
-                            {warnings[0].slice(0, 30)}...
+                            {String(warnings[0]).slice(0, 30)}...
                         </AlertDescription>
                     </Alert>
                 )}
@@ -869,7 +903,7 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
                     </div>
                     <div className="flex items-center space-x-2">
                         <Badge className={cn(categoryColor, "text-xs")}>
-                            {categoryCourses.length + categoryAndGroups.reduce((total, group) => total + group.courses.length, 0) + categoryFlexibleRequirements.length}
+                            {categoryCourses.length + categoryAndGroups.reduce((total: number, group: any) => total + group.courses.length, 0) + categoryFlexibleRequirements.length}
                         </Badge>
                         {isExpanded ? (
                             <ChevronUp className="h-4 w-4 text-slate-400" />
@@ -1103,7 +1137,7 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
     return (
         <>
             <Card 
-                ref={drop}
+                ref={drop as any}
                 className={cn(
                     "h-fit sticky top-6 border-slate-300 transition-colors duration-200",
                     isOver && "border-green-400 bg-green-50"

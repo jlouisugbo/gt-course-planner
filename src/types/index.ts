@@ -6,7 +6,8 @@
 export type { 
     UserProfile, 
     UserSettings, 
-    StudentInfo 
+    StudentInfo,
+    SemesterGPA
 } from './user';
 
 // =====================================================
@@ -23,6 +24,11 @@ export type {
     CourseFilters 
 } from './courses';
 
+export type {
+    CourseViewMode,
+    CourseSearchFilters  
+} from './courses-ui';
+
 // =====================================================
 // REQUIREMENTS-RELATED EXPORTS
 // =====================================================
@@ -36,7 +42,20 @@ export type {
     DegreeRequirements, 
     DegreeProgramDisplay, 
     ProgressItem, 
-    AcademicProgress 
+    AcademicProgress,
+    FootnoteRef,
+    BaseCourse,
+    RegularCourse,
+    OrGroupCourse,
+    AndGroupCourse,
+    SelectionCourse,
+    FlexibleCourse,
+    VisualCourse,
+    VisualRequirementCategory,
+    VisualDegreeProgram,
+    VisualMinorProgram,
+    DatabaseCourse,
+    EnhancedCourse
 } from './requirements';
 
 // =====================================================
@@ -75,3 +94,87 @@ export type {
     Semester, 
     DashboardData 
 } from './dashboard';
+
+// =====================================================
+// COMPONENT PROPS EXPORTS
+// =====================================================
+
+export type {
+    // Layout Components
+    AppLayoutProps,
+    
+    // Planner Components
+    CourseRecommendationsProps,
+    AcademicYearCardProps,
+    SemesterColumnsProps,
+    SemesterCardProps,
+    CourseCardProps,
+    CourseDetailsModalProps,
+    CourseCompletionModalProps,
+    FlexibleCourseCardProps,
+    InfoPopoutProps,
+    
+    // Requirements Components
+    RequirementCategoryProps,
+    RequirementSectionProps,
+    CompletableCourseCardProps,
+    CompletableGroupCardProps,
+    CourseGroupProps,
+    CourseModalProps,
+    FlexibleTextCardProps,
+    
+    // Courses Components
+    RecommendedCoursesProps,
+    CourseSearchBarProps,
+    CourseFiltersProps,
+    CourseGridProps,
+    CourseListProps,
+    
+    // New Requirements Components  
+    RequirementsCourseCardProps,
+    RequirementsCourseModalProps,
+    RequirementsCategoryProps,
+    RequirementsCategoryListProps,
+    RequirementsSearchProps,
+    
+    // Dashboard Components
+    WelcomeHeaderProps,
+    DashboardHeaderProps,
+    TimelineOverviewProps,
+    ThreadProgressChartProps,
+    ChartsRowProps,
+    DashboardDeadlinesProps,
+    StatsGridProps,
+    AIInsightsPanelProps,
+    Insight,
+    
+    // Error Components
+    ErrorBoundaryProps,
+    ErrorBoundaryState,
+    NetworkErrorFallbackProps,
+    LoadingErrorStateProps,
+    AsyncErrorBoundaryProps,
+    
+    // Legal Components
+    CookieSettings,
+    
+    // DND Components
+    DraggableProps,
+    DroppableProps,
+    
+    // UI Components
+    DebouncedInputProps,
+    ChartConfig,
+    TabType,
+    PaginationLinkProps,
+    FormFieldContextValue,
+    FormItemContextValue,
+    
+    // Carousel Types
+    CarouselApi,
+    CarouselOptions,
+    CarouselPlugin,
+    CarouselProps,
+    CarouselContextProps,
+    ChartContextProps
+} from './components';

@@ -12,8 +12,6 @@ export default function HomePage() {
     const { user, loading } = useAuth();
     const router = useRouter();
     const [mounted, setMounted] = useState(false);
-    // Add to each component to debug
-    console.log("Component render:", { user: !!user, loading, mounted });
     // Simple mounting check
     useEffect(() => {
         setMounted(true);

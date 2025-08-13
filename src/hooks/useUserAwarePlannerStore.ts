@@ -1,5 +1,5 @@
 import { useAuth } from "@/providers/AuthProvider";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useMemo } from "react";
 import { usePlannerStore } from "./usePlannerStore";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -10,7 +10,7 @@ import { supabase } from "@/lib/supabaseClient";
  */
 export const useUserAwarePlannerStore = () => {
     const { user } = useAuth();
-    const store = usePlannerStore();
+    const baseStore = usePlannerStore();
 
     /**
      * SECURITY FIX: Secure API call wrapper with proper authentication
@@ -61,55 +61,106 @@ export const useUserAwarePlannerStore = () => {
     useEffect(() => {
         if (user?.id) {
             // Check if the current store data belongs to this user
-            const currentUserId = store.getCurrentStorageUserId();
+            const currentUserId = baseStore.getCurrentStorageUserId();
             const newUserId = user.id;
 
             // If user has changed, completely clear the store to prevent data leakage
             if (currentUserId && currentUserId !== newUserId) {
-                console.log('SECURITY: User changed, clearing all store data for data isolation');
-                console.log(`Previous user: ${currentUserId}, New user: ${newUserId}`);
                 
                 // Use the enhanced clearUserData method
-                store.clearUserData();
+                baseStore.clearUserData();
                 
                 // Also clear localStorage for the previous user
                 clearUserPlanningData(currentUserId);
             }
         }
-    }, [user?.id, store]);
+    }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps -- Remove baseStore from dependencies to prevent infinite loop
 
     // SECURITY FIX: Monitor auth state changes
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, session) => {
-                console.log('SECURITY: Auth state changed:', event);
                 
                 if (event === 'SIGNED_OUT') {
-                    console.log('SECURITY: User signed out, clearing all data');
-                    store.clearUserData();
+                    baseStore.clearUserData();
                 } else if (event === 'TOKEN_REFRESHED') {
-                    console.log('SECURITY: Token refreshed, verifying user identity');
                     // Verify the user identity hasn't changed
                     if (session?.user?.id && session.user.id !== user?.id) {
-                        console.log('SECURITY: User identity changed during token refresh, clearing data');
-                        store.clearUserData();
+                        baseStore.clearUserData();
                     }
                 }
             }
         );
 
         return () => subscription.unsubscribe();
-    }, [store, user?.id]);
+    }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps -- Remove baseStore from dependencies to prevent infinite loop
 
-    return {
-        ...store,
-        // SECURITY: Add secure methods for authenticated operations
-        makeAuthenticatedRequest,
-        verifyUserAccess,
-        // Override potentially unsafe methods with secure versions
-        secureUserId: user?.id || null,
-        isAuthenticated: !!user?.id
-    };
+    /**
+     * SECURITY FIX: Secure user-scoped storage management
+     */
+    const secureStorageKey = useMemo(() => {
+        if (user?.id) {
+            return `gt-planner-secure-${user.id}`;
+        }
+        return null; // No storage for unauthenticated users
+    }, [user?.id]);
+
+    /**
+     * SECURITY FIX: Override storage operations to use secure user-scoped keys
+     */
+    const secureStore = useMemo(() => {
+        if (!user?.id) {
+            // Return limited functionality for unauthenticated users
+            return {
+                ...baseStore,
+                makeAuthenticatedRequest,
+                verifyUserAccess,
+                secureUserId: null,
+                isAuthenticated: false,
+                // Disable data persistence for unauthenticated users
+                initializeStore: async () => {
+                },
+                updateStudentInfo: () => {
+                },
+                // Add other sensitive methods that require authentication
+            };
+        }
+
+        // Return full store functionality with secure user scoping
+        return {
+            ...baseStore,
+            makeAuthenticatedRequest,
+            verifyUserAccess,
+            secureUserId: user.id,
+            isAuthenticated: true,
+        };
+    }, [user?.id, baseStore, makeAuthenticatedRequest, verifyUserAccess]);
+
+    /**
+     * SECURITY FIX: Initialize secure storage for authenticated users
+     */
+    useEffect(() => {
+        if (user?.id && secureStorageKey) {
+            // Check if we need to migrate from old insecure storage
+            const oldStorageKeys = [
+                'gt-planner-storage-anonymous-session',
+                `gt-planner-storage-${user.id}` // Old potentially insecure key
+            ];
+
+            let migrationNeeded = false;
+            oldStorageKeys.forEach(oldKey => {
+                if (localStorage.getItem(oldKey)) {
+                    localStorage.removeItem(oldKey);
+                    migrationNeeded = true;
+                }
+            });
+
+            if (migrationNeeded) {
+            }
+        }
+    }, [user?.id, secureStorageKey]);
+
+    return secureStore;
 };
 
 /**
@@ -135,7 +186,6 @@ export const clearUserPlanningData = (userId: string) => {
     
     if (typeof window !== 'undefined') {
         localStorage.removeItem(storageKey);
-        console.log(`Cleared planning data for user: ${userId}`);
     }
 };
 

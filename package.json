@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
+    "analyze": "ANALYZE=true next build",
     "start": "next start",
     "lint": "next lint",
     "crawler:setup": "cd crawler && npm install",
@@ -15,7 +16,10 @@
     "crawler:import": "ts-node lib/import-courses.ts",
     "crawler:export": "ts-node lib/export-courses.ts",
     "data:refresh": "npm run crawler:run && npm run crawler:import",
-    "data:seed": "ts-node lib/seed-sample-data.ts"
+    "data:seed": "ts-node lib/seed-sample-data.ts",
+    "security:health": "ts-node -e \"import { calculateSecurityHealthScore } from './src/lib/security/health-scoring'; calculateSecurityHealthScore().then(score => console.log('Security Health Score:', score.overall_score, 'Status:', score.trend));\"",
+    "security:monitor": "ts-node -e \"import { getSecurityMetrics } from './src/lib/security/monitoring'; getSecurityMetrics().then(metrics => console.log('Security Events (24h):', metrics.totalEvents, 'Critical:', metrics.criticalEvents));\"",
+    "security:audit": "npm run test:security && npm run security:health && npm run security:monitor"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -80,6 +84,7 @@
     "recharts": "^2.15.3",
     "sonner": "^2.0.5",
     "tailwind-merge": "^3.3.0",
+    "tailwindcss-animate": "^1.0.7",
     "uuid": "^11.1.0",
     "vaul": "^1.1.2",
     "zod": "^3.25.56",
@@ -87,7 +92,9 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
+    "@next/bundle-analyzer": "^15.3.3",
+    "@tailwindcss/postcss": "^4.1.11",
+    "@types/lodash": "^4.17.20",
     "@types/node": "^20.19.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",

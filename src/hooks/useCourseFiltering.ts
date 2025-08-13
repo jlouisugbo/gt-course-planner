@@ -77,8 +77,8 @@ export const useCourseFiltering = ({
           break;
         case 'popularity':
           // Mock popularity calculation since we don't have this data
-          const aPopularity = (a.prerequisites?.length || 0) + (5 - (a.difficulty || 3));
-          const bPopularity = (b.prerequisites?.length || 0) + (5 - (b.difficulty || 3));
+          const aPopularity = (a.prerequisites?.courses?.length || 0) + (5 - (a.difficulty || 3));
+          const bPopularity = (b.prerequisites?.courses?.length || 0) + (5 - (b.difficulty || 3));
           comparison = bPopularity - aPopularity;
           break;
       }

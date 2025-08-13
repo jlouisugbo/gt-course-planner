@@ -307,7 +307,7 @@ export const FlexibleCourseCard: React.FC<FlexibleCourseCardProps> = ({
                             {!isLoading && searchResults.length === 0 && searchTerm && (
                                 <div className="text-center py-8 text-slate-500">
                                     <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                                    <p className="text-sm">No courses found for "{searchTerm}"</p>
+                                    <p className="text-sm">No courses found for &quot;{searchTerm}&quot;</p>
                                     <p className="text-xs text-slate-400 mt-1">Try different search terms</p>
                                 </div>
                             )}

@@ -3,16 +3,13 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, BookOpen, Clock, AlertCircle, CheckCircle2, Sparkles, Calendar } from "lucide-react";
+import { Loader2, CheckCircle2, Sparkles, Calendar } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabaseClient";
 import { VisualCourse, EnhancedCourse } from "@/types/requirements";
 import { CourseModal } from "./CourseModal";
 import { cn } from "@/lib/utils";
 import { usePlannerStore } from "@/hooks/usePlannerStore";
-import { getUnlockedCourses } from "@/lib/prereqUtils";
 
 interface CompletableCourseCardProps {
     course: VisualCourse;
@@ -34,7 +31,7 @@ export const CompletableCourseCard: React.FC<CompletableCourseCardProps> = ({
     const { semesters } = usePlannerStore();
     const [enhancedCourse, setEnhancedCourse] = useState<EnhancedCourse | null>(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [, setError] = useState<string | null>(null);
     const [showModal, setShowModal] = useState(false);
 
     const isFlexible = course.courseType === 'flexible';
@@ -101,7 +98,7 @@ export const CompletableCourseCard: React.FC<CompletableCourseCardProps> = ({
                         college: 'Unknown',
                         department: course.code.split(' ')[0] // Extract department from course code
                     } as EnhancedCourse);
-                    setError(null); // Don't show as error to user
+                    // Don't show as error to user
                 } else {
                     // Merge course data with original course structure
                     setEnhancedCourse({
@@ -116,7 +113,6 @@ export const CompletableCourseCard: React.FC<CompletableCourseCardProps> = ({
                 }
             } catch (err) {
                 console.error('Error in fetchCourseDetails:', err);
-                setError('Failed to load course details');
                 setEnhancedCourse({
                     ...course,
                     credits: 3, // fallback
@@ -133,7 +129,7 @@ export const CompletableCourseCard: React.FC<CompletableCourseCardProps> = ({
             setLoading(false);
             setEnhancedCourse(course as EnhancedCourse);
         }
-    }, [course, isFlexible]);
+    }, [course.code, isFlexible, course]);
 
     const handleCardClick = () => {
         if (enhancedCourse && !loading) {
@@ -166,15 +162,6 @@ export const CompletableCourseCard: React.FC<CompletableCourseCardProps> = ({
             : 'border-yellow-200 bg-yellow-50 hover:border-yellow-300';
     };
 
-    const getBadgeColor = () => {
-        if (isCompleted) return 'bg-green-100 text-green-800';
-        if (isCourseActuallyPlanned) return 'bg-blue-100 text-blue-800';
-        if (isFlexible) return 'bg-amber-100 text-amber-800';
-        if (isOption) return 'bg-orange-100 text-orange-800';
-        return programType === 'degree' 
-            ? 'bg-slate-100 text-slate-800'
-            : 'bg-yellow-100 text-yellow-800';
-    };
 
     if (loading) {
         return (
@@ -192,21 +179,6 @@ export const CompletableCourseCard: React.FC<CompletableCourseCardProps> = ({
         );
     }
 
-    if (error && !enhancedCourse) {
-        return (
-            <Card className="py-1 border-red-200 bg-red-50">
-                <CardContent className="py-1">
-                    <div className="flex items-center space-x-2">
-                        <AlertCircle className="h-3 w-3 text-red-500" />
-                        <div>
-                            <div className="font-medium text-xs text-slate-900">{course.code}</div>
-                            <div className="text-xs text-red-600">{error}</div>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-        );
-    }
 
     if (!enhancedCourse) return null;
 

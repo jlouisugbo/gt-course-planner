@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
 import { usePlannerStore } from './usePlannerStore';
+import { createComponentLogger } from '@/lib/security/logger';
 
 export const useCompletionTracking = () => {
   const { user } = useAuth();
@@ -34,19 +35,56 @@ export const useCompletionTracking = () => {
       // completedCourses is computed from store state above
       // completedGroups remains local state for UI groups
       
-      console.log('✅ Loaded completion data from Zustand store:', {
-        completedCourses: completedCourses.size,
-        plannedCourses: plannedCourses.size,
-        groups: completedGroups.size
+      const logger = createComponentLogger('COMPLETION_TRACKING');
+      logger.debug('Loaded completion data from Zustand store', {
+        completedCount: completedCourses.size,
+        plannedCount: plannedCourses.size,
+        groupsCount: completedGroups.size
       });
       
     } catch (err) {
-      console.error('Error loading completion data:', err);
+      const logger = createComponentLogger('COMPLETION_TRACKING');
+      logger.error('Error loading completion data', err);
       setError('Error loading completion data');
     } finally {
       setIsLoading(false);
     }
   }, [user, completedCourses.size, plannedCourses.size, completedGroups.size]);
+
+  // Save completion to database
+  const saveCompletionToDatabase = useCallback(async (courseCode: string, isCompleted: boolean, grade?: string, semester?: string) => {
+    if (!user) return;
+
+    try {
+      const response = await fetch('/api/course-completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          courseCode,
+          grade: grade || 'A',
+          semester: semester || `${new Date().getFullYear()}-fall`,
+          credits: 3, // Default credits
+          status: isCompleted ? 'completed' : 'planned'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save completion to database');
+      }
+
+      const logger = createComponentLogger('COMPLETION_TRACKING');
+      logger.debug('Course completion status updated', {
+        operation: 'saveCompletionToDatabase',
+        status: isCompleted ? 'completed' : 'planned'
+      });
+    } catch (error) {
+      const logger = createComponentLogger('COMPLETION_TRACKING');
+      logger.error('Error saving completion to database', error);
+      // Continue anyway - don't let database errors break the UI
+    }
+  }, [user]);
 
   // Toggle course completion using Zustand store
   const toggleCourseCompletion = useCallback(async (courseCode: string) => {
@@ -58,14 +96,16 @@ export const useCompletionTracking = () => {
     
     if (!course) {
       // Course not in planner yet - we need to add it first
-      console.log(`Course ${courseCode} not found in planner, adding as completed`);
+      const logger = createComponentLogger('COMPLETION_TRACKING');
+      logger.debug('Course not found in planner, adding as completed');
       
       // Find the earliest available semester to add the course
       const semesters = getSafeSemesters();
       const earliestSemester = semesters.find(s => s.year <= new Date().getFullYear()) || semesters[0];
       
       if (!earliestSemester) {
-        console.warn('No semesters available to add course');
+        const logger = createComponentLogger('COMPLETION_TRACKING');
+        logger.warn('No semesters available to add course');
         return;
       }
 
@@ -74,14 +114,23 @@ export const useCompletionTracking = () => {
         id: Date.now(), // Temporary ID
         code: courseCode,
         title: `${courseCode} (From Requirements)`,
+        description: `Course ${courseCode} added from requirements tracking`,
         credits: 3, // Default credits
+        prerequisites: {} as any, // Placeholder for complex type
+        college: 'Unknown',
+        offerings: { fall: true, spring: true, summer: false },
+        difficulty: 3,
+        type: 'requirement',
         semesterId: earliestSemester.id,
         status: 'completed' as const,
-        grade: 'A'
+        grade: 'A',
+        year: earliestSemester.year,
+        season: earliestSemester.season as "Fall" | "Spring" | "Summer"
       };
 
       addCourseToSemester(newCourse);
-      console.log(`✅ Added and marked course as completed: ${courseCode}`);
+      await saveCompletionToDatabase(courseCode, true, 'A', `${earliestSemester.year}-${earliestSemester.season}`);
+      logger.debug('Added and marked course as completed');
       return;
     }
 
@@ -89,13 +138,17 @@ export const useCompletionTracking = () => {
     
     if (wasCompleted) {
       updateCourseStatus(course.id, course.semesterId, 'planned');
-      console.log(`❌ Marked course as planned: ${courseCode}`);
+      await saveCompletionToDatabase(courseCode, false);
+      const logger = createComponentLogger('COMPLETION_TRACKING');
+      logger.debug('Marked course as planned');
     } else {
       updateCourseStatus(course.id, course.semesterId, 'completed', 'A'); // Default grade
-      console.log(`✅ Marked course as completed: ${courseCode}`);
+      await saveCompletionToDatabase(courseCode, true, 'A');
+      const logger = createComponentLogger('COMPLETION_TRACKING');
+      logger.debug('Marked course as completed');
     }
     
-  }, [user]);
+  }, [user, saveCompletionToDatabase]);
 
   // Set group completion (local state only - no database persistence needed)
   const setGroupCompletion = useCallback(async (groupId: string, isSatisfied: boolean) => {
@@ -106,26 +159,33 @@ export const useCompletionTracking = () => {
     
     if (isSatisfied && !wasCompleted) {
       newCompletedGroups.add(groupId);
-      console.log(`✅ Group satisfied: ${groupId}`);
+      const logger = createComponentLogger('COMPLETION_TRACKING');
+      logger.debug('Group requirement satisfied');
     } else if (!isSatisfied && wasCompleted) {
       newCompletedGroups.delete(groupId);
-      console.log(`❌ Group unsatisfied: ${groupId}`);
+      const logger = createComponentLogger('COMPLETION_TRACKING');
+      logger.debug('Group requirement unsatisfied');
     } else {
       return; // No change needed
     }
     
     setCompletedGroups(newCompletedGroups);
-    console.log('💾 Updated completed groups in local state');
+    const logger = createComponentLogger('COMPLETION_TRACKING');
+    logger.debug('Updated completed groups in local state');
   }, [user, completedGroups]);
 
   // Preserve completed courses when major changes (now handled by Zustand persistence)
-  const preserveCompletionsOnMajorChange = useCallback(async (newMajor: string, oldMajor?: string) => {
+  const preserveCompletionsOnMajorChange = useCallback(async (_newMajor: string, _oldMajor?: string) => {
     if (!user) return;
     
     try {
       // Completion data is now preserved automatically in Zustand store
-      console.log(`🔄 Major changed from "${oldMajor}" to "${newMajor}". Completed and planned courses preserved in Zustand store.`);
-      console.log(`✅ Preserved ${completedCourses.size} completed courses, ${plannedCourses.size} planned courses, and ${completedGroups.size} completed groups`);
+      const logger = createComponentLogger('COMPLETION_TRACKING');
+      logger.info('Major changed - course data preserved', {
+        preservedCompleted: completedCourses.size,
+        preservedPlanned: plannedCourses.size,
+        preservedGroups: completedGroups.size
+      });
       
       return {
         preservedCourses: Array.from(completedCourses),
@@ -133,7 +193,8 @@ export const useCompletionTracking = () => {
         preservedGroups: Array.from(completedGroups)
       };
     } catch (error) {
-      console.error('Error preserving completions on major change:', error);
+      const logger = createComponentLogger('COMPLETION_TRACKING');
+      logger.error('Error preserving completions on major change', error);
       return {
         preservedCourses: [],
         preservedPlannedCourses: [],
@@ -148,7 +209,8 @@ export const useCompletionTracking = () => {
       ...prev,
       [requirementType]: courseCode
     }));
-    console.log(`🔗 Linked flexible course: ${courseCode} for requirement: ${requirementType}`);
+    const logger = createComponentLogger('COMPLETION_TRACKING');
+    logger.debug('Flexible course linked to requirement');
   }, []);
 
   // Get flexible course selection

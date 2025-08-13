@@ -1,8 +1,8 @@
 // CourseCompletionModal.tsx - With comprehensive safety checks
 "use client";
 
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import React, { useState, useRef } from 'react';
+import { StandardizedModal, ModalActions } from '@/components/ui/standardized-modal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -34,8 +34,22 @@ const CourseCompletionModal: React.FC<CourseCompletionModalProps> = ({
   onClose,
   onUpdateStatus
 }) => {
+  // Hooks must be called before any conditional returns
+  const [newStatus, setNewStatus] = useState<PlannedCourse['status']>(
+    course?.status || 'planned'
+  );
+  const [selectedGrade, setSelectedGrade] = useState(
+    course?.grade || ''
+  );
+  // Focus management - hooks must be called before any conditional returns
+  const statusSelectRef = useRef<HTMLButtonElement>(null);
 
-    // Safe property access with fallbacks
+  // Early return if no course provided
+  if (!course) {
+    return null;
+  }
+
+  // Safe property access with fallbacks
   const courseId = typeof course.id === 'number' ? course.id : 0;
   const courseSemesterId = typeof course.semesterId === 'number' ? course.semesterId : 0;
   const courseCode = course.code || 'Unknown';
@@ -43,15 +57,7 @@ const CourseCompletionModal: React.FC<CourseCompletionModalProps> = ({
   const courseCredits = typeof course.credits === 'number' ? course.credits : 0;
   const courseDifficulty = typeof course.difficulty === 'number' ? course.difficulty : 0;
   const courseStatus = course.status || 'planned';
-  const courseGrade = course.grade || '';
-
-  const [newStatus, setNewStatus] = useState<PlannedCourse['status']>(courseStatus);
-  const [selectedGrade, setSelectedGrade] = useState(courseGrade);
-
-  // Early return if no course provided
-  if (!course || typeof course !== 'object') {
-    return null;
-  }
+  // const courseGrade = course.grade || ''; // TODO: Use this for displaying current grade in UI
 
 
   const handleSave = () => {
@@ -118,22 +124,17 @@ const CourseCompletionModal: React.FC<CourseCompletionModalProps> = ({
   const isFormValid = newStatus !== 'completed' || selectedGrade !== '';
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md bg-white">
-        <DialogHeader>
-          <div className="flex items-start justify-between">
-            <div>
-              <DialogTitle className="text-lg font-bold text-slate-900">
-                Update Course Status
-              </DialogTitle>
-              <DialogDescription className="mt-1">
-                {courseCode} - {courseTitle}
-              </DialogDescription>
-            </div>
-          </div>
-        </DialogHeader>
+    <StandardizedModal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Update Course Status"
+      description={`${courseCode} - ${courseTitle}`}
+      size="sm"
+      className="bg-white"
+      initialFocus={statusSelectRef}
+    >
 
-        <div className="space-y-6">
+        <div className="p-6 space-y-6">
           {/* Course Info */}
           <Card className={cn("transition-colors", getStatusColor(courseStatus))}>
             <CardContent className="p-4">
@@ -163,7 +164,10 @@ const CourseCompletionModal: React.FC<CourseCompletionModalProps> = ({
                 Course Status
               </Label>
               <Select value={newStatus} onValueChange={handleStatusChange}>
-                <SelectTrigger className="mt-1">
+                <SelectTrigger 
+                  ref={statusSelectRef}
+                  className="mt-1"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="mt-1 bg-white">
@@ -245,22 +249,21 @@ const CourseCompletionModal: React.FC<CourseCompletionModalProps> = ({
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-3 pt-4 border-t border-slate-200">
-            <Button variant="outline" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleSave}
-              className="bg-[#003057] hover:bg-[#b3a369] text-white"
-              disabled={!isFormValid}
-            >
-              Update Status
-            </Button>
-          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+        
+        <ModalActions>
+          <Button variant="outline" onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSave}
+            className="bg-[#003057] hover:bg-[#b3a369] text-white"
+            disabled={!isFormValid}
+          >
+            Update Status
+          </Button>
+        </ModalActions>
+    </StandardizedModal>
   );
 };
 

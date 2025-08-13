@@ -52,6 +52,7 @@ interface PlannerState {
         fromSemester: number,
         toSemester: number,
     ) => void;
+    moveCourseToSemester: (courseId: string, targetSemesterId: number) => void;
     updateCourseGrade: (
         courseId: number,
         semesterId: number,
@@ -124,8 +125,8 @@ interface PlannerState {
         errors: string[];
     };
     
-    // User isolation methods
-    checkAndHandleUserChange: (newUserId: string) => void;
+    // User isolation methods - DEPRECATED: Use useUserAwarePlannerStore instead
+    checkAndHandleUserChange: () => void;
     getCurrentStorageUserId: () => string;
     clearUserData: () => void;
 }
@@ -171,37 +172,22 @@ const ensureSemesterIntegrity = (semester: any): semester is SemesterData => {
     );
 };
 
-// SECURITY WARNING: This function is VULNERABLE and should not be used directly
-// It relies on client-side localStorage that can be manipulated by users
-// Use useUserAwarePlannerStore instead for secure user identification
-// TODO: Remove this function once all usages are migrated to secure alternatives
-const getUserId = (): string => {
-    if (typeof window !== 'undefined') {
-        try {
-            // Try to get user from Supabase auth session
-            const supabaseAuth = localStorage.getItem('sb-localhost-auth-token');
-            if (supabaseAuth) {
-                const authData = JSON.parse(supabaseAuth);
-                if (authData?.user?.id) {
-                    return authData.user.id;
-                }
-            }
+// SECURITY FIX: REMOVED VULNERABLE getUserId() FUNCTION
+// This function has been replaced with secure server-side alternatives
+// All components should now use useUserAwarePlannerStore for secure user identification
 
-            // Fallback: try alternative auth storage patterns
-            const altAuth = localStorage.getItem('supabase.auth.token');
-            if (altAuth) {
-                const authData = JSON.parse(altAuth);
-                if (authData?.user?.id) {
-                    return authData.user.id;
-                }
-            }
-        } catch (error) {
-            console.warn('Error reading auth data for user-scoped storage:', error);
+// Secure fallback for anonymous sessions
+const getAnonymousSessionId = (): string => {
+    // Generate a random session ID for non-authenticated users
+    if (typeof window !== 'undefined') {
+        let sessionId = sessionStorage.getItem('gt-planner-anonymous-session');
+        if (!sessionId) {
+            sessionId = `anonymous-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            sessionStorage.setItem('gt-planner-anonymous-session', sessionId);
         }
+        return sessionId;
     }
-    
-    // Fallback to a session-based key if no user found
-    return 'anonymous-session';
+    return 'anonymous-fallback';
 };
 
 export const usePlannerStore = create<PlannerState>()(
@@ -297,8 +283,14 @@ export const usePlannerStore = create<PlannerState>()(
                         deadlines: deadlines || [],
                         isLoadingDeadlines: false,
                     });
-                } catch (error) {
-                    console.error("Failed to fetch deadlines:", error);
+                } catch (error: any) {
+                    const errorInfo = {
+                        message: error?.message || 'Unknown error',
+                        details: error?.details || 'No details available',
+                        stack: error?.stack || 'No stack trace',
+                        full_error: JSON.stringify(error, Object.getOwnPropertyNames(error))
+                    };
+                    console.error("Failed to fetch deadlines:", errorInfo);
                     set({ isLoadingDeadlines: false });
                 }
             },
@@ -514,7 +506,6 @@ export const usePlannerStore = create<PlannerState>()(
                     }
 
                     const majorName = userRecord.major;
-                    console.log('Fetching degree program requirements for major:', majorName);
 
                     // Query degree program by major name with college information
                     const { data: program, error: programError } = await supabase
@@ -532,15 +523,16 @@ export const usePlannerStore = create<PlannerState>()(
                         .single();
 
                     if (programError) {
-                        console.error('Error fetching degree program:', programError);
-                        console.error('Query details:', {
-                            majorName,
-                            errorCode: programError.code,
-                            errorMessage: programError.message
-                        });
+                        const errorDetails = {
+                            message: programError?.message || 'Unknown error',
+                            details: programError?.details || 'No details available',
+                            hint: programError?.hint || 'No hint provided',
+                            code: programError?.code || 'No error code',
+                            full_error: JSON.stringify(programError, Object.getOwnPropertyNames(programError))
+                        };
+                        console.error('Error fetching degree program:', errorDetails);
 
                         // Try case-insensitive fallback
-                        console.log('Trying case-insensitive fallback...');
                         const { data: fallbackProgram, error: fallbackError } = await supabase
                             .from('degree_programs')
                             .select(`
@@ -557,19 +549,9 @@ export const usePlannerStore = create<PlannerState>()(
 
                         if (fallbackError) {
                             console.error('Case-insensitive fallback also failed:', fallbackError);
-                            
-                            // Debug: Show available programs
-                            const { data: availablePrograms } = await supabase
-                                .from('degree_programs')
-                                .select('name, degree_type')
-                                .eq('is_active', true)
-                                .limit(10);
-                            
-                            console.log('Available degree programs:', availablePrograms?.map(p => `${p.name} (${p.degree_type})`));
                             return null;
                         }
 
-                        console.log('Found program via case-insensitive match:', fallbackProgram?.name);
                         
                         // Convert fallback program to visual format
                         const visualProgram: VisualDegreeProgram = {
@@ -590,7 +572,6 @@ export const usePlannerStore = create<PlannerState>()(
                         return null;
                     }
 
-                    console.log('Successfully found degree program:', program.name);
 
                     // Convert to visual program format
                     const visualProgram: VisualDegreeProgram = {
@@ -605,8 +586,12 @@ export const usePlannerStore = create<PlannerState>()(
 
                     return visualProgram;
 
-                } catch (error) {
-                    console.error('Error in fetchDegreeProgramRequirements:', error);
+                } catch (error: any) {
+                    console.error('Error in fetchDegreeProgramRequirements:', {
+                        message: error?.message || 'Unknown error',
+                        stack: error?.stack,
+                        error: error
+                    });
                     return null;
                 }
             },
@@ -634,12 +619,10 @@ export const usePlannerStore = create<PlannerState>()(
                     }
 
                     if (!userRecord?.minors || !Array.isArray(userRecord.minors) || userRecord.minors.length === 0) {
-                        console.log('User has no minors selected');
-                        return [];
+                            return [];
                     }
 
                     const minorNames = userRecord.minors;
-                    console.log('Fetching minor program requirements for minors:', minorNames);
 
                     // Query minor programs by names
                     const { data: programs, error: programError } = await supabase
@@ -670,26 +653,59 @@ export const usePlannerStore = create<PlannerState>()(
                 }
             },
 
-            updateStudentInfo: (info: Partial<StudentInfo>) => {
+            updateStudentInfo: (info: Partial<StudentInfo> | UserProfile) => {
                 set((state) => {
+                    // Handle both StudentInfo and UserProfile types
                     const updatedStudentInfo = {
                         ...state.studentInfo,
                         ...info,
+                        // Map UserProfile fields to StudentInfo if needed
+                        name: (info as any).name || state.studentInfo.name,
+                        email: (info as any).email || state.studentInfo.email,
+                        major: (info as any).major || state.studentInfo.major,
+                        threads: (info as any).threads || state.studentInfo.threads,
+                        minors: (info as any).minors || state.studentInfo.minors,
+                        expectedGraduation: (info as any).expectedGraduation || state.studentInfo.expectedGraduation,
+                        currentGPA: (info as any).currentGPA || state.studentInfo.currentGPA,
                     };
 
-                    if (info.startYear || info.expectedGraduation) {
-                        const startDate = `Fall ${info.startYear || state.studentInfo.startYear}`;
-                        const graduationDate =
-                            info.expectedGraduation ||
-                            state.studentInfo.expectedGraduation;
-
-                        if (graduationDate) {
-                            get().generateSemesters(startDate, graduationDate);
+                    // Generate semesters if we have the required data
+                    const startDate = (info as any).startDate || (info as any).startYear;
+                    const graduationDate = (info as any).expectedGraduation;
+                    
+                    if (startDate && graduationDate) {
+                        // Parse startDate to get semester and year
+                        let startSemester = 'Fall';
+                        let startYear = new Date().getFullYear();
+                        
+                        if (typeof startDate === 'string') {
+                            if (startDate.includes('Fall') || startDate.includes('Spring') || startDate.includes('Summer')) {
+                                const parts = startDate.split(' ');
+                                startSemester = parts[0];
+                                startYear = parseInt(parts[1]) || new Date().getFullYear();
+                            } else {
+                                // Try to parse as year
+                                const yearMatch = startDate.match(/\d{4}/);
+                                if (yearMatch) {
+                                    startYear = parseInt(yearMatch[0]);
+                                }
+                            }
+                        } else if (typeof startDate === 'number') {
+                            startYear = startDate;
+                        }
+                        
+                        const formattedStartDate = `${startSemester} ${startYear}`;
+                        
+                        // Generate semesters immediately without setTimeout for better performance
+                        const { semesters } = get();
+                        if (Object.keys(semesters).length === 0) {
+                            get().generateSemesters(formattedStartDate, graduationDate);
                         }
                     }
 
                     return {
                         studentInfo: updatedStudentInfo,
+                        userProfile: info as UserProfile, // Also update userProfile
                     };
                 });
             },
@@ -735,16 +751,19 @@ export const usePlannerStore = create<PlannerState>()(
                         timestamp: new Date(),
                     };
 
+                    // Use constant to prevent infinite growth
+                    const MAX_ACTIVITY_ITEMS = 10;
                     return {
                         semesters: updatedSemesters,
                         recentActivity: [
                             newActivity,
-                            ...state.recentActivity.slice(0, 9),
+                            ...state.recentActivity.slice(0, MAX_ACTIVITY_ITEMS - 1),
                         ],
                     };
                 });
 
-                setTimeout(() => get().updateSemesterGPA(course.semesterId), 0);
+                // Use batch update instead of setTimeout to prevent unnecessary re-renders
+                get().updateSemesterGPA(course.semesterId);
             },
 
             removeCourseFromSemester: (
@@ -756,6 +775,7 @@ export const usePlannerStore = create<PlannerState>()(
                     if (!semester) return state;
 
                     const safeCourses = semester.courses || [];
+                    const courseToRemove = safeCourses.find(c => c?.id === courseId);
                     const updatedCourses = safeCourses.filter(
                         (c) => c?.id !== courseId,
                     );
@@ -764,6 +784,16 @@ export const usePlannerStore = create<PlannerState>()(
                         0,
                     );
 
+                    // Add removal activity
+                    const newActivity: ActivityItem = {
+                        id: Date.now(),
+                        type: "course_added", // Using course_added as generic activity type
+                        title: `Removed ${courseToRemove?.code || 'course'} from ${semester.season} ${semester.year}`,
+                        description: courseToRemove?.title || 'Course removed',
+                        timestamp: new Date(),
+                    };
+
+                    const MAX_ACTIVITY_ITEMS = 10;
                     return {
                         semesters: {
                             ...state.semesters,
@@ -773,10 +803,15 @@ export const usePlannerStore = create<PlannerState>()(
                                 totalCredits,
                             },
                         },
+                        recentActivity: [
+                            newActivity,
+                            ...state.recentActivity.slice(0, MAX_ACTIVITY_ITEMS - 1),
+                        ],
                     };
                 });
 
-                setTimeout(() => get().updateSemesterGPA(semesterId), 0);
+                // Use batch update instead of setTimeout to prevent unnecessary re-renders
+                get().updateSemesterGPA(semesterId);
             },
 
             moveCourse: (
@@ -829,10 +864,80 @@ export const usePlannerStore = create<PlannerState>()(
                     };
                 });
 
-                setTimeout(() => {
-                    get().updateSemesterGPA(fromSemester);
-                    get().updateSemesterGPA(toSemester);
-                }, 0);
+                // Use batch updates instead of setTimeout to prevent unnecessary re-renders
+                get().updateSemesterGPA(fromSemester);
+                get().updateSemesterGPA(toSemester);
+            },
+
+            moveCourseToSemester: (courseId: string, targetSemesterId: number) => {
+                set((state) => {
+                    // Find the course in any semester
+                    let sourceSemesterId: number | null = null;
+                    let course: PlannedCourse | null = null;
+                    
+                    for (const [semId, semester] of Object.entries(state.semesters)) {
+                        const foundCourse = semester.courses?.find(c => 
+                            (c?.id?.toString() === courseId || c?.code === courseId)
+                        );
+                        if (foundCourse) {
+                            course = foundCourse;
+                            sourceSemesterId = parseInt(semId);
+                            break;
+                        }
+                    }
+                    
+                    if (!course || sourceSemesterId === null) return state;
+                    if (sourceSemesterId === targetSemesterId) return state;
+                    
+                    const sourceSem = state.semesters[sourceSemesterId];
+                    const targetSem = state.semesters[targetSemesterId];
+                    
+                    if (!sourceSem || !targetSem) return state;
+                    
+                    // Remove from source
+                    const newSourceCourses = (sourceSem.courses || []).filter(
+                        c => c?.id !== course?.id
+                    );
+                    
+                    // Add to target with updated semesterId
+                    const courseForTarget = {
+                        ...course,
+                        semesterId: targetSemesterId
+                    };
+                    const newTargetCourses = [...(targetSem.courses || []), courseForTarget];
+                    
+                    return {
+                        semesters: {
+                            ...state.semesters,
+                            [sourceSemesterId]: {
+                                ...sourceSem,
+                                courses: newSourceCourses,
+                                totalCredits: newSourceCourses.reduce(
+                                    (sum, c) => sum + (c?.credits || 0),
+                                    0,
+                                ),
+                            },
+                            [targetSemesterId]: {
+                                ...targetSem,
+                                courses: newTargetCourses,
+                                totalCredits: newTargetCourses.reduce(
+                                    (sum, c) => sum + (c?.credits || 0),
+                                    0,
+                                ),
+                            },
+                        },
+                    };
+                });
+                
+                // Update GPAs for both semesters
+                const state = get();
+                const sourceSem = Object.entries(state.semesters).find(([_, sem]) => 
+                    sem.courses?.some(c => c?.id?.toString() === courseId || c?.code === courseId)
+                );
+                if (sourceSem) {
+                    get().updateSemesterGPA(parseInt(sourceSem[0]));
+                }
+                get().updateSemesterGPA(targetSemesterId);
             },
 
             updateCourseGrade: (
@@ -860,7 +965,8 @@ export const usePlannerStore = create<PlannerState>()(
                     };
                 });
 
-                setTimeout(() => get().updateSemesterGPA(semesterId), 0);
+                // Use batch update instead of setTimeout to prevent unnecessary re-renders
+                get().updateSemesterGPA(semesterId);
             },
 
             updateCourseStatus: (
@@ -895,6 +1001,7 @@ export const usePlannerStore = create<PlannerState>()(
                         timestamp: new Date(),
                     };
 
+                    const MAX_ACTIVITY_ITEMS = 10;
                     return {
                         semesters: {
                             ...state.semesters,
@@ -905,12 +1012,13 @@ export const usePlannerStore = create<PlannerState>()(
                         },
                         recentActivity: [
                             newActivity,
-                            ...state.recentActivity.slice(0, 9),
+                            ...state.recentActivity.slice(0, MAX_ACTIVITY_ITEMS - 1),
                         ],
                     };
                 });
 
-                setTimeout(() => get().updateSemesterGPA(semesterId), 0);
+                // Use batch update instead of setTimeout to prevent unnecessary re-renders
+                get().updateSemesterGPA(semesterId);
             },
 
             setSelectedSemester: (semesterId: number | null) => {
@@ -1038,16 +1146,22 @@ export const usePlannerStore = create<PlannerState>()(
             },
 
             addActivity: (activity: Omit<ActivityItem, "id" | "timestamp">) => {
-                set((state) => ({
-                    recentActivity: [
-                        {
-                            ...activity,
-                            id: Date.now(),
-                            timestamp: new Date(),
-                        },
-                        ...state.recentActivity.slice(0, 9),
-                    ],
-                }));
+                set((state) => {
+                    // Limit recent activity to maximum 10 items to prevent memory leaks
+                    const MAX_ACTIVITY_ITEMS = 10;
+                    const newActivity = {
+                        ...activity,
+                        id: Date.now(),
+                        timestamp: new Date(),
+                    };
+                    
+                    return {
+                        recentActivity: [
+                            newActivity,
+                            ...state.recentActivity.slice(0, MAX_ACTIVITY_ITEMS - 1),
+                        ],
+                    };
+                });
             },
 
             updateStudentThreads: async (threads: number[]) => {
@@ -1225,7 +1339,6 @@ export const usePlannerStore = create<PlannerState>()(
 
                     // Safety break to prevent infinite loops
                     if (semesterCount > 25) {
-                        console.warn("Semester generation stopped after 25 semesters to prevent infinite loop");
                         break;
                     }
                 }
@@ -1358,19 +1471,15 @@ export const usePlannerStore = create<PlannerState>()(
                 };
             },
 
-            // User isolation methods
-            checkAndHandleUserChange: (newUserId: string) => {
-                const state = get();
-                const currentUserId = state.studentInfo?.email || getUserId();
-                
-                if (currentUserId && currentUserId !== newUserId) {
-                    console.log('User changed detected, clearing planning data for data isolation');
-                    get().clearUserData();
-                }
+            // User isolation methods - SECURITY FIX: These methods are now deprecated
+            // Components should use useUserAwarePlannerStore instead
+            checkAndHandleUserChange: () => {
+                // For backward compatibility, still clear data if somehow called
+                get().clearUserData();
             },
 
             getCurrentStorageUserId: () => {
-                return getUserId();
+                return getAnonymousSessionId();
             },
 
             clearUserData: () => {
@@ -1410,45 +1519,71 @@ export const usePlannerStore = create<PlannerState>()(
             },
         }),
         {
-            name: `gt-planner-storage-${getUserId()}`,
+            name: `gt-planner-storage-${getAnonymousSessionId()}`,
             // Check cookie consent before persisting
             storage: {
-                getItem: (name: string) => {
+                getItem: async (name: string) => {
                     // Allow reading if necessary cookies are accepted or no consent decision made yet
                     const consent = localStorage.getItem('gt-course-planner-cookie-consent');
                     const settings = localStorage.getItem('gt-course-planner-cookie-settings');
                     
                     if (!consent || (settings && JSON.parse(settings).functional)) {
-                        return localStorage.getItem(name);
+                        const value = localStorage.getItem(name);
+                        return value ? JSON.parse(value) : null;
                     }
                     return null;
                 },
-                setItem: (name: string, value: string) => {
+                setItem: async (name: string, value: any) => {
                     // Only persist if functional cookies are allowed or no consent decision made
                     const consent = localStorage.getItem('gt-course-planner-cookie-consent');
                     const settings = localStorage.getItem('gt-course-planner-cookie-settings');
                     
                     if (!consent || (settings && JSON.parse(settings).functional)) {
-                        localStorage.setItem(name, value);
+                        localStorage.setItem(name, JSON.stringify(value));
                     }
                 },
-                removeItem: (name: string) => {
+                removeItem: async (name: string) => {
                     localStorage.removeItem(name);
                 }
             },
-            partialize: (state) => ({
-                studentInfo: state.studentInfo,
-                userProfile: state.userProfile,
-                semesters: state.semesters,
-                academicProgress: state.academicProgress,
-                selectedThreads: state.selectedThreads,
-                selectedMinors: state.selectedMinors,
-                recentActivity: state.recentActivity,
-                // Store timestamp to track when data was last updated
-                lastUpdated: Date.now(),
-                // Store user ID to detect user changes
-                userId: getUserId(),
-            }),
+            partialize: (state) => {
+                // Calculate storage size and implement cleanup if needed
+                const dataToStore = {
+                    studentInfo: state.studentInfo,
+                    userProfile: state.userProfile,
+                    semesters: state.semesters,
+                    academicProgress: state.academicProgress,
+                    selectedThreads: state.selectedThreads,
+                    selectedMinors: state.selectedMinors,
+                    // Limit recent activity to prevent localStorage bloat
+                    recentActivity: state.recentActivity.slice(0, 10),
+                    // Store timestamp to track when data was last updated
+                    lastUpdated: Date.now(),
+                    // Store session ID for anonymous users only
+                    sessionId: getAnonymousSessionId(),
+                };
+                
+                // Estimate storage size (rough calculation)
+                const storageSize = JSON.stringify(dataToStore).length;
+                const MAX_STORAGE_SIZE = 5 * 1024 * 1024; // 5MB limit
+                
+                if (storageSize > MAX_STORAGE_SIZE) {
+                    console.warn('Planner data exceeds storage limit, reducing data size');
+                    // Reduce data size by removing older activity and limiting semesters
+                    return {
+                        ...dataToStore,
+                        recentActivity: state.recentActivity.slice(0, 5),
+                        // Keep only active semesters if storage is too large
+                        semesters: Object.fromEntries(
+                            Object.entries(state.semesters)
+                                .filter(([_, sem]) => (sem.courses || []).length > 0)
+                                .slice(0, 20) // Limit to 20 semesters
+                        ),
+                    };
+                }
+                
+                return dataToStore;
+            },
             version: 1,
             migrate: (persistedState: any, version: number) => {
                 // Handle migration from older versions
@@ -1456,7 +1591,7 @@ export const usePlannerStore = create<PlannerState>()(
                     return {
                         ...persistedState,
                         lastUpdated: Date.now(),
-                        userId: getUserId(),
+                        sessionId: getAnonymousSessionId(),
                     };
                 }
                 return persistedState;

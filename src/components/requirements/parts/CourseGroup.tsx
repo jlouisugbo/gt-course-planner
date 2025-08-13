@@ -68,7 +68,7 @@ export const CourseGroup: React.FC<CourseGroupProps> = ({
                     </div>
                     <div className="flex items-center space-x-2">
                         <Badge className={`${badgeBg} ${badgeText} border-0`}>
-                            {course.groupCourses.length} options
+                            {course.groupCourses?.length || 0} options
                         </Badge>
                         <Badge variant="outline">OR Group</Badge>
                     </div>
@@ -88,7 +88,7 @@ export const CourseGroup: React.FC<CourseGroupProps> = ({
                     </div>
                     <div className="flex items-center space-x-2">
                         <Badge className={`${badgeBg} ${badgeText} border-0`}>
-                            {course.groupCourses.length} required
+                            {course.groupCourses?.length || 0} required
                         </Badge>
                         <Badge variant="outline">AND Group</Badge>
                     </div>
@@ -166,12 +166,12 @@ export const CourseGroup: React.FC<CourseGroupProps> = ({
                             >
                                 <CardContent className="pt-0">
                                     <div className="space-y-3">
-                                        {courses.length === 0 ? (
+                                        {courses?.length === 0 ? (
                                             <div className="text-center py-6 text-slate-500">
                                                 <p>No courses available in this group</p>
                                             </div>
                                         ) : (
-                                            courses.map((groupCourse, index) => (
+                                            courses?.map((groupCourse, index) => (
                                                 <motion.div
                                                     key={`${groupCourse.code}-${index}`}
                                                     initial={{ opacity: 0, x: -20 }}
@@ -221,7 +221,7 @@ export const CourseGroup: React.FC<CourseGroupProps> = ({
                                                 }
                                             </span>
                                             <Badge variant="outline" className="text-xs">
-                                                {courses.length} total options
+                                                {courses?.length || 0} total options
                                             </Badge>
                                         </div>
                                     </div>

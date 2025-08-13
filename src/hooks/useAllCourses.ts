@@ -178,7 +178,7 @@ export const useAllCourses = (filters: CourseFilters = {}): UseAllCoursesResult 
                 abortControllerRef.current.abort();
             }
         };
-    }, [filters.search, filters.subject]); // Only refetch when filters actually change
+    }, [fetchCourses, filters.search, filters.subject]); // Only refetch when filters actually change
 
     return {
         courses: allCourses,

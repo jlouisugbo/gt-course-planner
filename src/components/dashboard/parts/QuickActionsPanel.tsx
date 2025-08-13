@@ -49,10 +49,10 @@ const QuickActionsPanel = ({ delay = 0 }: QuickActionsPanelProps) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay }}
         >
-            <Card className="border-slate-300">
+            <Card className="border-l-4 border-l-[#B3A369]/20">
                 <CardHeader>
-                    <CardTitle className="flex items-center">
-                        <Zap className="h-5 w-5 mr-2" />
+                    <CardTitle className="flex items-center text-[#003057]">
+                        <Zap className="h-5 w-5 mr-2 text-[#B3A369]" />
                         Quick Actions
                     </CardTitle>
                     <CardDescription>Common planning tasks</CardDescription>

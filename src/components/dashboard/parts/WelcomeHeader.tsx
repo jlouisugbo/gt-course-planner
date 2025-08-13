@@ -1,7 +1,7 @@
-// WelcomeHeader.tsx - With safety checks
+// WelcomeHeader.tsx - With safety checks and performance optimizations
 "use client";
 
-import React from "react";
+import React, { memo, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,19 +22,30 @@ interface WelcomeHeaderProps {
     } | null;
 }
 
-const WelcomeHeader = ({ data }: WelcomeHeaderProps) => {
-    // Safe data extraction with fallbacks
-    const safeData = data || {};
-    const studentInfo = safeData.studentInfo || {};
-    const progressPercentage = typeof safeData.progressPercentage === 'number' ? safeData.progressPercentage : 0;
-    const academicProgress = safeData.academicProgress || {};
+const WelcomeHeader = memo<WelcomeHeaderProps>(({ data }) => {
+    // Memoized safe data extraction with fallbacks for better performance
+    const { firstName, major, expectedGraduation, currentGPA, progressPercentage, roundedProgress } = useMemo(() => {
+        const safeData = data || {};
+        const studentInfo = safeData.studentInfo || {};
+        const progressPct = typeof safeData.progressPercentage === 'number' ? safeData.progressPercentage : 0;
+        const academicProgress = safeData.academicProgress || {};
 
-    // Safe property access with fallbacks
-    const studentName = studentInfo.name || "Student";
-    const firstName = studentName.split(" ")[0] || "Student";
-    const major = studentInfo.major || "Undeclared";
-    const expectedGraduation = studentInfo.expectedGraduation || "TBD";
-    const currentGPA = typeof academicProgress.currentGPA === 'number' ? academicProgress.currentGPA : 0;
+        const studentName = studentInfo.name || "Student";
+        const firstName = studentName.split(" ")[0] || "Student";
+        const major = studentInfo.major || "Undeclared";
+        const expectedGraduation = studentInfo.expectedGraduation || "Spring 2026"; // Default instead of TBD
+        const currentGPA = typeof academicProgress.currentGPA === 'number' ? academicProgress.currentGPA : 0;
+        const roundedProgress = Math.round(progressPct);
+        
+        return {
+            firstName,
+            major,
+            expectedGraduation,
+            currentGPA,
+            progressPercentage: progressPct,
+            roundedProgress
+        };
+    }, [data]);
 
     return (
         <motion.div
@@ -42,27 +53,27 @@ const WelcomeHeader = ({ data }: WelcomeHeaderProps) => {
             animate={{ opacity: 1, y: 0 }}
             className="relative overflow-hidden"
         >
-            <Card className="gt-gradient text-white border-0 shadow-xl">
+            <Card className="bg-gt-gradient text-white border-0 shadow-lg">
                 <CardContent className="p-8">
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-                        <div className="space-y-2">
-                            <h1 className="text-4xl font-bold">
+                        <div className="space-y-3">
+                            <h1 className="text-3xl lg:text-4xl font-bold">
                                 Welcome back, {firstName}! 👋
                             </h1>
-                            <p className="text-xl opacity-90">
+                            <p className="text-lg lg:text-xl text-white/90">
                                 {major} • Expected Graduation: {expectedGraduation}
                             </p>
-                            <div className="flex items-center space-x-4 mt-4">
+                            <div className="flex flex-wrap items-center gap-3 mt-4">
                                 <Badge
                                     variant="secondary"
-                                    className="bg-white/20 text-white border-white/30"
+                                    className="bg-white/20 text-white border-white/20 backdrop-blur-sm"
                                 >
                                     <Target className="w-3 h-3 mr-1" />
-                                    {Math.round(progressPercentage)}% Complete
+                                    {roundedProgress}% Complete
                                 </Badge>
                                 <Badge
                                     variant="secondary"
-                                    className="bg-white/20 text-white border-white/30"
+                                    className="bg-white/20 text-white border-white/20 backdrop-blur-sm"
                                 >
                                     <Award className="w-3 h-3 mr-1" />
                                     {currentGPA.toFixed(2)} GPA
@@ -70,13 +81,13 @@ const WelcomeHeader = ({ data }: WelcomeHeaderProps) => {
                             </div>
                         </div>
                         <div className="mt-6 lg:mt-0 text-center lg:text-right">
-                            <div className="text-5xl font-bold mb-2">
-                                {Math.round(progressPercentage)}%
+                            <div className="text-4xl lg:text-5xl font-bold mb-2">
+                                {roundedProgress}%
                             </div>
-                            <div className="text-lg opacity-90">Degree Progress</div>
+                            <div className="text-base lg:text-lg text-white/90 mb-3">Degree Progress</div>
                             <Progress
                                 value={Math.min(progressPercentage, 100)}
-                                className="mt-3 h-3 bg-white/20"
+                                className="h-3 bg-white/20"
                             />
                         </div>
                     </div>
@@ -84,6 +95,8 @@ const WelcomeHeader = ({ data }: WelcomeHeaderProps) => {
             </Card>
         </motion.div>
     );
-};
+});
+
+WelcomeHeader.displayName = 'WelcomeHeader';
 
 export default WelcomeHeader;

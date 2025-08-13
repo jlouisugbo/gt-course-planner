@@ -4,12 +4,26 @@ export interface Course {
     title: string;
     description: string;
     credits: number;
-    prerequisites: any; // JSON structure from database
-    postrequisites?: any; // JSON structure from database  
-    college: string;
+    prerequisites: PrerequisiteStructure; // More specific type
+    college: string; // College name (from college table or legacy field)
     offerings: SemesterOffering;
     difficulty: number;
-    type: string; // e.g., "core", "elective", "major"
+    course_type: string; // Course type field used in filtering (aligned with database)
+    department: string; // Department field extracted from course code
+}
+
+// Better type for prerequisites/postrequisites JSON structure
+export interface PrerequisiteStructure {
+    type?: "AND" | "OR";
+    courses?: string[];
+    conditions?: PrerequisiteCondition[];
+    nested?: PrerequisiteStructure[];
+}
+
+export interface PrerequisiteCondition {
+    type: "course" | "gpa" | "credit" | "classification";
+    value: string | number;
+    operator?: ">" | ">=" | "<" | "<=" | "=";
 }
 
 export interface Prerequisite {
@@ -55,6 +69,7 @@ export interface SemesterData {
     totalCredits: number;
     maxCredits: number;
     isActive: boolean;
+    isCompleted: boolean; // Computed field indicating if semester is completed
     gpa: number;
 }
 

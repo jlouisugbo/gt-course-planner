@@ -1,16 +1,15 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { VisualRequirementCategory, VisualCourse } from "@/types/requirements";
 import { CourseCard } from "./CourseCard";
 import { CourseGroup } from "./CourseGroup";
 import { FlexibleCourseCard } from "./FlexibleCourseCard";
 import { CompletableCourseCard } from "./CompletableCourseCard";
 import { CompletableGroupCard } from "./CompletableGroupCard";
-import { FlexibleTextCard } from "./FlexibleTextCard";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface RequirementCategoryProps {
@@ -33,10 +32,17 @@ export const RequirementCategory: React.FC<RequirementCategoryProps> = ({
     onGroupCompletion
 }) => {
     const [isExpanded, setIsExpanded] = useState(true); // Start expanded by default
-    // Function to check if a group is satisfied
-    const isGroupSatisfied = (course: VisualCourse): boolean => {
+    
+    // Combined function to check if a course/group is satisfied (handles recursion properly)
+    const isCourseSatisfied: (course: VisualCourse) => boolean = useCallback((course: VisualCourse): boolean => {
         if (!completedCourses) return false;
         
+        // Handle regular and flexible courses
+        if (course.courseType === 'regular' || course.courseType === 'flexible') {
+            return completedCourses.has(course.code);
+        }
+        
+        // Handle group courses  
         if (course.courseType === 'and_group') {
             // For AND groups, all nested courses must be completed
             return course.groupCourses?.every(subCourse => 
@@ -54,19 +60,12 @@ export const RequirementCategory: React.FC<RequirementCategoryProps> = ({
             ).length || 0;
             return satisfiedCount >= (course.selectionCount || 1);
         }
-        return false;
-    };
-
-    // Function to check if a course/group is satisfied (recursive for nested groups)
-    const isCourseSatisfied = (course: VisualCourse): boolean => {
-        if (!completedCourses) return false;
         
-        if (course.courseType === 'regular' || course.courseType === 'flexible') {
-            return completedCourses.has(course.code);
-        } else {
-            return isGroupSatisfied(course);
-        }
-    };
+        return false;
+    }, [completedCourses]);
+
+    // Alias for the same function to avoid circular dependency issues
+    const isGroupSatisfied = isCourseSatisfied;
 
     const hasCompletionTracking = completedCourses && onCourseToggle;
     
@@ -87,7 +86,7 @@ export const RequirementCategory: React.FC<RequirementCategoryProps> = ({
                 onGroupCompletion(groupId, satisfied);
             }
         });
-    }, [completedCourses, completedGroups, category.courses, onGroupCompletion]);
+    }, [completedCourses, completedGroups, category.courses, onGroupCompletion, isGroupSatisfied]);
     
     const renderCourse = (course: VisualCourse, index: number) => {
         // Handle different course types - use completable versions if completion tracking is enabled

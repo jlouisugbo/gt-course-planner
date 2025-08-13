@@ -4,14 +4,13 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Sparkles, CheckCircle2, FileText } from "lucide-react";
+import { Sparkles, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface FlexibleTextCardProps {
     text: string;
     code?: string;
-    programType: 'degree' | 'minor';
     isCompleted?: boolean;
     onToggleComplete?: (identifier: string) => void;
 }
@@ -19,7 +18,6 @@ interface FlexibleTextCardProps {
 export const FlexibleTextCard: React.FC<FlexibleTextCardProps> = ({ 
     text,
     code,
-    programType, 
     isCompleted = false,
     onToggleComplete
 }) => {
@@ -40,10 +38,6 @@ export const FlexibleTextCard: React.FC<FlexibleTextCardProps> = ({
         return 'border-amber-200 bg-amber-50 hover:border-amber-300';
     };
 
-    const getBadgeColor = () => {
-        if (isCompleted) return 'bg-green-100 text-green-800';
-        return 'bg-amber-100 text-amber-800';
-    };
 
     return (
         <motion.div

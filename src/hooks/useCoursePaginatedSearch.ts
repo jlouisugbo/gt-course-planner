@@ -34,6 +34,13 @@ export const useCoursePaginatedSearch = (): UseCoursePaginatedSearchReturn => {
     searchType: ''
   });
 
+  const clearSearch = useCallback(() => {
+    setCourses([]);
+    setError(null);
+    setHasSearched(false);
+    setSearchInfo({ query: '', total: 0, searchType: '' });
+  }, []);
+
   const searchCourses = useCallback(async (query: string) => {
     if (!query.trim()) {
       clearSearch();
@@ -81,14 +88,7 @@ export const useCoursePaginatedSearch = (): UseCoursePaginatedSearchReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
-
-  const clearSearch = useCallback(() => {
-    setCourses([]);
-    setError(null);
-    setHasSearched(false);
-    setSearchInfo({ query: '', total: 0, searchType: '' });
-  }, []);
+  }, [clearSearch]);
 
   return {
     courses,

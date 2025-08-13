@@ -1,305 +1,433 @@
+/**
+ * Enhanced Academic Program Setup Step
+ * Major, threads, and minors selection with real-time validation
+ */
 
-import React, { useCallback } from "react";
+"use client";
+
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { GraduationCap, Plus } from "lucide-react";
-import { UserProfile } from "@/types";
-import { CS_THREADS, COE_THREADS, CM_THREADS, getAllMajors, getAllMinors } from "@/lib/constants";
-import { useCompletionTracking } from "@/hooks/useCompletionTracking";
+import { GraduationCap, Plus, X, BookOpen, Award } from "lucide-react";
+import { FormError, FormLoadingSpinner } from "@/components/ui/form-validation";
+import { ExtendedProfileData } from "@/hooks/useProfileSetup";
+import { supabase } from "@/lib/supabaseClient";
 
 interface AcademicProgramSetupProps {
-  profile: Partial<UserProfile>;
-  setProfile: React.Dispatch<React.SetStateAction<Partial<UserProfile>>>;
+  profile: Partial<ExtendedProfileData>;
+  updateProfile: <K extends keyof ExtendedProfileData>(field: K, value: ExtendedProfileData[K]) => void;
   errors: Record<string, string>;
 }
 
 export const AcademicProgramSetup: React.FC<AcademicProgramSetupProps> = ({
   profile,
-  setProfile,
-  errors
+  updateProfile,
+  errors,
 }) => {
-  const MAJORS = getAllMajors();
-  const MINORS = getAllMinors();
-  const { preserveCompletionsOnMajorChange } = useCompletionTracking();
+  const [availableMajors, setAvailableMajors] = useState<string[]>([]);
+  const [availableThreads, setAvailableThreads] = useState<string[]>([]);
+  const [availableMinors, setAvailableMinors] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [newThread, setNewThread] = useState('');
+  const [newMinor, setNewMinor] = useState('');
 
-  const getAvailableThreads = useCallback((major: string): string[] => {
-    switch (major) {
-      case "Computer Science":
-        return Array.isArray(CS_THREADS) ? CS_THREADS : [];
-      case "Computer Engineering":
-      case "Computer Engineering (Dual BS)":
-        return Array.isArray(COE_THREADS) ? COE_THREADS : [];
-      case "Computational Media":
-        return Array.isArray(CM_THREADS) ? CM_THREADS : [];
-      default:
-        return [];
-    }
+  // Load available programs from database
+  useEffect(() => {
+    const loadPrograms = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Get all degree programs
+        const { data: programs, error } = await supabase
+          .from('degree_programs')
+          .select('name, degree_type')
+          .eq('is_active', true)
+          .order('name');
+
+        if (error) throw error;
+
+        const majors = programs
+          ?.filter(p => p.degree_type === 'BS' || p.degree_type === 'Major')
+          .map(p => p.name) || [];
+          
+        const threads = programs
+          ?.filter(p => p.degree_type === 'Thread')
+          .map(p => p.name) || [];
+          
+        const minors = programs
+          ?.filter(p => p.degree_type === 'Minor')
+          .map(p => p.name) || [];
+
+        setAvailableMajors(majors);
+        setAvailableThreads(threads);
+        setAvailableMinors(minors);
+        
+        console.log('Loaded programs from database:', { majors: majors.length, threads: threads.length, minors: minors.length });
+        
+      } catch (error) {
+        console.error('Error loading programs:', error);
+        // Set comprehensive fallback data
+        setAvailableMajors([
+          'Computer Science',
+          'Computer Engineering', 
+          'Electrical Engineering',
+          'Mechanical Engineering',
+          'Industrial Engineering',
+          'Aerospace Engineering',
+          'Biomedical Engineering',
+          'Chemical Engineering',
+          'Civil Engineering',
+          'Materials Science and Engineering',
+          'Nuclear Engineering'
+        ]);
+        setAvailableThreads([
+          'Intelligence',
+          'Theory',
+          'Systems & Architecture', 
+          'People',
+          'Information Internetworks',
+          'Media',
+          'Modeling & Simulation',
+          'Devices'
+        ]);
+        setAvailableMinors([
+          'Mathematics',
+          'Business',
+          'Psychology',
+          'Physics',
+          'Chemistry',
+          'Biology',
+          'History',
+          'Literature',
+          'Economics',
+          'Philosophy'
+        ]);
+        console.log('Using fallback program data due to database error');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadPrograms();
   }, []);
 
-  const handleThreadToggle = useCallback((thread: string) => {
-    setProfile(prev => {
-      const currentThreads = prev.threads || [];
-      if (currentThreads.includes(thread)) {
-        return {
-          ...prev,
-          threads: currentThreads.filter((t) => t !== thread),
-        };
-      } else if (currentThreads.length < 2) {
-        return {
-          ...prev,
-          threads: [...currentThreads, thread],
-        };
-      }
-      return prev;
-    });
-  }, [setProfile]);
+  const addThread = () => {
+    if (newThread && !profile.threads?.includes(newThread)) {
+      const updatedThreads = [...(profile.threads || []), newThread];
+      updateProfile('threads', updatedThreads);
+      setNewThread('');
+    }
+  };
 
-  const handleMinorToggle = useCallback((minor: string) => {
-    setProfile(prev => {
-      const currentMinors = prev.minors || [];
-      if (currentMinors.includes(minor)) {
-        return {
-          ...prev,
-          minors: currentMinors.filter((m) => m !== minor),
-        };
-      } else if (currentMinors.length < 2) {
-        return {
-          ...prev,
-          minors: [...currentMinors, minor],
-        };
-      }
-      return prev;
-    });
-  }, [setProfile]);
+  const removeThread = (threadToRemove: string) => {
+    const updatedThreads = profile.threads?.filter(t => t !== threadToRemove) || [];
+    updateProfile('threads', updatedThreads);
+  };
 
-  const handleDoubleMajorToggle = useCallback((checked: boolean) => {
-    setProfile(prev => ({
-      ...prev,
-      isDoubleMajor: checked,
-      secondMajor: checked ? prev.secondMajor || "" : "",
-      threads: [],
-      minors: [],
-    }));
-  }, [setProfile]);
+  const addMinor = () => {
+    if (newMinor && !profile.minors?.includes(newMinor)) {
+      const updatedMinors = [...(profile.minors || []), newMinor];
+      updateProfile('minors', updatedMinors);
+      setNewMinor('');
+    }
+  };
+
+  const removeMinor = (minorToRemove: string) => {
+    const updatedMinors = profile.minors?.filter(m => m !== minorToRemove) || [];
+    updateProfile('minors', updatedMinors);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="flex items-center gap-2">
+          <FormLoadingSpinner size="md" />
+          <span className="text-muted-foreground">Loading programs...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Debug logging
+  console.log('AcademicProgramSetup render:', {
+    availableMajors: availableMajors.length,
+    availableThreads: availableThreads.length,
+    availableMinors: availableMinors.length,
+    profileMajor: profile.major,
+    profileThreads: profile.threads,
+    profileMinors: profile.minors
+  });
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      className="space-y-6"
-    >
-      <div className="flex items-center space-x-2 mb-4">
-        <GraduationCap className="h-5 w-5 text-[#B3A369]" />
-        <h3 className="text-lg font-semibold">Academic Program</h3>
-      </div>
-
-      {/* Double Major Toggle */}
-      <div className="flex items-center space-x-2 p-4 bg-slate-50 rounded-lg">
-        <Checkbox
-          checked={profile.isDoubleMajor || false}
-          onCheckedChange={handleDoubleMajorToggle}
-        />
-        <Label className="flex items-center space-x-2">
-          <Plus className="h-4 w-4" />
-          <span>I am pursuing a double major</span>
-        </Label>
-      </div>
-
+    <div className="space-y-3">
       {/* Major Selection */}
-      <div>
-        <Label htmlFor="major">
-          {profile.isDoubleMajor ? "Primary Major *" : "Major *"}
-        </Label>
-        <Select
-          value={profile.major || ""}
-          onValueChange={async (value) => {
-            const oldMajor = profile.major;
-            
-            // Preserve completion data when major changes
-            if (oldMajor && oldMajor !== value) {
-              await preserveCompletionsOnMajorChange(value, oldMajor);
-            }
-            
-            setProfile(prev => ({
-              ...prev,
-              major: value,
-              threads: [],
-            }));
-          }}
-        >
-          <SelectTrigger className={`bg-white ${errors.major ? "border-red-500" : ""}`}>
-            <SelectValue placeholder="Select your major" />
-          </SelectTrigger>
-          <SelectContent className="bg-white border border-black z-50 max-h-60 overflow-y-auto">
-            {MAJORS.map((major) => (
-              <SelectItem key={major.value} value={major.value} className="bg-white">
-                {major.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {errors.major && (
-          <p className="text-red-500 text-sm mt-1">{errors.major}</p>
-        )}
-      </div>
-
-      {/* Second Major */}
-      {profile.isDoubleMajor && (
-        <div>
-          <Label htmlFor="secondMajor">Second Major *</Label>
-          <Select
-            value={profile.secondMajor || ""}
-            onValueChange={async (value) => {
-              const oldSecondMajor = profile.secondMajor;
-              
-              // Preserve completion data when second major changes
-              if (oldSecondMajor && oldSecondMajor !== value) {
-                await preserveCompletionsOnMajorChange(value, oldSecondMajor);
-              }
-              
-              setProfile(prev => ({
-                ...prev,
-                secondMajor: value,
-                threads: [],
-              }));
-            }}
-          >
-            <SelectTrigger className={errors.secondMajor ? "border-red-500" : ""}>
-              <SelectValue placeholder="Select your second major" />
-            </SelectTrigger>
-            <SelectContent>
-              {MAJORS
-                .filter((major) => major.value !== profile.major)
-                .map((major) => (
-                  <SelectItem key={major.value} value={major.value}>
-                    {major.label}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <Card className={`transition-all duration-200 ${errors.major ? 'border-red-300 bg-red-50/50' : 'hover:shadow-md'}`}>
+          <CardHeader className="py-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <GraduationCap className="h-5 w-5 text-[#B3A369]" />
+              Primary Major *
+            </CardTitle>
+            <CardDescription className="py-1">
+              Select your primary degree program at Georgia Tech
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="py-2">
+            <Select
+              value={profile.major || ''}
+              onValueChange={(value) => updateProfile('major', value)}
+            >
+              <SelectTrigger 
+                className={errors.major ? 'border-red-300' : ''}
+                aria-invalid={!!errors.major}
+                aria-describedby={errors.major ? 'major-error' : undefined}
+              >
+                <SelectValue placeholder="Choose your major" />
+              </SelectTrigger>
+              <SelectContent className="z-50 max-h-[200px]">
+                {availableMajors.map((major) => (
+                  <SelectItem key={major} value={major}>
+                    {major}
                   </SelectItem>
                 ))}
-            </SelectContent>
-          </Select>
-          {errors.secondMajor && (
-            <p className="text-red-500 text-sm mt-1">{errors.secondMajor}</p>
-          )}
-        </div>
-      )}
+              </SelectContent>
+            </Select>
+            <FormError error={errors.major} />
+          </CardContent>
+        </Card>
+      </motion.div>
 
-      {/* Thread Selection */}
-      {(profile.major === "Computer Science" ||
-        profile.major === "Computer Engineering" ||
-        profile.major === "Computer Engineering (Dual BS)" ||
-        profile.major === "Computational Media" ||
-        (profile.isDoubleMajor &&
-          (profile.secondMajor === "Computer Science" ||
-            profile.secondMajor === "Computer Engineering" ||
-            profile.secondMajor === "Computer Engineering (Dual BS)" ||
-            profile.secondMajor === "Computational Media"))) && (
-        <div>
-          <Label>Specialization Threads *</Label>
-          <p className="text-sm text-slate-600 mb-3">
-            Choose specialization threads for your degree program(s)
-          </p>
-
-          {/* Primary Major Threads */}
-          {getAvailableThreads(profile.major || "").length > 0 && (
-            <div className="mb-4">
-              <h4 className="font-medium text-sm text-slate-700 mb-2">
-                {profile.major} Threads (Select 2)
-              </h4>
-              <div className="grid grid-cols-2 gap-3">
-                {getAvailableThreads(profile.major || "").map((thread) => (
-                  <div
-                    key={`primary-${thread}`}
-                    className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                      profile.threads?.includes(thread)
-                        ? "border-[#B3A369] bg-[#B3A369]/10"
-                        : "border-slate-200 hover:border-slate-300"
-                    }`}
-                    onClick={() => handleThreadToggle(thread)}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        checked={profile.threads?.includes(thread) || false}
-                        onChange={() => handleThreadToggle(thread)}
-                      />
-                      <span className="text-sm font-medium">{thread}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+      {/* Double Major Option */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
+        <Card>
+          <CardContent className="py-2 px-3">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="isDoubleMajor"
+                checked={profile.isDoubleMajor || false}
+                onCheckedChange={(checked) => updateProfile('isDoubleMajor', checked as boolean)}
+              />
+              <Label htmlFor="isDoubleMajor" className="text-sm font-medium">
+                I&apos;m pursuing a double major
+              </Label>
             </div>
-          )}
-
-          {errors.threads && (
-            <p className="text-red-500 text-sm mt-1">{errors.threads}</p>
-          )}
-
-          <div className="mt-3">
-            <p className="text-sm text-slate-600">
-              Selected: {profile.threads?.length || 0}/
-              {profile.isDoubleMajor ? "4" : "2"}
-            </p>
-            <div className="flex flex-wrap gap-1 mt-1">
-              {profile.threads?.map((thread) => (
-                <Badge
-                  key={thread}
-                  variant="secondary"
-                  className="bg-[#B3A369] text-white"
+            
+            {profile.isDoubleMajor && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="mt-4"
+              >
+                <Select
+                  value={profile.secondMajor || ''}
+                  onValueChange={(value) => updateProfile('secondMajor', value)}
                 >
-                  {thread}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose your second major" />
+                  </SelectTrigger>
+                  <SelectContent className="z-50 max-h-[200px]">
+                    {availableMajors
+                      .filter(major => major !== profile.major)
+                      .map((major) => (
+                        <SelectItem key={major} value={major}>
+                          {major}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </motion.div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
 
-      {/* Minor Selection */}
-      <div>
-        <Label>Minors (Optional - Select up to 2)</Label>
-        <p className="text-sm text-slate-600 mb-3">
-          Add minor programs to complement your major(s)
-        </p>
-        <div className="grid grid-cols-2 gap-3 max-h-48 overflow-y-auto">
-          {MINORS.map((minor) => (
-            <div
-              key={minor.value}
-              className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                profile.minors?.includes(minor.value)
-                  ? "border-[#B3A369] bg-[#B3A369]/10"
-                  : "border-slate-200 hover:border-slate-300"
-              } ${
-                (profile.minors?.length || 0) >= 2 &&
-                !profile.minors?.includes(minor.value)
-                  ? "opacity-50 cursor-not-allowed"
-                  : ""
-              }`}
-              onClick={() => {
-                if (
-                  (profile.minors?.length || 0) < 2 ||
-                  profile.minors?.includes(minor.value)
-                ) {
-                  handleMinorToggle(minor.value);
-                }
-              }}
-            >
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  checked={profile.minors?.includes(minor.value) || false}
-                  onChange={() => handleMinorToggle(minor.value)}
-                  disabled={
-                    (profile.minors?.length || 0) >= 2 &&
-                    !profile.minors?.includes(minor.value)
-                  }
-                />
-                <span className="text-sm font-medium">{minor.label}</span>
+      {/* Threads Selection */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        <Card>
+          <CardHeader className="py-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <BookOpen className="h-5 w-5 text-[#B3A369]" />
+              Threads
+            </CardTitle>
+            <CardDescription className="py-1">
+              Select your areas of specialization (typically 2 threads required for CS)
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="py-2 space-y-3">
+            {/* Current Threads */}
+            {profile.threads && profile.threads.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Selected Threads:</Label>
+                <div className="flex flex-wrap gap-2">
+                  {profile.threads.map((thread) => (
+                    <Badge
+                      key={thread}
+                      variant="secondary"
+                      className="flex items-center gap-1 bg-[#B3A369]/10 text-[#003057] border-[#B3A369]/20"
+                    >
+                      {thread}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-4 w-4 p-0 hover:bg-transparent"
+                        onClick={() => removeThread(thread)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Add Thread */}
+            <div className="flex gap-2">
+              <Select value={newThread} onValueChange={setNewThread}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Choose a thread to add" />
+                </SelectTrigger>
+                <SelectContent className="z-50 max-h-[200px]">
+                  {availableThreads
+                    .filter(thread => !profile.threads?.includes(thread))
+                    .map((thread) => (
+                      <SelectItem key={thread} value={thread}>
+                        {thread}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                onClick={addThread}
+                disabled={!newThread}
+                className="bg-[#B3A369] hover:bg-[#B3A369]/90"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Minors Selection */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <Card>
+          <CardHeader className="py-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Award className="h-5 w-5 text-[#B3A369]" />
+              Minors
+            </CardTitle>
+            <CardDescription className="py-1">
+              Add any minors you&apos;re pursuing (optional)
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="py-2 space-y-3">
+            {/* Current Minors */}
+            {profile.minors && profile.minors.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Selected Minors:</Label>
+                <div className="flex flex-wrap gap-2">
+                  {profile.minors.map((minor) => (
+                    <Badge
+                      key={minor}
+                      variant="secondary"
+                      className="flex items-center gap-1 bg-blue-50 text-blue-700 border-blue-200"
+                    >
+                      {minor}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-4 w-4 p-0 hover:bg-transparent"
+                        onClick={() => removeMinor(minor)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Add Minor */}
+            <div className="flex gap-2">
+              <Select value={newMinor} onValueChange={setNewMinor}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Choose a minor to add" />
+                </SelectTrigger>
+                <SelectContent className="z-50 max-h-[200px]">
+                  {availableMinors
+                    .filter(minor => !profile.minors?.includes(minor))
+                    .map((minor) => (
+                      <SelectItem key={minor} value={minor}>
+                        {minor}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                onClick={addMinor}
+                disabled={!newMinor}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Info Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+      >
+        <Card className="bg-[#003057]/5 border-[#003057]/20">
+          <CardContent className="py-2 px-3">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 bg-[#003057] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <GraduationCap className="h-4 w-4 text-white" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="font-medium text-[#003057]">
+                  About Academic Programs
+                </h3>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p>• <strong>Major:</strong> Your primary degree program (e.g., Computer Science)</p>
+                  <p>• <strong>Threads:</strong> Areas of specialization within your major (usually 2 required)</p>
+                  <p>• <strong>Minors:</strong> Additional areas of study outside your major (optional)</p>
+                </div>
+                <p className="text-xs text-[#B3A369] font-medium">
+                  ℹ️ This information helps us provide personalized course recommendations and track your progress
+                </p>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
-    </motion.div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </div>
   );
 };

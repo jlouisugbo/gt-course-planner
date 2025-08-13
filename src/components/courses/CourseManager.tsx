@@ -29,7 +29,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Search, Filter, BookOpen, Star, Lock, AlertTriangle } from "lucide-react";
 import { Course, PlannedCourse } from "@/types/courses";
-import { usePlannerStore } from "@/hooks/usePlannerStore";
+import { useUserAwarePlannerStore } from "@/hooks/useUserAwarePlannerStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAllCourses } from '@/hooks/useAllCourses';
 import { useAuth } from '@/providers/AuthProvider';
@@ -54,7 +54,7 @@ const CourseManager: React.FC<CourseManagerProps> = ({
     semesterId,
     onClose,
 }) => {
-    const { addCourseToSemester, semesters } = usePlannerStore();
+    const { addCourseToSemester, semesters } = useUserAwarePlannerStore();
     const { user } = useAuth();
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -247,7 +247,7 @@ const CourseManager: React.FC<CourseManagerProps> = ({
             title: customCourse.title,
             credits: customCourse.credits,
             description: "Custom course entry",
-            prerequisites: [],
+            prerequisites: { type: "AND", courses: [] },
             offerings: { fall: true, spring: true, summer: true },
             difficulty: 3,
             type: customCourse.type || "elective", // Default to "elective" if type is missing
@@ -865,7 +865,7 @@ const CourseManager: React.FC<CourseManagerProps> = ({
                                             </div>
                                             <div className="flex justify-between">
                                                 <span>Prerequisites:</span>
-                                                <span>{selectedCourse.prerequisites.length || "None"}</span>
+                                                <span>{selectedCourse.prerequisites?.courses?.length || "None"}</span>
                                             </div>
                                         </div>
                                     </div>

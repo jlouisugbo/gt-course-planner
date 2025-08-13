@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
         };
 
         // Get all existing course codes for validation
-        const { data: existingCourses } = await supabaseAdmin
+        const { data: existingCourses } = await supabaseAdmin()
             .from('courses')
             .select('code')
             .order('code');
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
                 }
                 
                 try {
-                    const { error } = await supabaseAdmin
+                    const { error } = await supabaseAdmin()
                         .from('courses')
                         .update({ 
                             prerequisites: JSON.stringify(prereqData) 
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
                 }
                 
                 try {
-                    const { error } = await supabaseAdmin
+                    const { error } = await supabaseAdmin()
                         .from('courses')
                         .update({ 
                             postrequisites: JSON.stringify(postreqData) 

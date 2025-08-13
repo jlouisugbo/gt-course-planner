@@ -30,12 +30,12 @@ export function LandingPage() {
     const isLoading = loading || isAuthLoading;
 
     return (
-        <div className="h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-slate-100">
+        <div className="h-screen relative overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-100">
             {/* Animated background elements */}
             <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute -top-20 -right-20 w-60 h-60 bg-gradient-to-br from-[#003057]/10 to-[#B3A369]/10 rounded-full blur-3xl animate-pulse" />
-                <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-gradient-to-tr from-[#B3A369]/10 to-[#003057]/10 rounded-full blur-3xl animate-pulse" />
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-[#003057]/5 to-[#B3A369]/5 rounded-full blur-3xl" />
+                <div className="absolute -top-20 -right-20 w-60 h-60 bg-gradient-to-br from-gt-navy/10 to-gt-gold/10 rounded-full blur-3xl animate-pulse" />
+                <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-gradient-to-tr from-gt-gold/10 to-gt-navy/10 rounded-full blur-3xl animate-pulse" />
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-gt-navy/5 to-gt-gold/5 rounded-full blur-3xl" />
             </div>
 
             <div className="relative z-10 h-full flex flex-col justify-between px-6 py-8">
@@ -52,12 +52,12 @@ export function LandingPage() {
                             initial={{ scale: 0.8, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{ delay: 0.2, duration: 0.6 }}
-                            className="inline-flex items-center space-x-3 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-full px-4 py-2 mb-6 shadow-lg"
+                            className="inline-flex items-center space-x-3 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-full px-4 py-2 mb-6 shadow-lg"
                         >
-                            <div className="w-6 h-6 bg-gradient-to-br from-[#003057] to-[#B3A369] rounded-full flex items-center justify-center">
+                            <div className="w-6 h-6 bg-gt-gradient rounded-full flex items-center justify-center">
                                 <GraduationCap className="h-4 w-4 text-white" />
                             </div>
-                            <span className="text-base font-bold bg-gradient-to-r from-[#003057] to-[#B3A369] bg-clip-text text-transparent">
+                            <span className="text-base font-bold bg-gt-gradient bg-clip-text text-transparent">
                                 GT Course Planner
                             </span>
                         </motion.div>
@@ -67,19 +67,19 @@ export function LandingPage() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.4, duration: 0.8 }}
-                            className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 mb-4 leading-tight"
+                            className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 leading-tight"
                         >
                             Master Your
                             <br />
                             <span className="relative">
-                                <span className="bg-gradient-to-r from-[#003057] to-[#B3A369] bg-clip-text text-transparent">
+                                <span className="bg-gt-gradient bg-clip-text text-transparent">
                                     Academic Path
                                 </span>
                                 <motion.div
                                     initial={{ width: 0 }}
                                     animate={{ width: "100%" }}
                                     transition={{ delay: 1.2, duration: 0.8 }}
-                                    className="absolute -bottom-1 left-0 h-1 bg-gradient-to-r from-[#003057] to-[#B3A369] rounded-full"
+                                    className="absolute -bottom-1 left-0 h-1 bg-gt-gradient rounded-full"
                                 />
                             </span>
                         </motion.h1>
@@ -89,7 +89,7 @@ export function LandingPage() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.6, duration: 0.8 }}
-                            className="text-lg text-slate-600 mb-8 leading-relaxed max-w-2xl mx-auto"
+                            className="text-lg text-gray-600 mb-8 leading-relaxed max-w-2xl mx-auto"
                         >
                             The intelligent planning companion for Georgia Tech students. Navigate requirements, 
                             optimize your schedule, and graduate with confidence.
@@ -102,7 +102,7 @@ export function LandingPage() {
                             transition={{ delay: 0.8, duration: 0.8 }}
                             onClick={handleGetStarted}
                             disabled={isLoading}
-                            className="group relative bg-gradient-to-r from-[#003057] to-[#B3A369] text-white px-6 py-3 rounded-2xl font-bold text-base hover:shadow-2xl hover:shadow-[#003057]/25 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:transform-none mb-8"
+                            className="group relative bg-gt-gradient text-white px-6 py-3 rounded-2xl font-bold text-base hover:shadow-2xl hover:shadow-gt-navy/25 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:transform-none mb-8"
                         >
                             <div className="flex items-center space-x-3">
                                 {isLoading ? (
@@ -118,7 +118,7 @@ export function LandingPage() {
                                     </>
                                 )}
                             </div>
-                            <div className="absolute inset-0 bg-gradient-to-r from-[#004080] to-[#D4C284] opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl -z-10" />
+                            <div className="absolute inset-0 bg-gradient-to-r from-gt-navy-700 to-gt-gold-600 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl -z-10" />
                         </motion.button>
                     </motion.div>
 
@@ -158,11 +158,11 @@ export function LandingPage() {
                                 transition={{ delay: 1.2 + index * 0.1, duration: 0.6 }}
                                 className="group"
                             >
-                                <div className="bg-white/60 backdrop-blur-sm border border-slate-200 rounded-xl p-4 text-center hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300 hover:scale-105">
+                                <div className="bg-white/60 backdrop-blur-sm border border-gray-200 rounded-xl p-4 text-center hover:shadow-lg hover:shadow-gray-200/50 transition-all duration-300 hover:scale-105">
                                     <div className={`w-8 h-8 bg-gradient-to-br ${feature.color} rounded-lg flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform`}>
                                         <feature.icon className="h-4 w-4 text-white" />
                                     </div>
-                                    <h3 className="font-semibold text-slate-900 text-sm">{feature.title}</h3>
+                                    <h3 className="font-semibold text-gray-900 text-sm">{feature.title}</h3>
                                 </div>
                             </motion.div>
                         ))}
@@ -173,7 +173,7 @@ export function LandingPage() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 1.4, duration: 0.8 }}
-                            className="bg-gradient-to-r from-[#003057]/5 to-[#B3A369]/5 backdrop-blur-sm border border-slate-200 rounded-2xl p-4"
+                            className="bg-gradient-to-r from-gt-navy/5 to-gt-gold/5 backdrop-blur-sm border border-gray-200 rounded-2xl p-4"
                         >
                             <div className="grid grid-cols-4 gap-4 text-center">
                             {[
@@ -188,10 +188,10 @@ export function LandingPage() {
                                     animate={{ scale: 1, opacity: 1 }}
                                     transition={{ delay: 1.6 + index * 0.1, duration: 0.6 }}
                                 >
-                                        <div className="text-xl font-bold bg-gradient-to-r from-[#003057] to-[#B3A369] bg-clip-text text-transparent mb-1">
+                                        <div className="text-xl font-bold bg-gt-gradient bg-clip-text text-transparent mb-1">
                                             {stat.number}
                                         </div>
-                                        <div className="text-slate-600 text-xs font-medium">{stat.label}</div>
+                                        <div className="text-gray-600 text-xs font-medium">{stat.label}</div>
                                 </motion.div>
                             ))}
                             </div>
@@ -204,15 +204,15 @@ export function LandingPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 1.8, duration: 0.8 }}
-                    className="text-center pt-4 border-t border-slate-200/50"
+                    className="text-center pt-4 border-t border-gray-200/50"
                 >
-                    <p className="text-slate-500 text-xs">
+                    <p className="text-gray-500 text-xs">
                         Created and designed by{" "}
                         <a 
                             href="https://www.joelcodes.dev" 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="text-[#003057] hover:text-[#B3A369] font-medium transition-colors duration-200"
+                            className="text-gt-navy hover:text-gt-gold font-medium transition-colors duration-200"
                         >
                             Joel Louis-Ugbo
                         </a>
@@ -221,7 +221,7 @@ export function LandingPage() {
                             href="https://github.com/jlouisugbo/gt-course-planner" 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="text-[#003057] hover:text-[#B3A369] font-medium transition-colors duration-200"
+                            className="text-gt-navy hover:text-gt-gold font-medium transition-colors duration-200"
                         >
                             other important contributors
                         </a>

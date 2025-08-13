@@ -37,13 +37,13 @@ const CreditDistributionChart = ({ academicProgress, delay = 0 }: CreditDistribu
         {
             name: "In Progress",
             value: creditsInProgress,
-            color: "#3B82F6",
+            color: "#B3A369",
             percentage: hasValidData ? (creditsInProgress / totalCreditsRequired) * 100 : 0,
         },
         {
             name: "Planned",
             value: creditsPlanned,
-            color: "#F59E0B",
+            color: "#003057",
             percentage: hasValidData ? (creditsPlanned / totalCreditsRequired) * 100 : 0,
         },
         {
@@ -63,10 +63,17 @@ const CreditDistributionChart = ({ academicProgress, delay = 0 }: CreditDistribu
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay }}
         >
-            <Card className="border-slate-300">
+            <Card 
+                className="border-l-4 border-l-[#B3A369]/20 focus-within:ring-2 focus-within:ring-blue-500/20"
+                role="region"
+                aria-labelledby="credit-distribution-title"
+            >
                 <CardHeader>
-                    <CardTitle className="flex items-center">
-                        <PieChart className="h-5 w-5 mr-2" />
+                    <CardTitle 
+                        className="flex items-center text-[#003057]"
+                        id="credit-distribution-title"
+                    >
+                        <PieChart className="h-5 w-5 mr-2 text-[#B3A369]" aria-hidden="true" />
                         Credit Distribution
                     </CardTitle>
                     <CardDescription>
@@ -76,44 +83,60 @@ const CreditDistributionChart = ({ academicProgress, delay = 0 }: CreditDistribu
                 <CardContent>
                     <div className="h-64 flex items-center justify-center">
                         {!hasValidData || nonZeroDistribution.length === 0 ? (
-                            <div className="text-center text-gray-500">
-                                <PieChart className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                            <div className="text-center text-gray-500" role="status" aria-live="polite">
+                                <PieChart className="h-12 w-12 mx-auto mb-2 opacity-50" aria-hidden="true" />
                                 <p>No credit data available</p>
                                 <p className="text-sm mt-1">
                                     Add courses to see credit distribution
                                 </p>
                             </div>
                         ) : (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <RechartsPieChart>
-                                    <Pie
-                                        data={nonZeroDistribution}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={100}
-                                        dataKey="value"
-                                    >
-                                        {nonZeroDistribution.map((entry, index) => (
-                                            <Cell
-                                                key={`cell-${index}`}
-                                                fill={entry.color}
-                                            />
-                                        ))}
-                                    </Pie>
-                                </RechartsPieChart>
-                            </ResponsiveContainer>
+                            <div role="img" aria-labelledby="chart-summary">
+                                <div className="sr-only" id="chart-summary">
+                                    Credit distribution chart showing {nonZeroDistribution.map(item => `${item.name}: ${item.value} credits (${item.percentage.toFixed(1)}%)`).join(', ')}
+                                </div>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <RechartsPieChart>
+                                        <Pie
+                                            data={nonZeroDistribution}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={60}
+                                            outerRadius={100}
+                                            dataKey="value"
+                                        >
+                                            {nonZeroDistribution.map((entry, index) => (
+                                                <Cell
+                                                    key={`cell-${index}`}
+                                                    fill={entry.color}
+                                                />
+                                            ))}
+                                        </Pie>
+                                    </RechartsPieChart>
+                                </ResponsiveContainer>
+                            </div>
                         )}
                     </div>
-                    <div className="grid grid-cols-2 gap-2 mt-4">
+                    <div 
+                        className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4"
+                        role="list"
+                        aria-labelledby="credit-distribution-title"
+                    >
                         {creditDistribution.map((item, index) => (
-                            <div key={index} className="flex items-center space-x-2">
+                            <div 
+                                key={index} 
+                                className="flex items-center space-x-2 min-h-[44px] p-1"
+                                role="listitem"
+                            >
                                 <div
-                                    className="w-3 h-3 rounded-full"
+                                    className="w-4 h-4 rounded-full flex-shrink-0"
                                     style={{ backgroundColor: item.color }}
+                                    role="img"
+                                    aria-label={`${item.name} color indicator`}
                                 />
-                                <span className="text-sm text-slate-600">
-                                    {item.name}: {item.value}
+                                <span className="text-sm text-muted-foreground break-words">
+                                    <span className="font-medium">{item.name}:</span> {item.value} credit{item.value !== 1 ? 's' : ''}
+                                    {item.value > 0 && ` (${item.percentage.toFixed(1)}%)`}
                                 </span>
                             </div>
                         ))}

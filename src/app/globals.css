@@ -1,5 +1,16 @@
 @import "tailwindcss";
-@import "tw-animate-css";
+
+/* Custom CSS Variables - Matching GitHub Design */
+:root {
+  --gt-navy: #003057;
+  --gt-gold: #B3A369;
+  --gt-tech-gold: #EAAA00;
+}
+
+/* Inter Font Family */
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+}
 
 /* Line clamp utilities */
 .line-clamp-2 {
@@ -9,192 +20,140 @@
   -webkit-line-clamp: 2;
 }
 
-/* GT Theme */
-.gt-gradient {
-  background: linear-gradient(135deg, #003057 0%, #B3A369 100%);
+/* GT Theme Gradients */
+.gt-gradient,
+.gt-gradient-legacy,
+.bg-gt-gradient {
+  background: linear-gradient(135deg, var(--gt-navy) 0%, var(--gt-gold) 100%);
 }
 
-@custom-variant dark (&:is(.dark *));
+/* GT Brand Colors */
+.text-gt-navy { color: var(--gt-navy); }
+.text-gt-gold { color: var(--gt-gold); }
+.text-gt-tech-gold { color: var(--gt-tech-gold); }
+.bg-gt-navy { background-color: var(--gt-navy); }
+.bg-gt-gold { background-color: var(--gt-gold); }
+.bg-gt-tech-gold { background-color: var(--gt-tech-gold); }
+.border-gt-navy { border-color: var(--gt-navy); }
+.border-gt-gold { border-color: var(--gt-gold); }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+/* Course Components with GT Theme */
+.course-card {
+  @apply bg-white border border-gray-200 rounded-lg p-4 shadow-sm cursor-move hover:shadow-lg transition-all duration-200;
+  border-left: 4px solid transparent;
 }
 
-:root {
-  --radius: 0.75rem;
-  --background: 0 0% 98%;
-  --foreground: 210 40% 8%;
-  --card: 0 0% 100%;
-  --card-foreground: 210 40% 8%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 210 40% 8%;
-  --primary: 210 100% 17%;
-  --primary-foreground: 0 0% 98%;
-  --secondary: 210 40% 96%;
-  --secondary-foreground: 210 40% 8%;
-  --muted: 210 40% 94%;
-  --muted-foreground: 215 16% 47%;
-  --accent: 210 40% 94%;
-  --accent-foreground: 210 40% 8%;
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 214 32% 88%;
-  --input: 214 32% 88%;
-  --ring: 210 100% 17%;
-  --chart-1: 12 76% 61%;
-  --chart-2: 173 58% 39%;
-  --chart-3: 197 37% 24%;
-  --chart-4: 43 74% 66%;
-  --chart-5: 27 87% 67%;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-  
-  /* GT Brand Colors */
-  --gt-gold: 45 65% 56%;
-  --gt-navy: 210 100% 17%;
-  --gt-tech-gold: 45 100% 46%;
-  --gt-light-gold: 45 45% 75%;
-  --gt-dark-navy: 210 100% 12%;
-  --gt-medium-navy: 210 85% 25%;
-  --gt-light-navy: 210 70% 35%;
+.course-card:hover {
+  border-left-color: var(--gt-gold);
+  box-shadow: 0 10px 25px -3px rgba(179, 163, 105, 0.1), 0 4px 6px -2px rgba(179, 163, 105, 0.05);
 }
 
-.dark {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 98%;
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 98%;
-  --primary: 210 40% 98%;
-  --primary-foreground: 222.2 84% 4.9%;
-  --secondary: 217.2 32.6% 17.5%;
-  --secondary-foreground: 210 40% 98%;
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
-  --accent: 217.2 32.6% 17.5%;
-  --accent-foreground: 210 40% 98%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 212.7 26.8% 83.9%;
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+.semester-column {
+  @apply bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-6 min-h-[500px] transition-colors;
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+.semester-column.drag-over {
+  background-color: rgba(179, 163, 105, 0.05);
+  border-color: var(--gt-gold);
+}
+
+.academic-year-card,
+.stats-card,
+.gt-card {
+  @apply bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow;
+}
+
+.academic-year-card:hover,
+.stats-card:hover,
+.gt-card:hover {
+  border-color: rgba(179, 163, 105, 0.3);
+}
+
+.requirement-category {
+  @apply bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4;
+}
+
+/* GT Buttons - Enhanced for Accessibility */
+.gt-button-primary {
+  background-color: var(--gt-navy);
+  color: white;
+  @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+}
+
+.gt-button-primary:hover {
+  background-color: #002041;
+}
+
+.gt-button-primary:focus {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
+
+.gt-button-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.gt-button-secondary {
+  background-color: var(--gt-gold);
+  color: var(--gt-navy);
+  @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+}
+
+.gt-button-secondary:hover {
+  background-color: #a08954;
+}
+
+.gt-button-secondary:focus {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
+
+.gt-button-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .gt-button-primary,
+  .gt-button-secondary {
+    min-height: 48px;
+    padding: 12px 16px;
   }
 }
 
-@layer components {
-  .gt-gradient {
-    @apply bg-gradient-to-r from-[#003057] via-[#1a365d] to-[#B3A369];
-  }
-  
-  .gt-gold {
-    color: #B3A369;
-  }
-  
-  .gt-navy {
-    color: #003057;
-  }
-  
-  .gt-light-gold {
-    color: #D4C794;
-  }
-  
-  .gt-dark-navy {
-    color: #002041;
-  }
-  
-  .course-card {
-    @apply bg-white border border-slate-300 rounded-lg p-4 shadow-sm cursor-move hover:shadow-lg transition-all duration-200;
-  }
-  
-  .semester-column {
-    @apply bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl p-6 min-h-[500px] transition-colors;
-  }
-  
-  .semester-column.drag-over {
-    @apply border-[#B3A369] bg-[#B3A369]/5;
-  }
-  
-  .academic-year-card {
-    @apply bg-white border border-slate-300 rounded-xl shadow-sm hover:shadow-md transition-shadow;
-  }
-  
-  .requirement-category {
-    @apply bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4;
-  }
-  
-  .stats-card {
-    @apply bg-white border border-slate-300 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow;
-  }
+/* GT Input - Enhanced for Accessibility */
+.gt-input {
+  @apply border border-gray-300 rounded-lg px-3 py-2 transition-colors duration-200;
+  min-height: 44px;
+  font-size: 16px; /* Prevents zoom on iOS */
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+.gt-input:focus {
+  border-color: var(--gt-navy);
+  box-shadow: 0 0 0 2px rgba(0, 48, 87, 0.2);
+  outline: none;
+}
+
+.gt-input:invalid {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
+}
+
+@media (max-width: 768px) {
+  .gt-input {
+    padding: 12px 16px;
+    min-height: 48px;
   }
 }
 
@@ -215,4 +174,127 @@
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* Text utilities */
+.text-balance {
+  text-wrap: balance;
+}
+
+/* Accessibility and Touch Target Enhancements */
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Ensure minimum touch target size (44x44px) */
+@media (max-width: 768px) {
+  button, 
+  [role="button"], 
+  input[type="button"], 
+  input[type="submit"], 
+  input[type="reset"], 
+  .clickable {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Ensure interactive elements have adequate spacing on mobile */
+  .interactive-spacing {
+    margin: 4px;
+  }
+  
+  /* Improve text readability on small screens */
+  .responsive-text {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
+/* Focus management for better keyboard navigation */
+.focus-trap {
+  outline: none;
+}
+
+.focus-trap:focus-within {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .course-card:hover {
+    border-left-color: #000;
+    box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.2);
+  }
+  
+  .semester-column.drag-over {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-color: #000;
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Print styles for accessibility */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .course-card,
+  .gt-card,
+  .stats-card {
+    border: 1px solid #000 !important;
+    background: white !important;
+    box-shadow: none !important;
+  }
+}
+
+/* Better spacing for small screens */
+@media (max-width: 640px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* Ensure cards don't become too small */
+  .course-card,
+  .gt-card,
+  .stats-card {
+    min-height: 120px;
+  }
+  
+  /* Improve form layout on mobile */
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+/* Tablet-specific improvements */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .tablet-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .tablet-flex-col {
+    flex-direction: column;
+  }
 }

@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
         console.log(`🔍 Fetching courses for requirement: "${requirementName}" for user: ${userId}`);
         
         // Get user's major to fetch their degree program
-        const { data: userRecord, error: userError } = await supabaseAdmin
+        const { data: userRecord, error: userError } = await supabaseAdmin()
             .from('users')
             .select('major')
             .eq('auth_id', userId)
@@ -55,11 +55,14 @@ export async function GET(request: NextRequest) {
             }, { status: 404 });
         }
 
+        // Type assertion with validation
+        const majorName = typeof userRecord.major === 'string' ? userRecord.major.trim() : String(userRecord.major).trim();
+
         // Get degree program requirements
-        const { data: program, error: programError } = await supabaseAdmin
+        const { data: program, error: programError } = await supabaseAdmin()
             .from('degree_programs')
             .select('requirements')
-            .eq('name', userRecord.major.trim())
+            .eq('name', majorName)
             .eq('is_active', true)
             .single();
 
@@ -151,7 +154,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Query courses by course codes
-        const { data: courses, error: coursesError } = await supabaseAdmin
+        const { data: courses, error: coursesError } = await supabaseAdmin()
             .from('courses')
             .select(`
                 id,

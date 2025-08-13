@@ -10,21 +10,25 @@ import {
   Edit,
   Trash2,
   Info,
-  AlertCircle
+  AlertCircle,
+  // Check
 } from 'lucide-react';
 import { PlannedCourse } from '@/types/courses';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import CourseCompletionModal from './CourseCompletionModal';
 import { usePlannerStore } from '@/hooks/usePlannerStore';
-import { DragTypes, DragItem } from '@/types';
+import { DragItem } from '@/types';
+import { useEnhancedToast } from '@/hooks/useEnhancedToast';
 
 interface CourseCardProps {
   course?: PlannedCourse | null;
   onRemove?: () => void;
   onViewDetails?: () => void;
   compact?: boolean;
+  isOptimistic?: boolean;
+  dragPreview?: boolean;
 }
 
 const CourseCard: React.FC<CourseCardProps> = ({
@@ -33,32 +37,46 @@ const CourseCard: React.FC<CourseCardProps> = ({
   onViewDetails,
   compact = false
 }) => {
+  // Hooks must be called before any conditional returns
   const { updateCourseStatus } = usePlannerStore();
   const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [_isUpdating, _setIsUpdating] = useState(false);
+  const [_pendingStatusUpdate, _setPendingStatusUpdate] = useState<{
+    status: PlannedCourse['status'];
+    grade?: string;
+  } | null>(null);
+  const { success: _success, error: _error } = useEnhancedToast();
+  
+  const [{ isDragging }, drag] = useDrag<DragItem, void, { isDragging: boolean }>({
+    type: 'PLANNED_COURSE',
+    item: {
+      type: 'PLANNED_COURSE',
+      id: course?.id || 0,
+      course: course || {} as PlannedCourse,
+      semesterId: course?.semesterId || 0
+    },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging()
+    }),
+    canDrag: () => course?.status !== 'completed' // Don't allow dragging completed courses
+  });
+  
+  // Early return if no course provided
+  if (!course) {
+    return null;
+  }
+
   // Safe property access with fallbacks
-  const courseId = course.id || 0;
+  // const courseId = course.id || 0; // TODO: Use for course identification in future features
   const courseCode = course.code || 'Unknown';
   const courseTitle = course.title || 'No title available';
   const courseCredits = typeof course.credits === 'number' ? course.credits : 0;
   const courseStatus = course.status || 'planned';
   const courseGrade = course.grade || null;
-  const courseSemesterId = course.semesterId || 0;
-  const [{ isDragging }, drag] = useDrag<DragItem, void, { isDragging: boolean }>({
-    type: DragTypes.PLANNED_COURSE,
-    item: {
-      type: DragTypes.PLANNED_COURSE,
-      id: courseId,
-      course: course,
-      semesterId: courseSemesterId
-    },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging()
-    }),
-    canDrag: () => courseStatus !== 'completed' // Don't allow dragging completed courses
-  });
+  // const courseSemesterId = course.semesterId || 0; // TODO: Use for semester-specific operations
 
-  // Early return if no course provided
-  if (!course || typeof course !== 'object') {
+  // Additional validation
+  if (typeof course !== 'object') {
     return (
       <div className="p-3 rounded-lg border border-red-200 bg-red-50">
         <div className="flex items-center text-red-600">
@@ -173,11 +191,19 @@ const CourseCard: React.FC<CourseCardProps> = ({
         </p>
         
         <div className="flex items-center justify-between">
-          {courseGrade && (
-            <Badge variant="outline" className="text-xs">
-              {courseGrade}
-            </Badge>
-          )}
+          <AnimatePresence>
+            {(courseGrade || pendingStatusUpdate?.grade) && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+              >
+                <Badge variant="outline" className="text-xs">
+                  {pendingStatusUpdate?.grade || courseGrade}
+                </Badge>
+              </motion.div>
+            )}
+          </AnimatePresence>
           
         </div>
       </motion.div>

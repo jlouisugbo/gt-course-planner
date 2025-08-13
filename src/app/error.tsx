@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
+import { createComponentLogger } from '@/lib/security/logger';
+import { ENV } from '@/lib/security/config';
 
 interface ErrorPageProps {
   error: Error & { digest?: string };
@@ -12,14 +14,22 @@ interface ErrorPageProps {
  * Root error page for the GT Course Planner
  * This catches any unhandled errors at the app level
  */
-export default function ErrorPage({ error, reset }: ErrorPageProps) {
+export default function ErrorPage({ reset }: ErrorPageProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50">
       <ErrorBoundary
         context="general"
-        onError={(err, errorInfo) => {
-          console.error('App-level error:', err, errorInfo);
-          // In production, report to error monitoring service
+        onError={(err) => {
+          const logger = createComponentLogger('APP_ERROR_PAGE');
+          logger.error('App-level error page triggered', err, {
+            context: 'app-level-error-page',
+            timestamp: new Date().toISOString()
+          });
+          
+          // Report to monitoring service in production
+          if (ENV.isProd) {
+            // Monitoring service integration would go here
+          }
         }}
         fallback={
           <div className="min-h-screen flex items-center justify-center p-4">

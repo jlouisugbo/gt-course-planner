@@ -1,6 +1,8 @@
 // lib/auth-server.ts - Server-side ONLY authentication functions
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { NextRequest } from 'next/server';
+import { ensureUserInitialized } from './user-initialization';
+import { createAPILogger } from './security/logger';
 
 export interface AuthenticatedUser {
   id: string;
@@ -37,7 +39,8 @@ export async function authenticateRequest(request: NextRequest): Promise<{
     const { data: { user }, error: authError } = await supabaseAdmin().auth.getUser(token);
     
     if (authError || !user) {
-      console.error('Authentication failed:', authError);
+      const logger = createAPILogger('auth', 'authenticate');
+      logger.warn('Authentication failed', { errorCode: authError?.message });
       return {
         user: null,
         error: 'Invalid or expired token'
@@ -47,12 +50,13 @@ export async function authenticateRequest(request: NextRequest): Promise<{
     // Verify user exists in GT system
     const { data: userRecord, error: userError } = await supabaseAdmin()
       .from('users')
-      .select('auth_id, full_name, email')
+      .select('id, auth_id, full_name, email')
       .eq('auth_id', user.id)
       .single();
 
     if (userError || !userRecord) {
-      console.error('GT user verification failed:', userError);
+      const logger = createAPILogger('auth', 'verify_user');
+      logger.warn('GT user verification failed', { errorCode: userError?.message });
       return {
         user: null,
         error: 'User not authorized for GT Course Planner'
@@ -62,17 +66,27 @@ export async function authenticateRequest(request: NextRequest): Promise<{
     // Log access for FERPA compliance
     await logAcademicDataAccess(user.id, request.url, request.method);
 
+    // Auto-initialize user in required tables if needed
+    try {
+      const userId = typeof userRecord.id === 'number' ? userRecord.id : parseInt(String(userRecord.id));
+      await ensureUserInitialized(userId);
+    } catch (initError) {
+      const logger = createAPILogger('auth', 'user_init');
+      logger.warn('User initialization failed (non-critical)', initError);
+    }
+
     return {
       user: {
         id: user.id,
         email: user.email || '',
-        gtUserId: userRecord.auth_id
+        gtUserId: typeof userRecord.auth_id === 'string' ? userRecord.auth_id : String(userRecord.auth_id)
       },
       error: null
     };
 
   } catch (error) {
-    console.error('Authentication error:', error);
+    const logger = createAPILogger('auth', 'authenticate');
+    logger.error('Authentication service error', error);
     return {
       user: null,
       error: 'Authentication service unavailable'
@@ -95,7 +109,12 @@ async function logAcademicDataAccess(userId: string, endpoint: string, method: s
         access_type: 'academic_data'
       });
   } catch (error) {
-    console.error('Failed to log access:', error);
+    const logger = createAPILogger('auth', 'access_log');
+    logger.error('FERPA access logging failed', error, {
+      critical: true,
+      userId,
+      endpoint
+    });
     // Don't fail the request if logging fails, but alert monitoring
   }
 }

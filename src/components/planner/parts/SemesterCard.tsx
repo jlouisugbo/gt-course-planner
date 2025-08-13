@@ -14,17 +14,66 @@ import { cn } from "@/lib/utils";
 import CourseManager from "@/components/courses/CourseManager";
 import CourseDetailsModal from "./CourseDetailsModal";
 import CourseCard from "./PlannerCourseCard";
-import { DragItem, DropResult, DragTypes } from "@/types";
+import { DragItem, DropResult } from "@/types";
 
 interface SemesterCardProps {
     semester?: SemesterData | null;
 }
 
 const SemesterCard: React.FC<SemesterCardProps> = ({ semester }) => {
-
+    // Hooks must be called before any conditional returns
     const { removeCourseFromSemester, moveCourse, addCourseToSemester } = usePlannerStore();
     const [showCourseManager, setShowCourseManager] = useState(false);
     const [selectedCourse, setSelectedCourse] = useState<PlannedCourse | null>(null);
+    
+    const [{ isOver, canDrop }, drop] = useDrop<
+        DragItem,
+        DropResult,
+        { isOver: boolean; canDrop: boolean }
+    >({
+        accept: ['COURSE', 'PLANNED_COURSE'],
+        drop: (item): DropResult => {
+            try {
+                if (
+                    item?.type === 'PLANNED_COURSE' &&
+                    typeof item.id === 'number' &&
+                    typeof item.semesterId === 'number' &&
+                    item.semesterId !== (semester?.id || 0) &&
+                    moveCourse
+                ) {
+                    moveCourse(item.id, item.semesterId, semester?.id || 0);
+                } else if (
+                    item?.type === 'COURSE' && 
+                    item.course && 
+                    typeof item.course === 'object' &&
+                    addCourseToSemester
+                ) {
+                    addCourseToSemester({
+                        ...item.course,
+                        semesterId: semester?.id || 0,
+                        status: 'planned',
+                        year: semester?.year || new Date().getFullYear(),
+                        season: semester?.season || 'Fall'
+                    });
+                }
+            } catch (error) {
+                console.error('Error handling drop:', error);
+            }
+            return { 
+                targetSemesterId: semester?.id || 0,
+                targetType: 'semester' as const
+            };
+        },
+        collect: (monitor) => ({
+            isOver: monitor.isOver(),
+            canDrop: monitor.canDrop()
+        })
+    });
+
+    // Early return if no semester provided
+    if (!semester) {
+        return null;
+    }
 
     // Safe property access with fallbacks
     const semesterId = typeof semester.id === 'number' ? semester.id : 0;
@@ -35,55 +84,8 @@ const SemesterCard: React.FC<SemesterCardProps> = ({ semester }) => {
     const semesterMaxCredits = typeof semester.maxCredits === 'number' ? semester.maxCredits : 18;
     const semesterIsActive = Boolean(semester.isActive);
 
-    const [{ isOver, canDrop }, drop] = useDrop<
-        DragItem,
-        DropResult,
-        { isOver: boolean; canDrop: boolean }
-    >({
-        accept: [DragTypes.COURSE, DragTypes.PLANNED_COURSE],
-        drop: (item) => {
-            try {
-                if (
-                    item?.type === DragTypes.PLANNED_COURSE &&
-                    typeof item.id === 'number' &&
-                    typeof item.semesterId === 'number' &&
-                    item.semesterId !== semesterId &&
-                    moveCourse
-                ) {
-                    moveCourse(item.id, item.semesterId, semesterId);
-                } else if (
-                    item?.type === DragTypes.COURSE && 
-                    item.course && 
-                    typeof item.course === 'object' &&
-                    addCourseToSemester
-                ) {
-                    const plannedCourse: PlannedCourse = {
-                        ...item.course,
-                        semesterId: semesterId,
-                        status: "planned" as const,
-                        grade: null,
-                        year: semesterYear,
-                        season: semesterSeason as "Fall" | "Spring" | "Summer",
-                    };
-                    addCourseToSemester(plannedCourse);
-                }
-            } catch (error) {
-                console.error('Error handling drop:', error);
-            }
-            
-            return {
-                targetSemesterId: semesterId,
-                targetType: "semester",
-            };
-        },
-        collect: (monitor) => ({
-            isOver: monitor.isOver(),
-            canDrop: monitor.canDrop(),
-        }),
-    });
-
-    // Early return if no semester provided
-    if (!semester || typeof semester !== 'object') {
+    // Additional validation
+    if (typeof semester !== 'object') {
         return (
             <Card className="border-red-200 bg-red-50">
                 <CardContent className="p-4">
@@ -126,6 +128,7 @@ const SemesterCard: React.FC<SemesterCardProps> = ({ semester }) => {
               college: selectedCourse.college || "Unknown College",
               prerequisites: Array.isArray(selectedCourse.prerequisites) ? selectedCourse.prerequisites : [],
               offerings: selectedCourse.offerings || { fall: true, spring: true, summer: false },
+              type: 'planned', // Default type for planned courses
           } as Course)
         : null;
 

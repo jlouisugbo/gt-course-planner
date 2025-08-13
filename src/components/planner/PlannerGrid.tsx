@@ -1,36 +1,129 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { memo, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Upload, User, GraduationCap } from "lucide-react";
-import { usePlannerStore } from "@/hooks/usePlannerStore";
-import { motion } from "framer-motion";
-import AcademicYearCard from "./parts/AcademicYearCard";
-import ProfileSetup from "@/components/profile/ProfileSetup";
-import CourseRecommendations from "./CourseRecommendations";
+import { 
+  Calendar,
+  Plus,
+  CheckCircle2,
+  AlertTriangle,
+  GripVertical,
+  Trash2
+} from "lucide-react";
+import { useUserAwarePlannerStore } from "@/hooks/useUserAwarePlannerStore";
+import { motion, AnimatePresence } from "framer-motion";
+import { useDroppable, useDraggable } from '@dnd-kit/core';
+// import { DragTypes } from '@/types'; // Currently unused
+import { cn } from '@/lib/utils';
+import { CriticalErrorBoundary } from "@/components/error/GlobalErrorBoundary";
 
-const PlannerGrid = () => {
+// Draggable Course Card Component
+const DraggableCourseCard: React.FC<{
+    course: any;
+    semesterId: number;
+    isCompleted: boolean;
+    isCurrent: boolean;
+    onRemove: (semesterId: number, courseId: number | string) => void;
+}> = memo(({ course, semesterId, isCompleted, isCurrent, onRemove }) => {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        isDragging,
+    } = useDraggable({
+        id: course.id || course.code,
+        data: {
+            course,
+            semesterId,
+        },
+    });
 
-    const { semesters, studentInfo, userProfile } = usePlannerStore();
-    const [showProfileSetup, setShowProfileSetup] = useState(false);
+    const style = transform ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+    } : undefined;
+
+    return (
+        <motion.div
+            ref={setNodeRef}
+            style={style}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: isDragging ? 0.5 : 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="group"
+            role="listitem"
+        >
+            <div 
+                className={cn(
+                    "p-3 rounded-lg border transition-all duration-200 focus-within:ring-2 focus-within:ring-blue-500/20",
+                    "hover:shadow-sm cursor-move",
+                    isDragging && "opacity-50",
+                    isCompleted && "bg-green-50 border-green-200",
+                    isCurrent && "bg-yellow-50 border-yellow-200",
+                    !isCompleted && !isCurrent && "bg-white border-gray-200 hover:border-[#B3A369]/30"
+                )}
+                tabIndex={0}
+                role="button"
+                aria-label={`${course.code} ${course.title}, ${course.credits} credits. Press Enter to interact.`}
+                {...attributes}
+                {...listeners}
+            >
+                <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                            <GripVertical 
+                                className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" 
+                                aria-hidden="true"
+                            />
+                            <span className="font-medium text-sm text-[#003057] break-words">
+                                {course.code || 'Course Code'}
+                            </span>
+                            <Badge 
+                                variant="secondary" 
+                                className="text-xs flex-shrink-0"
+                                aria-label={`${course.credits || 3} credit hours`}
+                            >
+                                {course.credits || 3}
+                            </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-2 break-words">
+                            {course.title || course.name || 'Course Title'}
+                        </p>
+                    </div>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity min-h-[44px] min-w-[44px] p-0 text-red-500 hover:text-red-700 flex-shrink-0"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onRemove(semesterId, course.id || course.code);
+                        }}
+                        aria-label={`Remove ${course.code} from semester`}
+                    >
+                        <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    </Button>
+                </div>
+            </div>
+        </motion.div>
+    );
+});
+
+DraggableCourseCard.displayName = 'DraggableCourseCard';
+
+export const PlannerGrid: React.FC = memo(() => {
+    const plannerStore = useUserAwarePlannerStore();
+    const { semesters, removeCourseFromSemester } = plannerStore;
 
     const safeSemesters = useMemo(() => {
         return semesters && typeof semesters === 'object' ? semesters : {};
     }, [semesters]);
 
-    const safeStudentInfo = useMemo(() => {
-        return studentInfo && typeof studentInfo === 'object' ? studentInfo : {};
-    }, [studentInfo]);
 
-    const safeUserProfile = useMemo(() => {
-        return userProfile && typeof userProfile === 'object' ? userProfile : null;
-    }, [userProfile]);
-
-    // Group semesters by academic year - memoized to prevent recalculation
-    const groupSemestersByAcademicYear = useMemo(() => {
-        const semesterArray = Object.values(safeSemesters)
+    // Process semesters into sorted array
+    const sortedSemesters = useMemo(() => {
+        return Object.values(safeSemesters)
             .filter(semester => 
                 semester && 
                 typeof semester === 'object' &&
@@ -42,266 +135,218 @@ const PlannerGrid = () => {
                 const seasonOrder: Record<string, number> = { Fall: 0, Spring: 1, Summer: 2 };
                 return (seasonOrder[a.season] || 0) - (seasonOrder[b.season] || 0);
             });
-
-        const academicYears: { [key: string]: any[] } = {};
-
-        semesterArray.forEach((semester) => {
-            let academicYear: string;
-
-            // Academic year starts with Fall semester
-            // Fall 2024 -> 2024-2025 academic year
-            // Spring 2025 -> 2024-2025 academic year  
-            // Summer 2025 -> 2024-2025 academic year
-            if (semester.season === "Fall") {
-                academicYear = `${semester.year}-${semester.year + 1}`;
-            } else { // Spring or Summer
-                academicYear = `${semester.year - 1}-${semester.year}`;
-            }
-
-            if (!academicYears[academicYear]) {
-                academicYears[academicYear] = [];
-            }
-
-            academicYears[academicYear].push(semester);
-        });
-
-        // Sort each academic year's semesters properly
-        Object.keys(academicYears).forEach(year => {
-            academicYears[year].sort((a, b) => {
-                if (a.year !== b.year) return a.year - b.year;
-                const seasonOrder: Record<string, number> = { Fall: 0, Spring: 1, Summer: 2 };
-                return (seasonOrder[a.season] || 0) - (seasonOrder[b.season] || 0);
-            });
-        });
-
-        // Sort academic years chronologically
-        const sortedAcademicYears: { [key: string]: any[] } = {};
-        Object.keys(academicYears)
-            .sort((a, b) => {
-                const yearA = parseInt(a.split('-')[0]);
-                const yearB = parseInt(b.split('-')[0]);
-                return yearA - yearB;
-            })
-            .forEach(year => {
-                sortedAcademicYears[year] = academicYears[year];
-            });
-
-        return sortedAcademicYears;
     }, [safeSemesters]);
 
-    // Memoize calculations with safety checks
-    const totalCreditsPlanned = useMemo(() => {
-        return Object.values(safeSemesters)
-            .filter(semester => semester && typeof semester === 'object')
-            .reduce((sum, semester) => {
-                const credits = typeof semester.totalCredits === 'number' ? semester.totalCredits : 0;
-                return sum + credits;
-            }, 0);
-    }, [safeSemesters]);
+    // Memoized remove course handler
+    const handleRemoveCourse = useCallback(
+        (semesterId: number, courseId: number | string) => {
+            if (removeCourseFromSemester) {
+                removeCourseFromSemester(semesterId, courseId);
+            }
+        },
+        [removeCourseFromSemester]
+    );
 
-    const averageCreditsPerSemester = useMemo(() => {
-        const academicYearCount = Object.keys(groupSemestersByAcademicYear).length;
-        return academicYearCount > 0
-            ? totalCreditsPlanned / (academicYearCount * 2.5)
-            : 0;
-    }, [groupSemestersByAcademicYear, totalCreditsPlanned]);
+    // Modern semester card component - memoized for performance
+    const ModernSemesterCard: React.FC<{ semester: any; index: number }> = memo(({ semester, index }) => {
+        const { isOver, setNodeRef } = useDroppable({
+            id: `semester-${semester.id}`,
+        });
 
-    // Memoize handlers
-    const handleProfileSetupOpen = useCallback(() => {
-        setShowProfileSetup(true);
-    }, []);
+        // Memoize semester calculations
+        const semesterData = useMemo(() => {
+            const totalCredits = typeof semester.totalCredits === 'number' ? semester.totalCredits : 0;
+            const courses = Array.isArray(semester.courses) ? semester.courses : [];
+            return {
+                totalCredits,
+                courses,
+                isOverloaded: totalCredits > 18,
+                isLight: totalCredits < 12,
+                isCompleted: Boolean(semester.isCompleted),
+                isCurrent: Boolean(semester.isActive)
+            };
+        }, [semester]);
 
-    const handleProfileSetupClose = useCallback(() => {
-        setShowProfileSetup(false);
-    }, []);
+        const { totalCredits, courses, isOverloaded, isLight, isCompleted, isCurrent } = semesterData;
 
-    // Safe graduation date access
-    const expectedGraduation = (safeStudentInfo as any).expectedGraduation || 
-        (typeof (safeStudentInfo as any).graduationYear === 'number' ? `Spring ${(safeStudentInfo as any).graduationYear}` : 'TBD');
-
-    return (
-        <div className="min-h-screen bg-slate-50">
-            <div className="max-w-[1800px] mx-auto p-6 space-y-8 min-h-screen">
-                {/* Header Section */}
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold text-slate-900 mb-1">
-                            Academic Plan
-                        </h1>
-                        <p className="text-base text-slate-600">
-                            Plan your 4-year journey at Georgia Tech
-                        </p>
-                    </div>
-
-                    <div className="mt-3 lg:mt-0 flex items-center space-x-3">
-                        <Button
-                            variant="outline"
-                            onClick={handleProfileSetupOpen}
-                            className="border-slate-300 text-sm h-9"
-                        >
-                            <User className="h-4 w-4 mr-2" />
-                            Profile
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="border-slate-300 text-sm h-9"
-                        >
-                            <Upload className="h-4 w-4 mr-2" />
-                            Import
-                        </Button>
-                        <Button className="bg-[#003057] hover:bg-[#b3a369] text-sm h-9 text-white">
-                            <Download className="h-4 w-4 mr-2" />
-                            Export
-                        </Button>
-                    </div>
-                </div>
-
-                {/* Student Info Banner */}
-                {safeUserProfile && (
-                    <Card className="gt-gradient text-white border-0 mb-12">
-                        <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h3 className="text-lg font-semibold">
-                                        {safeUserProfile.name || 'Student'}
-                                    </h3>
-                                    <p className="text-sm opacity-90">
-                                        {safeUserProfile.major || 'Undeclared'} •{" "}
-                                        {safeUserProfile.startDate || 'TBD'} -{" "}
-                                        {safeUserProfile.expectedGraduation || 'TBD'}
-                                    </p>
-                                    {Array.isArray(safeUserProfile.threads) && safeUserProfile.threads.length > 0 && (
-                                        <div className="flex space-x-2 mt-2">
-                                            {safeUserProfile.threads.map((thread, index) => (
-                                                <Badge
-                                                    key={`${thread}-${index}`}
-                                                    variant="secondary"
-                                                    className="bg-white/20 text-white border-white/30 text-xs"
-                                                >
-                                                    {thread}
-                                                </Badge>
-                                            ))}
-                                        </div>
+        return (
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="h-full"
+            >
+                <Card 
+                    ref={setNodeRef}
+                    className={cn(
+                        "h-full transition-all duration-200 relative focus-within:ring-2 focus-within:ring-blue-500/20",
+                        isOver && "ring-2 ring-[#B3A369] ring-opacity-50",
+                        isCurrent && "border-[#B3A369] shadow-lg",
+                        isCompleted && "border-green-300 bg-green-50/30"
+                    )}
+                    role="region"
+                    aria-label={`${semester.season} ${semester.year} semester with ${courses.length} courses, ${totalCredits} credits${isCurrent ? ' (current)' : ''}${isCompleted ? ' (completed)' : ''}`}
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            // Focus on first course or add course button
+                            const firstInteractable = e.currentTarget.querySelector('button, [tabindex="0"]') as HTMLElement;
+                            firstInteractable?.focus();
+                        }
+                    }}
+                >
+                    <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                                <CardTitle 
+                                    className={cn(
+                                        "text-base sm:text-lg mb-1 break-words",
+                                        isCurrent && "text-[#B3A369]",
+                                        isCompleted && "text-green-700"
                                     )}
-                                </div>
-                                <div className="text-right">
-                                    <div className="text-xl font-bold">
-                                        {typeof safeUserProfile.currentGPA === 'number' 
-                                            ? safeUserProfile.currentGPA.toFixed(2) 
-                                            : '0.00'}
-                                    </div>
-                                    <div className="text-sm opacity-90">
-                                        Current GPA
-                                    </div>
+                                    id={`semester-title-${semester.id}`}
+                                >
+                                    {semester.season} {semester.year}
+                                </CardTitle>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {isCurrent && (
+                                        <Badge className="bg-[#B3A369] text-white text-xs">
+                                            Current
+                                        </Badge>
+                                    )}
+                                    {isCompleted && (
+                                        <Badge className="bg-green-100 text-green-800 text-xs">
+                                            <CheckCircle2 className="h-3 w-3 mr-1" aria-hidden="true" />
+                                            Complete
+                                        </Badge>
+                                    )}
+                                    <Badge 
+                                        variant="outline" 
+                                        className={cn(
+                                            "text-xs",
+                                            isOverloaded && "border-red-300 text-red-700",
+                                            isLight && "border-yellow-300 text-yellow-700"
+                                        )}
+                                        role="status"
+                                        aria-label={`${totalCredits} credits ${isOverloaded ? '(overloaded)' : isLight ? '(light load)' : ''}`}
+                                    >
+                                        {totalCredits} credits
+                                    </Badge>
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
-                )}
-
-                {/* Main Content Grid - Increased spacing and height */}
-                <div className="grid grid-cols-1 xl:grid-cols-7 gap-8 mb-16">
-                    {/* Course Recommendations Sidebar - Taller with more padding */}
-                    <div className="xl:col-span-2">
-                        <div className="sticky top-6 h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar pr-2">
-                            <CourseRecommendations />
-                        </div>
-                    </div>
-                    
-                    {/* Academic Years Grid - Taller and more spaced */}
-                    <div className="xl:col-span-5">
-                        <div className="space-y-8 min-h-[calc(100vh-200px)]">
-                            {Object.keys(groupSemestersByAcademicYear).length === 0 ? (
-                                <Card className="border-slate-300 py-16">
-                                    <CardContent className="text-center py-8">
-                                        <GraduationCap className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-                                        <p className="text-gray-600">No academic years planned yet</p>
-                                        <p className="text-sm text-gray-500 mt-1">
-                                            Set up your profile to generate semester plan
-                                        </p>
-                                    </CardContent>
-                                </Card>
-                            ) : (
-                                Object.entries(groupSemestersByAcademicYear).map(
-                                    ([academicYear, yearSemesters], index) => (
-                                        <motion.div
-                                            key={academicYear}
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: index * 0.1 }}
-                                            className="mb-8"
-                                        >
-                                            <AcademicYearCard
-                                                academicYear={academicYear}
-                                                semesters={yearSemesters}
-                                            />
-                                        </motion.div>
-                                    ),
-                                )
+                            {isOverloaded && (
+                                <AlertTriangle 
+                                    className="h-4 w-4 text-orange-500 flex-shrink-0" 
+                                    aria-label="Credit overload warning"
+                                    role="img"
+                                />
                             )}
                         </div>
-                    </div>
+                    </CardHeader>
+
+                    <CardContent className="pt-0">
+                        <div 
+                            className="space-y-2 min-h-[200px]"
+                            role="list"
+                            aria-labelledby={`semester-title-${semester.id}`}
+                        >
+                            <AnimatePresence>
+                                {courses.map((course: any, courseIndex: number) => (
+                                    <DraggableCourseCard
+                                        key={course.id || courseIndex}
+                                        course={course}
+                                        semesterId={semester.id}
+                                        isCompleted={isCompleted}
+                                        isCurrent={isCurrent}
+                                        onRemove={handleRemoveCourse}
+                                    />
+                                ))}
+                            </AnimatePresence>
+
+                            {/* Drop zone when empty */}
+                            {courses.length === 0 && (
+                                <div 
+                                    className={cn(
+                                        "flex flex-col items-center justify-center py-8 border-2 border-dashed rounded-lg transition-colors min-h-[120px]",
+                                        isOver ? "border-[#B3A369] bg-[#B3A369]/5" : "border-gray-300"
+                                    )}
+                                    role="status"
+                                    aria-live="polite"
+                                    aria-label={isOver ? `Ready to drop course in ${semester.season} ${semester.year}` : `Empty semester: ${semester.season} ${semester.year}`}
+                                >
+                                    <Plus 
+                                        className={cn(
+                                            "h-8 w-8 mb-2 transition-colors",
+                                            isOver ? "text-[#B3A369]" : "text-muted-foreground"
+                                        )} 
+                                        aria-hidden="true"
+                                    />
+                                    <p className={cn(
+                                        "text-sm transition-colors text-center",
+                                        isOver ? "text-[#B3A369]" : "text-muted-foreground"
+                                    )}>
+                                        {isOver ? 'Drop course here' : 'Drag courses here'}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+            </motion.div>
+        );
+    });
+
+    ModernSemesterCard.displayName = 'ModernSemesterCard';
+
+    if (sortedSemesters.length === 0) {
+        return (
+            <Card className="h-full">
+                <CardContent className="flex flex-col items-center justify-center py-16">
+                    <Calendar className="h-16 w-16 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold text-muted-foreground mb-2">No Semesters Planned</h3>
+                    <p className="text-sm text-muted-foreground text-center">
+                        Set up your academic profile to generate your semester plan
+                    </p>
+                </CardContent>
+            </Card>
+        );
+    }
+
+    return (
+        <CriticalErrorBoundary>
+            <div className="space-y-6">
+                {/* Semester Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {sortedSemesters.map((semester, index) => (
+                        <ModernSemesterCard
+                            key={semester.id || `${semester.season}-${semester.year}`}
+                            semester={semester}
+                            index={index}
+                        />
+                    ))}
                 </div>
 
-                {/* Plan Summary - Pushed much further down with more spacing */}
-                <div className="mt-24 pt-16 border-t border-slate-200">
-                    <Card className="academic-year-card">
-                        <CardHeader className="pb-4">
-                            <CardTitle className="flex items-center text-slate-900 text-xl">
-                                <GraduationCap className="h-6 w-6 mr-3" />
-                                Plan Summary
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-2">
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                                <div className="text-center p-4 bg-slate-50 rounded-lg">
-                                    <div className="text-3xl font-bold text-slate-900 mb-1">
-                                        {totalCreditsPlanned}
-                                    </div>
-                                    <div className="text-sm text-slate-600">
-                                        Total Credits
-                                    </div>
-                                </div>
-                                <div className="text-center p-4 bg-slate-50 rounded-lg">
-                                    <div className="text-3xl font-bold text-slate-900 mb-1">
-                                        {Object.keys(groupSemestersByAcademicYear).length}
-                                    </div>
-                                    <div className="text-sm text-slate-600">
-                                        Academic Years
-                                    </div>
-                                </div>
-                                <div className="text-center p-4 bg-slate-50 rounded-lg">
-                                    <div className="text-3xl font-bold text-slate-900 mb-1">
-                                        {averageCreditsPerSemester.toFixed(1)}
-                                    </div>
-                                    <div className="text-sm text-slate-600">
-                                        Avg Credits/Sem
-                                    </div>
-                                </div>
-                                <div className="text-center p-4 bg-slate-50 rounded-lg">
-                                    <div className="text-3xl font-bold text-[#B3A369] mb-1">
-                                        {expectedGraduation}
-                                    </div>
-                                    <div className="text-sm text-slate-600">
-                                        Graduation
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Profile Setup Modal */}
-                {showProfileSetup && (
-                    <ProfileSetup
-                        isOpen={showProfileSetup}
-                        onClose={handleProfileSetupClose}
-                        existingProfile={safeUserProfile || undefined}
-                    />
-                )}
+            {/* Add Semester Button */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: sortedSemesters.length * 0.1 }}
+                className="flex justify-center"
+            >
+                <Button
+                    variant="outline"
+                    className="border-dashed border-2 border-[#B3A369] text-[#B3A369] hover:bg-[#B3A369]/5 min-h-[120px] w-full max-w-sm flex flex-col items-center justify-center gap-2 focus:ring-2 focus:ring-blue-500/20"
+                    aria-label="Add new semester for course planning"
+                >
+                    <Plus className="h-8 w-8" aria-hidden="true" />
+                    <span className="font-medium">Add New Semester</span>
+                    <span className="text-xs text-muted-foreground">Plan your next semester</span>
+                </Button>
+            </motion.div>
             </div>
-        </div>
+        </CriticalErrorBoundary>
     );
-};
+});
 
-export default PlannerGrid;
+PlannerGrid.displayName = 'PlannerGrid';

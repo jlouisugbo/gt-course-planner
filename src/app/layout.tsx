@@ -2,9 +2,13 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "@/providers/AppProviders";
-import  AppLayout  from "@/components/layout/AppLayout";
+import AppLayout from "@/components/layout/AppLayout";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ 
+    subsets: ["latin"],
+    variable: '--font-inter',
+    display: 'swap',
+});
 
 export const metadata: Metadata = {
     title: "GT 4-Year Planner",
@@ -18,7 +22,7 @@ export default function RootLayout({
 }) {
     return (
         <html lang="en">
-            <body className={inter.className}>
+            <body className={`${inter.variable} font-sans`}>
                 <AppProviders>
                     <AppLayout>{children}</AppLayout>
                 </AppProviders>

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -45,9 +46,11 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ user, stats })
                         <div className="space-y-3">
                             <div className="flex items-center space-x-3">
                                 {user.avatar && (
-                                    <img 
+                                    <Image 
                                         src={user.avatar} 
                                         alt={user.name}
+                                        width={48}
+                                        height={48}
                                         className="w-12 h-12 rounded-full border-2 border-white/30"
                                     />
                                 )}

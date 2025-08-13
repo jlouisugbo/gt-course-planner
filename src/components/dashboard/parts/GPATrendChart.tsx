@@ -6,9 +6,10 @@ import { motion } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { TrendingUp } from "lucide-react";
+import { GPAHistoryItem } from "@/types/dashboard";
 
 interface GPATrendChartProps {
-    gpaHistory?: any[];
+    gpaHistory?: GPAHistoryItem[];
     delay?: number;
 }
 
@@ -31,10 +32,10 @@ const GPATrendChart = ({ gpaHistory, delay = 0 }: GPATrendChartProps) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay }}
         >
-            <Card className="border-slate-300">
+            <Card className="border-l-4 border-l-[#B3A369]/20">
                 <CardHeader>
-                    <CardTitle className="flex items-center">
-                        <TrendingUp className="h-5 w-5 mr-2" />
+                    <CardTitle className="flex items-center text-[#003057]">
+                        <TrendingUp className="h-5 w-5 mr-2 text-[#B3A369]" />
                         GPA Trend
                     </CardTitle>
                     <CardDescription>

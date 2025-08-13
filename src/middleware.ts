@@ -54,12 +54,8 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  console.log('Middleware - pathname:', pathname)
-  console.log('Middleware - user exists:', !!user)
-
   // Check if user is authenticated
   if (!user) {
-    console.log('Middleware - No user, redirecting to landing')
     const url = request.nextUrl.clone()
     url.pathname = '/landing' 
     return NextResponse.redirect(url)
@@ -72,12 +68,8 @@ export async function middleware(request: NextRequest) {
     .eq('auth_id', user.id)
     .single()
 
-  console.log('Middleware - userProfile:', userProfile)
-  console.log('Middleware - profileError:', profileError)
-
   // If user doesn't exist in database, redirect to landing
   if (profileError?.code === 'PGRST116') {
-    console.log('Middleware - No user profile in database, redirecting to landing')
     const url = request.nextUrl.clone()
     url.pathname = '/landing'
     return NextResponse.redirect(url)
@@ -86,11 +78,8 @@ export async function middleware(request: NextRequest) {
   // Check if setup is complete (graduation_year and major are set)
   const isSetupComplete = Boolean(userProfile?.graduation_year && userProfile?.major)
 
-  console.log('Middleware - isSetupComplete:', isSetupComplete)
-
   // If setup is not complete and not on setup page, redirect to setup
   if (!isSetupComplete && !pathname.startsWith('/setup')) {
-    console.log('Middleware - Setup not complete, redirecting to setup')
     const url = request.nextUrl.clone()
     url.pathname = '/setup'
     return NextResponse.redirect(url)
@@ -98,14 +87,12 @@ export async function middleware(request: NextRequest) {
 
   // If setup is complete and on setup page, redirect to dashboard
   if (isSetupComplete && pathname.startsWith('/setup')) {
-    console.log('Middleware - Setup complete, redirecting to dashboard')
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
 
   // Allow access to protected routes if authenticated and setup complete
-  console.log('Middleware - Allowing access to protected route')
   return supabaseResponse
 }
 

@@ -1,252 +1,254 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { 
+  createErrorHandler, 
+  withRetry, 
+  ErrorInfo,
+  ErrorHandlerOptions
+} from '@/lib/errorHandlingUtils';
 
 type ErrorContext = 'courses' | 'requirements' | 'planner' | 'dashboard' | 'auth' | 'profile';
 
-interface ErrorMetadata {
+interface UseErrorHandlingOptions {
   context: ErrorContext;
-  action?: string;
   userId?: string;
-  timestamp: Date;
-  userAgent: string;
-  url: string;
+  showToasts?: boolean;
 }
 
-interface ErrorHandlingOptions {
-  context: ErrorContext;
-  fallbackMessage?: string;
-  retry?: () => void | Promise<void>;
-  reportToService?: boolean;
-}
-
-export function useErrorHandling() {
+export function useErrorHandling(options: UseErrorHandlingOptions = { context: 'general' as any }) {
   const queryClient = useQueryClient();
+  const { context, userId, showToasts = true } = options;
 
-  // Enhanced error categorization
-  const categorizeError = useCallback((_error: Error): {
-    type: 'network' | 'auth' | 'validation' | 'api' | 'client' | 'unknown';
-    severity: 'low' | 'medium' | 'high' | 'critical';
-    userMessage: string;
-  } => {
-    const message = _error.message.toLowerCase();
-    const stack = _error.stack?.toLowerCase() || '';
+  // Create a context-specific error handler
+  const contextErrorHandler = useMemo(() => {
+    return createErrorHandler(context, userId);
+  }, [context, userId]);
 
-    // Network errors
-    if (message.includes('fetch') || message.includes('network') || message.includes('timeout')) {
-      return {
-        type: 'network',
-        severity: 'medium',
-        userMessage: 'Unable to connect to GT servers. Please check your internet connection.'
-      };
+  // Handle errors with optional custom options
+  const handleErrorWithOptions = useCallback((
+    error: unknown, 
+    customOptions: Partial<ErrorHandlerOptions> = {}
+  ): ErrorInfo => {
+    return contextErrorHandler(error, {
+      showToast: showToasts,
+      ...customOptions
+    });
+  }, [contextErrorHandler, showToasts]);
+
+  // Quick error handler for common use cases
+  const handleError = useCallback((error: unknown): ErrorInfo => {
+    return handleErrorWithOptions(error);
+  }, [handleErrorWithOptions]);
+
+  // Handle async operation with retry logic
+  const handleAsyncOperation = useCallback(async <T>(
+    operation: () => Promise<T>,
+    retryOptions: {
+      maxRetries?: number;
+      delay?: number;
+      shouldRetry?: (error: any, attempt: number) => boolean;
+    } = {}
+  ): Promise<T> => {
+    try {
+      return await withRetry(operation, {
+        context,
+        ...retryOptions
+      });
+    } catch (error) {
+      handleError(error);
+      throw error; // Re-throw after handling
     }
+  }, [context, handleError]);
 
-    // Authentication errors
-    if (message.includes('unauthorized') || message.includes('403') || message.includes('401')) {
-      return {
-        type: 'auth',
-        severity: 'high',
-        userMessage: 'Your session has expired. Please log in again.'
-      };
-    }
-
-    // API/Server errors
-    if (message.includes('500') || message.includes('502') || message.includes('503')) {
-      return {
-        type: 'api',
-        severity: 'high',
-        userMessage: 'GT Course Planner servers are temporarily unavailable. Please try again later.'
-      };
-    }
-
-    // Validation errors
-    if (message.includes('validation') || message.includes('invalid') || message.includes('required')) {
-      return {
-        type: 'validation',
-        severity: 'low',
-        userMessage: 'Please check your input and try again.'
-      };
-    }
-
-    // Client-side errors
-    if (stack.includes('react') || stack.includes('component')) {
-      return {
-        type: 'client',
-        severity: 'medium',
-        userMessage: 'There was an issue with the page. Try refreshing or return to the dashboard.'
-      };
-    }
-
-    // Unknown errors
-    return {
-      type: 'unknown',
-      severity: 'medium',
-      userMessage: 'An unexpected error occurred. Please try again or contact support.'
+  // Clear related queries on error (useful for cache invalidation)
+  const clearQueriesOnError = useCallback((queryKeys: string[]) => {
+    return (error: unknown) => {
+      const errorInfo = handleError(error);
+      
+      // Clear relevant queries based on error type
+      if (errorInfo.type === 'auth') {
+        queryClient.clear(); // Clear all queries on auth error
+      } else if (errorInfo.type === 'api' && errorInfo.severity === 'high') {
+        // Clear specific queries for API errors
+        queryKeys.forEach(key => {
+          queryClient.removeQueries({ queryKey: [key] });
+        });
+      }
+      
+      return errorInfo;
     };
-  }, []);
+  }, [handleError, queryClient]);
 
-  // Create error metadata for reporting
-  const createErrorMetadata = useCallback((context: ErrorContext, error: Error): ErrorMetadata => {
-    return {
-      context,
-      timestamp: new Date(),
-      userAgent: navigator.userAgent,
-      url: window.location.href,
-      // Note: In a real app, get userId from auth context
-      userId: 'current-user-id'
-    };
-  }, []);
-
-  // Report error to monitoring service
-  const reportError = useCallback((error: Error, metadata: ErrorMetadata) => {
-    if (process.env.NODE_ENV === 'production') {
-      // In production, send to error reporting service
-      console.log('Would report error:', { error, metadata });
-      // Example: Sentry.captureException(error, { extra: metadata });
-    } else {
-      // In development, just log
-      console.error('Error Report:', { error, metadata });
-    }
-  }, []);
-
-  // Handle GT-specific course data errors
-  const handleCourseDataError = useCallback((error: Error, action?: string) => {
-    const { type, severity, userMessage } = categorizeError(error);
-    const metadata = createErrorMetadata('courses', error);
-    
-    // Clear related queries on certain errors
-    if (type === 'api' || type === 'network') {
-      queryClient.removeQueries({ queryKey: ['courses'] });
-      queryClient.removeQueries({ queryKey: ['course-search'] });
-    }
-
-    reportError(error, { ...metadata, action });
-
-    return {
-      type,
-      severity,
-      userMessage: userMessage || 'Unable to load course information. Please try again.',
-      shouldRetry: type === 'network' || type === 'api',
-      shouldReload: type === 'client',
-      shouldLogout: type === 'auth'
-    };
-  }, [categorizeError, createErrorMetadata, reportError, queryClient]);
-
-  // Handle requirements/degree program errors
-  const handleRequirementsError = useCallback((error: Error, action?: string) => {
-    const { type, severity, userMessage } = categorizeError(error);
-    const metadata = createErrorMetadata('requirements', error);
-
-    // Clear requirements cache on error
-    queryClient.removeQueries({ queryKey: ['degree-program'] });
-    queryClient.removeQueries({ queryKey: ['requirements'] });
-
-    reportError(error, { ...metadata, action });
-
-    return {
-      type,
-      severity,
-      userMessage: userMessage || 'Unable to load degree requirements. Please verify your profile setup.',
-      shouldRetry: type === 'network' || type === 'api',
-      shouldCheckProfile: true,
-      shouldLogout: type === 'auth'
-    };
-  }, [categorizeError, createErrorMetadata, reportError, queryClient]);
-
-  // Handle academic planner errors
-  const handlePlannerError = useCallback((error: Error, action?: string) => {
-    const { type, severity, userMessage } = categorizeError(error);
-    const metadata = createErrorMetadata('planner', error);
-
-    // Don't clear planner data immediately - user might lose work
-    if (type === 'auth') {
-      queryClient.removeQueries({ queryKey: ['planner'] });
-    }
-
-    reportError(error, { ...metadata, action });
-
-    return {
-      type,
-      severity,
-      userMessage: userMessage || 'Issue with academic planner. Your data should be safe, but try refreshing.',
-      shouldRetry: type === 'network' || type === 'api',
-      shouldBackup: true, // Suggest backing up current plan
-      shouldLogout: type === 'auth'
-    };
-  }, [categorizeError, createErrorMetadata, reportError, queryClient]);
-
-  // Handle authentication/profile errors
-  const handleAuthError = useCallback((error: Error, action?: string) => {
-    const { type, severity, userMessage } = categorizeError(error);
-    const metadata = createErrorMetadata('auth', error);
-
-    // Clear all user data on auth errors
-    queryClient.clear();
-
-    reportError(error, { ...metadata, action });
-
-    return {
-      type,
-      severity,
-      userMessage: userMessage || 'Authentication issue. Please log in again.',
-      shouldLogout: true,
-      shouldRedirect: '/auth/login'
-    };
-  }, [categorizeError, createErrorMetadata, reportError, queryClient]);
-
-  // Generic error handler with context awareness
-  const handleError = useCallback((
-    error: Error, 
-    options: ErrorHandlingOptions
+  // Optimistic update rollback handler
+  const handleOptimisticError = useCallback((
+    error: unknown,
+    rollbackData: any,
+    queryKey: string[]
   ) => {
-    const { context, fallbackMessage, retry, reportToService = true } = options;
+    const errorInfo = handleError(error);
+    
+    // Rollback optimistic update
+    queryClient.setQueryData(queryKey, rollbackData);
+    
+    // Optionally refetch the data
+    if (errorInfo.shouldRetry) {
+      queryClient.invalidateQueries({ queryKey });
+    }
+    
+    return errorInfo;
+  }, [handleError, queryClient]);
 
-    let result;
+  // Form-specific error handler
+  const handleFormError = useCallback((
+    error: unknown, 
+    formData?: any,
+    onPartialSave?: (data: any) => void
+  ) => {
+    const errorInfo = handleErrorWithOptions(error, {
+      logToConsole: true,
+      showToast: showToasts
+    });
+
+    // Save form data for recovery if provided
+    if (formData && onPartialSave) {
+      try {
+        onPartialSave(formData);
+      } catch (saveError) {
+        console.error('Failed to save form data for recovery:', saveError);
+      }
+    }
+
+    return errorInfo;
+  }, [handleErrorWithOptions, showToasts]);
+
+  // Network-specific error handler with connectivity check
+  const handleNetworkError = useCallback(async (error: unknown) => {
+    const errorInfo = handleError(error);
+    
+    if (errorInfo.type === 'network') {
+      // Check if it's actually a network issue
+      try {
+        const response = await fetch('/api/health', { method: 'HEAD' });
+        if (response.ok) {
+          // Network is fine, might be a CORS or other issue
+          return handleErrorWithOptions(error, {
+            showToast: true,
+            userMessage: 'There was a connection issue. Please try again.'
+          });
+        }
+      } catch {
+        // Definitely a network issue
+        return handleErrorWithOptions(error, {
+          showToast: true,
+          userMessage: 'You appear to be offline. Please check your connection.'
+        });
+      }
+    }
+    
+    return errorInfo;
+  }, [handleError, handleErrorWithOptions]);
+
+  // Context-specific error handlers
+  const contextSpecificHandlers = useMemo(() => {
+    const baseHandler = handleErrorWithOptions;
+    
     switch (context) {
       case 'courses':
-        result = handleCourseDataError(error);
-        break;
-      case 'requirements':
-        result = handleRequirementsError(error);
-        break;
-      case 'planner':
-        result = handlePlannerError(error);
-        break;
-      case 'auth':
-      case 'profile':
-        result = handleAuthError(error);
-        break;
-      default:
-        const { type, severity, userMessage } = categorizeError(error);
-        const metadata = createErrorMetadata(context, error);
-        if (reportToService) {
-          reportError(error, metadata);
-        }
-        result = {
-          type,
-          severity,
-          userMessage: fallbackMessage || userMessage,
-          shouldRetry: type === 'network' || type === 'api'
+        return {
+          handleCourseLoadError: (error: unknown) => baseHandler(error, {
+            fallbackMessage: 'Unable to load course information. Please try refreshing the page.'
+          }),
+          handleCourseSearchError: (error: unknown) => baseHandler(error, {
+            fallbackMessage: 'Course search is temporarily unavailable. Please try again.'
+          })
         };
+        
+      case 'planner':
+        return {
+          handlePlannerSaveError: (error: unknown, planData?: any) => {
+            const errorInfo = baseHandler(error, {
+              fallbackMessage: 'Failed to save your academic plan. Your data may have been preserved.'
+            });
+            
+            // Try to save to localStorage as backup
+            if (planData && errorInfo.shouldRetry) {
+              try {
+                localStorage.setItem('planner-backup', JSON.stringify({
+                  data: planData,
+                  timestamp: new Date().toISOString()
+                }));
+              } catch (e) {
+                console.error('Failed to create backup:', e);
+              }
+            }
+            
+            return errorInfo;
+          }
+        };
+        
+      case 'requirements':
+        return {
+          handleRequirementError: (error: unknown) => baseHandler(error, {
+            fallbackMessage: 'Unable to load degree requirements. Please check your profile setup.'
+          })
+        };
+        
+      case 'auth':
+        return {
+          handleAuthError: (error: unknown) => baseHandler(error, {
+            fallbackMessage: 'Authentication issue. You may need to log in again.',
+            reportToService: true
+          })
+        };
+        
+      default:
+        return {};
     }
-
-    // Add retry function if provided
-    const finalResult = { ...result } as typeof result & { retry?: () => void | Promise<void> };
-    if (retry) {
-      finalResult.retry = retry;
-    }
-
-    return finalResult;
-  }, [handleCourseDataError, handleRequirementsError, handlePlannerError, handleAuthError, categorizeError, createErrorMetadata, reportError]);
+  }, [context, handleErrorWithOptions]);
 
   return {
+    // Core handlers
     handleError,
-    handleCourseDataError,
-    handleRequirementsError,
-    handlePlannerError,
-    handleAuthError,
-    categorizeError,
-    reportError
+    handleErrorWithOptions,
+    handleAsyncOperation,
+    
+    // Specialized handlers  
+    handleFormError,
+    handleNetworkError,
+    clearQueriesOnError,
+    handleOptimisticError,
+    
+    // Context-specific handlers
+    ...contextSpecificHandlers,
+    
+    // Utility functions
+    withRetry: (operation: () => Promise<any>, options = {}) => 
+      withRetry(operation, { context, ...options }),
+      
+    // Query utilities
+    invalidateQueries: (queryKey: string[]) => queryClient.invalidateQueries({ queryKey }),
+    clearQueries: (queryKey: string[]) => queryClient.removeQueries({ queryKey }),
+    clearAllQueries: () => queryClient.clear()
   };
 }
+
+// Specialized hooks for different contexts
+export const useCourseErrorHandling = (userId?: string) => 
+  useErrorHandling({ context: 'courses', userId });
+
+export const usePlannerErrorHandling = (userId?: string) => 
+  useErrorHandling({ context: 'planner', userId });
+
+export const useRequirementsErrorHandling = (userId?: string) => 
+  useErrorHandling({ context: 'requirements', userId });
+
+export const useAuthErrorHandling = (userId?: string) => 
+  useErrorHandling({ context: 'auth', userId });
+
+export const useProfileErrorHandling = (userId?: string) => 
+  useErrorHandling({ context: 'profile', userId });
+
+export const useDashboardErrorHandling = (userId?: string) => 
+  useErrorHandling({ context: 'dashboard', userId });

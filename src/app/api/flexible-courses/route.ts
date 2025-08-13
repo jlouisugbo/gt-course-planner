@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
             try {
                 const requirementResponse = await fetch(
                     `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/courses/requirement?name=${encodeURIComponent(requirementType)}&userId=${userId}`
+
                 );
                 
                 if (requirementResponse.ok) {
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Fallback to generic search
-        let query = supabaseAdmin
+        let query = supabaseAdmin()
             .from('courses')
             .select(`
                 id,
@@ -113,7 +114,7 @@ export async function GET(request: NextRequest) {
             postrequisites: course.postrequisites || [],
             type: course.course_type || 'elective',
             college: course.college_id || 'Unknown',
-            department: course.code?.split(' ')[0] || 'Unknown',
+            department: typeof course.code === 'string' ? course.code.split(' ')[0] || 'Unknown' : 'Unknown',
             difficulty: 3, // Default difficulty
             offerings: { fall: true, spring: true, summer: false } // Default offerings
         }));

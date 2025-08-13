@@ -1,6 +1,8 @@
 'use client';
 
 import React from 'react';
+import { createComponentLogger } from '@/lib/security/logger';
+import { ENV } from '@/lib/security/config';
 
 interface GlobalErrorProps {
   error: Error & { digest?: string };
@@ -13,12 +15,20 @@ interface GlobalErrorProps {
  */
 export default function GlobalError({ error, reset }: GlobalErrorProps) {
   React.useEffect(() => {
-    // Log the error for debugging
-    console.error('Global error caught:', error);
+    const logger = createComponentLogger('GLOBAL_ERROR_HANDLER');
     
-    // In production, you might want to send this to an error reporting service
-    if (process.env.NODE_ENV === 'production') {
-      // Example: reportError(error, { level: 'critical', context: 'global' });
+    // Log the error securely
+    logger.critical('Global error boundary triggered', error, {
+      digest: error.digest,
+      timestamp: new Date().toISOString(),
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+      url: typeof window !== 'undefined' ? window.location.href : 'unknown'
+    });
+    
+    // Report to monitoring service in production
+    if (ENV.isProd) {
+      // Monitoring service integration would go here
+      // Example: reportCriticalError(error, { context: 'global', digest: error.digest });
     }
   }, [error]);
 
@@ -89,7 +99,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
             </div>
 
             {/* Development Information */}
-            {process.env.NODE_ENV === 'development' && (
+            {!ENV.isProd && (
               <details className="mt-6 text-left">
                 <summary className="cursor-pointer text-xs font-medium text-gray-600">
                   Developer Information

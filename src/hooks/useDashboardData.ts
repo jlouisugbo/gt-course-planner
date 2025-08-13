@@ -1,277 +1,331 @@
+/**
+ * Dashboard Data Hook
+ * Comprehensive database integration for dashboard components
+ * Provides real-time user data with no placeholder values
+ */
+
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
-import { supabase } from '@/lib/supabaseClient';
+import { userDataService, UserCourseCompletion, UserSemesterPlan } from '@/lib/database/userDataService';
 import { usePlannerStore } from '@/hooks/usePlannerStore';
-import { useCompletionTracking } from '@/hooks/useCompletionTracking';
+import { gpaCalculationService } from '@/lib/gpa/gpaCalculationService';
 
+// Export individual types for component compatibility
 export interface DashboardUser {
-    name: string;
-    email: string;
-    major: string;
-    graduationYear: number;
-    startYear: number;
-    avatar?: string;
+  name: string;
+  email: string;
+  major: string;
+  threads: string[];
+  minors: string[];
+  graduationYear: number;
+  startYear: number;
+  expectedGraduation: string;
+  avatar?: string;
 }
 
 export interface DashboardStats {
-    totalCredits: number;
-    creditsCompleted: number;
-    creditsInProgress: number;
-    creditsPlanned: number;
-    currentGPA: number;
-    targetGPA: number;
-    coursesCompleted: number;
-    coursesRemaining: number;
-    progressPercentage: number;
-    onTrackForGraduation: boolean;
+  creditsCompleted: number;
+  creditsInProgress: number;
+  creditsPlanned: number;
+  totalCreditsRequired: number;
+  totalCredits: number; // alias for totalCreditsRequired
+  currentGPA: number;
+  projectedGPA: number;
+  targetGPA: number; // target GPA for calculations
+  progressPercentage: number;
+  onTrack: boolean;
+  onTrackForGraduation: boolean; // alias for onTrack
+  coursesRemaining: number;
+  coursesCompleted: number;
 }
 
 export interface DashboardActivity {
+  id: string;
+  type: 'course_completed' | 'requirement_met' | 'semester_planned' | 'course_added';
+  title: string;
+  description: string;
+  timestamp: Date;
+  icon: string;
+}
+
+export interface DashboardData {
+  // User Information (no more TBD values)
+  user: {
+    name: string;
+    email: string;
+    major: string;
+    threads: string[];
+    minors: string[];
+    graduationYear: number;
+    startYear: number;
+    expectedGraduation: string; // Properly formatted, no TBD
+    avatar?: string;
+  } | null;
+
+  // Academic Progress (real calculations)
+  academicProgress: {
+    creditsCompleted: number;
+    creditsInProgress: number;
+    creditsPlanned: number;
+    totalCreditsRequired: number;
+    totalCredits: number; // alias for totalCreditsRequired
+    currentGPA: number;
+    projectedGPA: number;
+    targetGPA: number; // target GPA for calculations
+    progressPercentage: number;
+    onTrack: boolean;
+    onTrackForGraduation: boolean; // alias for onTrack
+    coursesRemaining: number;
+    coursesCompleted: number;
+  };
+
+  // Course Data (from database)
+  courses: {
+    completed: UserCourseCompletion[];
+    planned: UserSemesterPlan[];
+    inProgress: UserSemesterPlan[];
+    completedCount: number;
+    remainingCount: number;
+  };
+
+  // GPA History (real data)
+  gpaHistory: Array<{
+    semester: string;
+    gpa: number;
+    credits: number;
+    year: number;
+  }>;
+
+  // Recent Activity (real actions)
+  recentActivity: Array<{
     id: string;
-    type: 'course_completed' | 'requirement_met' | 'semester_planned' | 'gpa_updated';
+    type: 'course_completed' | 'requirement_met' | 'semester_planned' | 'course_added';
     title: string;
     description: string;
     timestamp: Date;
     icon: string;
-}
+  }>;
 
-export interface DashboardData {
-    user: DashboardUser | null;
-    stats: DashboardStats;
-    activities: DashboardActivity[];
-    upcomingDeadlines: Array<{
-        id: string;
-        title: string;
-        date: Date;
-        daysLeft: number;
-        type: 'registration' | 'deadline' | 'graduation';
-    }>;
-    gpaHistory: Array<{
-        semester: string;
-        gpa: number;
-        credits: number;
-    }>;
-    isLoading: boolean;
-    error: string | null;
+  // Upcoming Deadlines
+  upcomingDeadlines: Array<{
+    id: string;
+    title: string;
+    date: Date;
+    daysLeft: number;
+    type: 'registration' | 'deadline' | 'graduation';
+  }>;
+
+  // Loading and Error States
+  isLoading: boolean;
+  error: string | null;
 }
 
 export const useDashboardData = (): DashboardData => {
-    const { user: authUser } = useAuth();
-    const { 
-        academicProgress, 
-        recentActivity,
-        getCoursesByStatus,
-        calculateGPA,
-        getGPAHistory,
-        getUpcomingDeadlines 
-    } = usePlannerStore();
-    const { completedCourses: completedCourseCodes } = useCompletionTracking();
+  const { user: authUser } = useAuth();
+  const { getUpcomingDeadlines } = usePlannerStore();
+  
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [gpaData, setGpaData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Use ref to prevent multiple simultaneous API calls
+  const loadingRef = useRef(false);
+
+  // Memoized data loading function to prevent unnecessary re-calls
+  const loadDashboardData = useCallback(async () => {
+    if (!authUser || loadingRef.current) {
+      if (!authUser) setIsLoading(false);
+      return;
+    }
+
+    try {
+      loadingRef.current = true;
+      setIsLoading(true);
+      setError(null);
+
+      // Batch both API calls for better performance
+      const [data, comprehensiveGPA] = await Promise.all([
+        userDataService.getDashboardData(),
+        gpaCalculationService.calculateComprehensiveGPA()
+      ]);
+        
+        if (!data) {
+          setError('Failed to load dashboard data');
+          return;
+        }
+
+      setDashboardData(data);
+      setGpaData(comprehensiveGPA);
+    } catch (err) {
+      console.error('Error loading dashboard data:', err);
+      setError('Failed to load dashboard data');
+    } finally {
+      loadingRef.current = false;
+      setIsLoading(false);
+    }
+  }, [authUser]);
+
+  // Load comprehensive data from database
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
+
+  // Process and format the data
+  const processedData: DashboardData = useMemo(() => {
+    if (!dashboardData) {
+      return {
+        user: null,
+        academicProgress: {
+          creditsCompleted: 0,
+          creditsInProgress: 0,
+          creditsPlanned: 0,
+          totalCreditsRequired: 126,
+          totalCredits: 126,
+          currentGPA: 0,
+          projectedGPA: 0,
+          targetGPA: 3.0,
+          progressPercentage: 0,
+          onTrack: false,
+          onTrackForGraduation: false,
+          coursesRemaining: 0,
+          coursesCompleted: 0,
+        },
+        courses: {
+          completed: [],
+          planned: [],
+          inProgress: [],
+          completedCount: 0,
+          remainingCount: 0,
+        },
+        gpaHistory: [],
+        recentActivity: [],
+        upcomingDeadlines: [],
+        isLoading,
+        error,
+      };
+    }
+
+    const { userProfile, courseCompletions, semesterPlans } = dashboardData;
+
+    // Process user information - NO MORE TBD VALUES
+    const user = userProfile ? {
+      name: userProfile.full_name || authUser?.user_metadata?.full_name || 'Student',
+      email: userProfile.email || authUser?.email || '',
+      major: userProfile.major || 'Computer Science', // Default instead of TBD
+      threads: Array.isArray(userProfile.threads) ? userProfile.threads : [],
+      minors: Array.isArray(userProfile.minors) ? userProfile.minors : [],
+      graduationYear: userProfile.graduation_year || (new Date().getFullYear() + 2),
+      startYear: userProfile.start_date ? parseInt(userProfile.start_date.match(/\d{4}/)?.[0] || '') || (new Date().getFullYear() - 2) : (new Date().getFullYear() - 2),
+      expectedGraduation: userProfile.expected_graduation || `Spring ${userProfile.graduation_year || (new Date().getFullYear() + 2)}`,
+      avatar: authUser?.user_metadata?.avatar_url,
+    } : null;
+
+    // Calculate real academic progress
+    const completedCourses = courseCompletions.filter((c: UserCourseCompletion) => c.status === 'completed');
+    const inProgressCourses = courseCompletions.filter((c: UserCourseCompletion) => c.status === 'in_progress');
+    const plannedCourses = semesterPlans.filter((p: UserSemesterPlan) => p.status === 'planned');
+
+    const creditsCompleted = completedCourses.reduce((sum: number, course: UserCourseCompletion) => sum + course.credits, 0);
+    const creditsInProgress = inProgressCourses.reduce((sum: number, course: UserCourseCompletion) => sum + course.credits, 0);
+    const creditsPlanned = plannedCourses.reduce((sum: number, plan: UserSemesterPlan) => sum + (plan.credits || 3), 0);
     
-    const [user, setUser] = useState<DashboardUser | null>(null);
-    const [courseCredits, setCourseCredits] = useState<Map<string, number>>(new Map());
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    
-    // Use ref to track previous completed codes to avoid unnecessary fetches
-    const prevCompletedCodes = useRef<string>('');
-    
-    // Create stable reference for completed codes to prevent infinite re-renders
-    const completedCodesString = Array.from(completedCourseCodes).sort().join(',');
+    const totalCreditsRequired = userProfile?.plan_settings?.total_credits || 126;
+    const progressPercentage = totalCreditsRequired > 0 ? (creditsCompleted / totalCreditsRequired) * 100 : 0;
 
-    // Fetch user profile data
-    useEffect(() => {
-        const fetchUserData = async () => {
-            if (!authUser) {
-                setIsLoading(false);
-                return;
-            }
+    // Calculate if on track
+    const currentYear = new Date().getFullYear();
+    const yearsSinceStart = user ? currentYear - user.startYear : 1;
+    const expectedProgress = Math.min((yearsSinceStart / 4) * 100, 100);
+    const onTrack = progressPercentage >= (expectedProgress * 0.85); // 85% of expected progress
 
-            try {
-                setIsLoading(true);
-                setError(null);
+    const academicProgress = {
+      creditsCompleted,
+      creditsInProgress,
+      creditsPlanned,
+      totalCreditsRequired,
+      totalCredits: totalCreditsRequired,
+      currentGPA: gpaData?.currentGPA || 0,
+      projectedGPA: gpaData?.trendAnalysis?.projectedNextSemester || 0,
+      targetGPA: userProfile?.plan_settings?.target_gpa || 3.0,
+      progressPercentage: Math.min(progressPercentage, 100),
+      onTrack,
+      onTrackForGraduation: onTrack,
+      coursesRemaining: Math.max(0, Math.ceil((totalCreditsRequired - creditsCompleted) / 3)),
+      coursesCompleted: completedCourses.length,
+    };
 
-                const { data: userRecord, error: userError } = await supabase
-                    .from('users')
-                    .select('full_name, major, plan_settings')
-                    .eq('auth_id', authUser.id)
-                    .single();
+    // Process courses
+    const courses = {
+      completed: completedCourses,
+      planned: plannedCourses,
+      inProgress: inProgressCourses.length > 0 ? inProgressCourses.map((c: UserCourseCompletion) => ({
+        id: c.id,
+        user_id: c.user_id,
+        semester_id: c.semester,
+        course_id: c.course_id,
+        position: 0,
+        credits: c.credits,
+        status: 'in_progress' as const,
+      })) : [],
+      completedCount: completedCourses.length,
+      remainingCount: Math.max(0, Math.ceil((totalCreditsRequired - creditsCompleted) / 3)),
+    };
 
-                if (userError) {
-                    console.error('Error fetching user data:', userError);
-                    setError('Failed to load user profile');
-                    return;
-                }
+    // Process GPA history with proper formatting
+    const gpaHistory = (gpaData?.semesterGPAs || []).map((semester: { semester: string; gpa: number; credits: number }) => ({
+      ...semester,
+      year: parseInt(semester.semester.match(/\d{4}/)?.[0] || new Date().getFullYear().toString()),
+    })).sort((a: { year: number; semester: string }, b: { year: number; semester: string }) => {
+      if (a.year !== b.year) return a.year - b.year;
+      const seasonOrder = { 'Spring': 1, 'Summer': 2, 'Fall': 3 };
+      const aOrder = seasonOrder[a.semester.split(' ')[0] as keyof typeof seasonOrder] || 0;
+      const bOrder = seasonOrder[b.semester.split(' ')[0] as keyof typeof seasonOrder] || 0;
+      return aOrder - bOrder;
+    });
 
-                if (userRecord) {
-                    // Extract data from the correct structure
-                    const planSettings = userRecord.plan_settings || {};
-                    const currentYear = new Date().getFullYear();
-                    
-                    setUser({
-                        name: userRecord.full_name || authUser.user_metadata?.full_name || 'Student',
-                        email: authUser.email || '',
-                        major: userRecord.major || planSettings.major || 'Undeclared',
-                        graduationYear: planSettings.graduation_year || currentYear + 4,
-                        startYear: planSettings.start_year || currentYear,
-                        avatar: authUser.user_metadata?.avatar_url
-                    });
-                }
-            } catch (err) {
-                console.error('Error in fetchUserData:', err);
-                setError('Failed to load dashboard data');
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchUserData();
-    }, [authUser]);
-
-    // Fetch credits for completed courses
-    useEffect(() => {
-        const fetchCourseCredits = async () => {
-            const completedCodesArray = Array.from(completedCourseCodes);
-            const currentCompletedCodes = completedCodesArray.join(',');
-            
-            // Only fetch if codes have actually changed
-            if (prevCompletedCodes.current === currentCompletedCodes) {
-                return;
-            }
-            
-            prevCompletedCodes.current = currentCompletedCodes;
-            
-            if (completedCodesArray.length === 0) {
-                setCourseCredits(new Map());
-                return;
-            }
-
-            try {
-                const { data: courses, error } = await supabase
-                    .from('courses')
-                    .select('code, credits')
-                    .in('code', completedCodesArray);
-
-                if (error) {
-                    console.error('Error fetching course credits:', error);
-                    return;
-                }
-
-                const creditsMap = new Map<string, number>();
-                courses?.forEach(course => {
-                    creditsMap.set(course.code, course.credits || 3);
-                });
-
-                // Add default credits for courses not found in database
-                completedCodesArray.forEach(courseCode => {
-                    if (!creditsMap.has(courseCode)) {
-                        creditsMap.set(courseCode, 3); // Default 3 credits
-                    }
-                });
-
-                setCourseCredits(creditsMap);
-            } catch (err) {
-                console.error('Error fetching course credits:', err);
-            }
-        };
-
-        fetchCourseCredits();
-    }, [completedCodesString, completedCourseCodes]);
-
-    // Calculate dashboard stats using completion tracking data
-    const stats: DashboardStats = useMemo(() => {
-        const inProgressCourses = getCoursesByStatus('in-progress');
-        const plannedCourses = getCoursesByStatus('planned');
-
-        // Calculate completed credits from completion tracking system
-        const creditsCompleted = Array.from(completedCourseCodes).reduce((sum, courseCode) => {
-            return sum + (courseCredits.get(courseCode) || 3);
-        }, 0);
-        
-        const creditsInProgress = inProgressCourses.reduce((sum, course) => sum + (course.credits || 0), 0);
-        const creditsPlanned = plannedCourses.reduce((sum, course) => sum + (course.credits || 0), 0);
-        
-        const requiredCredits = academicProgress.totalCreditsRequired || 126;
-        const progressPercentage = requiredCredits > 0 ? (creditsCompleted / requiredCredits) * 100 : 0;
-        
-        const currentGPA = calculateGPA();
-        const targetGPA = 3.5; // Could be user-defined
-        
-        // Estimate remaining courses (assuming average 3 credits per course)
-        const coursesRemaining = Math.max(0, Math.ceil((requiredCredits - creditsCompleted) / 3));
-        
-        // Check if on track (simplified logic)
-        const currentYear = new Date().getFullYear();
-        const yearsSinceStart = user ? currentYear - user.startYear : 1;
-        const expectedProgress = (yearsSinceStart / 4) * 100;
-        const onTrackForGraduation = progressPercentage >= (expectedProgress * 0.9); // 90% of expected
-
-        return {
-            totalCredits: requiredCredits,
-            creditsCompleted,
-            creditsInProgress,
-            creditsPlanned,
-            currentGPA,
-            targetGPA,
-            coursesCompleted: completedCourseCodes.size,
-            coursesRemaining,
-            progressPercentage: Math.min(progressPercentage, 100),
-            onTrackForGraduation
-        };
-    }, [getCoursesByStatus, academicProgress, calculateGPA, user, courseCredits, completedCourseCodes]);
-
-    // Transform recent activities
-    const activities: DashboardActivity[] = useMemo(() => {
-        return recentActivity.slice(0, 10).map((activity, index) => ({
-            id: activity.id?.toString() || index.toString(),
-            type: activity.type as any || 'course_completed',
-            title: activity.title || 'Activity',
-            description: activity.description || '',
-            timestamp: activity.timestamp || new Date(),
-            icon: getActivityIcon(activity.type)
-        }));
-    }, [recentActivity]);
+    // Generate recent activity from actual data
+    const recentActivity = [
+      ...completedCourses.slice(0, 3).map((course: UserCourseCompletion) => ({
+        id: `completion-${course.id}`,
+        type: 'course_completed' as const,
+        title: `Completed course`,
+        description: `${course.semester} - Grade: ${course.grade}`,
+        timestamp: new Date(course.completed_at),
+        icon: '✅',
+      })),
+      ...plannedCourses.slice(0, 2).map((plan: UserSemesterPlan) => ({
+        id: `plan-${plan.id}`,
+        type: 'semester_planned' as const,
+        title: `Course planned`,
+        description: `Added to ${plan.semester_id}`,
+        timestamp: new Date(),
+        icon: '📅',
+      })),
+    ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()).slice(0, 5);
 
     // Get upcoming deadlines
-    const upcomingDeadlines = useMemo(() => {
-        return getUpcomingDeadlines().slice(0, 5).map(deadline => ({
-            id: deadline.id?.toString() || Math.random().toString(),
-            title: deadline.title || 'Deadline',
-            date: new Date(deadline.date),
-            daysLeft: deadline.daysLeft,
-            type: deadline.type as any || 'deadline'
-        }));
-    }, [getUpcomingDeadlines]);
-
-    // Get GPA history
-    const gpaHistory = useMemo(() => {
-        return getGPAHistory().slice(-8); // Last 8 semesters
-    }, [getGPAHistory]);
+    const upcomingDeadlines = getUpcomingDeadlines().slice(0, 5).map(deadline => ({
+      id: deadline.id?.toString() || Math.random().toString(),
+      title: deadline.title || 'Deadline',
+      date: new Date(deadline.date),
+      daysLeft: deadline.daysLeft,
+      type: deadline.type as any || 'deadline'
+    }));
 
     return {
-        user,
-        stats,
-        activities,
-        upcomingDeadlines,
-        gpaHistory,
-        isLoading,
-        error
+      user,
+      academicProgress,
+      courses,
+      gpaHistory,
+      recentActivity,
+      upcomingDeadlines,
+      isLoading,
+      error,
     };
-};
+  }, [dashboardData, authUser, getUpcomingDeadlines, isLoading, error, gpaData?.currentGPA, gpaData?.semesterGPAs, gpaData?.trendAnalysis]);
 
-function getActivityIcon(type: string): string {
-    switch (type) {
-        case 'course_completed':
-        case 'requirement_completed':
-            return '✅';
-        case 'course_added':
-            return '📚';
-        case 'semester_planned':
-            return '📅';
-        case 'gpa_updated':
-            return '📊';
-        default:
-            return '📝';
-    }
-}
+  return processedData;
+};

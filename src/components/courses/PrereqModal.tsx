@@ -1,7 +1,7 @@
 "use client";
 
-import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import React, { useRef } from 'react';
+import { StandardizedModal, ModalActions } from '@/components/ui/standardized-modal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,6 +27,9 @@ export const PrereqModal: React.FC<PrereqModalProps> = ({
     plannedCourses,
     allCourses
 }) => {
+    // Focus management - hooks must be called before any conditional returns
+    const closeButtonRef = useRef<HTMLButtonElement>(null);
+
     if (!course) return null;
 
     const prereqResult: PrereqValidationResult = evaluatePrerequisites(
@@ -34,8 +37,6 @@ export const PrereqModal: React.FC<PrereqModalProps> = ({
         completedCourses,
         plannedCourses
     );
-
-    
 
     const renderPrereqStructure = (prereqData: any, level = 0) => {
         if (!prereqData || !Array.isArray(prereqData) || prereqData.length === 0) {
@@ -123,29 +124,23 @@ export const PrereqModal: React.FC<PrereqModalProps> = ({
         return null;
     };
 
-    return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center space-x-3">
-                        <div className={cn(
-                            "w-8 h-8 rounded-lg flex items-center justify-center",
-                            prereqResult.isValid ? "bg-green-100" : "bg-red-100"
-                        )}>
-                            {prereqResult.isValid ? (
-                                <CheckCircle className="h-5 w-5 text-green-600" />
-                            ) : (
-                                <Lock className="h-5 w-5 text-red-600" />
-                            )}
-                        </div>
-                        <div>
-                            <span className="text-xl font-bold">{course.code} Prerequisites</span>
-                            <p className="text-sm text-slate-600 font-normal">{course.title}</p>
-                        </div>
-                    </DialogTitle>
-                </DialogHeader>
+    const titleIcon = prereqResult.isValid ? (
+        <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+    ) : (
+        <Lock className="h-5 w-5 text-red-600 mr-2" />
+    );
 
-                <div className="space-y-6">
+    return (
+        <StandardizedModal
+            isOpen={isOpen}
+            onClose={onClose}
+            title={`${titleIcon}${course.code} Prerequisites`}
+            description={course.title}
+            size="xl"
+            initialFocus={closeButtonRef}
+        >
+
+                <div className="p-6 space-y-6">
                     {/* Status Summary */}
                     <Card className={cn(
                         "border-2",
@@ -190,19 +185,22 @@ export const PrereqModal: React.FC<PrereqModalProps> = ({
                         {renderPrereqStructure(course.prerequisites)}
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex justify-end space-x-3 pt-4 border-t">
-                        <Button variant="outline" onClick={onClose}>
-                            Close
-                        </Button>
-                        {!prereqResult.isValid && (
-                            <Button variant="secondary" onClick={onClose}>
-                                Plan Missing Prerequisites
-                            </Button>
-                        )}
-                    </div>
                 </div>
-            </DialogContent>
-        </Dialog>
+                
+                <ModalActions>
+                    <Button 
+                        ref={closeButtonRef}
+                        variant="outline" 
+                        onClick={onClose}
+                    >
+                        Close
+                    </Button>
+                    {!prereqResult.isValid && (
+                        <Button variant="secondary" onClick={onClose}>
+                            Plan Missing Prerequisites
+                        </Button>
+                    )}
+                </ModalActions>
+        </StandardizedModal>
     );
 };

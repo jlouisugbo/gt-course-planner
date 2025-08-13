@@ -1,8 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { memo, useMemo } from "react";
 import StatCard from "./StatCard";
 import { GraduationCap, TrendingUp, BookOpen, Clock } from "lucide-react";
+import { DashboardCardSkeleton } from "@/components/ui/loading";
+import { motion } from "framer-motion";
 
 interface StatsGridProps {
     data?: {
@@ -22,9 +24,10 @@ interface StatsGridProps {
             graduationYear?: number;
         } | null;
     } | null;
+    isLoading?: boolean;
 }
 
-const StatsGrid = ({ data }: StatsGridProps) => {
+const StatsGrid = memo<StatsGridProps>(({ data, isLoading = false }) => {
     // Safe data extraction with comprehensive fallbacks
     const safeData = data || {};
     const academicProgress = safeData.academicProgress || {};
@@ -41,11 +44,12 @@ const StatsGrid = ({ data }: StatsGridProps) => {
     const currentGPA = typeof academicProgress.currentGPA === 'number' ? academicProgress.currentGPA : 0;
     const projectedGPA = typeof academicProgress.projectedGPA === 'number' ? academicProgress.projectedGPA : currentGPA;
     
-    // Safe graduation date handling
+    // Safe graduation date handling - no more TBD values
     const expectedGraduation = studentInfo.expectedGraduation || 
-        (typeof studentInfo.graduationYear === 'number' ? `Spring ${studentInfo.graduationYear}` : 'TBD');
+        (typeof studentInfo.graduationYear === 'number' ? `Spring ${studentInfo.graduationYear}` : `Spring ${new Date().getFullYear() + 2}`);
 
-    const stats = [
+    // Memoize stats array to prevent recreation on every render
+    const stats = useMemo(() => [
         {
             title: "Credit Progress",
             value: `${creditsCompleted + creditsInProgress}/${totalCreditsRequired}`,
@@ -61,7 +65,7 @@ const StatsGrid = ({ data }: StatsGridProps) => {
             value: currentGPA.toFixed(2),
             subtitle: `Target: ${projectedGPA.toFixed(2)}`,
             icon: TrendingUp,
-            color: "bg-green-600",
+            color: "bg-[#003057]",
             trend: "stable" as const,
             trendValue: "On track",
             delay: 0.2,
@@ -81,20 +85,53 @@ const StatsGrid = ({ data }: StatsGridProps) => {
             value: expectedGraduation,
             subtitle: "Expected completion",
             icon: Clock,
-            color: "bg-emerald-600",
+            color: "bg-green-600",
             trend: "stable" as const,
             trendValue: "On schedule",
             delay: 0.4,
         },
-    ];
+    ], [creditsCompleted, creditsInProgress, totalCreditsRequired, progressPercentage, 
+        currentGPA, projectedGPA, remainingCourses, plannedCourses.length, 
+        completedCourses.length, expectedGraduation]);
+
+    if (isLoading) {
+        return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {Array.from({ length: 4 }).map((_, index) => (
+                    <motion.div
+                        key={index}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                    >
+                        <DashboardCardSkeleton />
+                    </motion.div>
+                ))}
+            </div>
+        );
+    }
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <motion.div 
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+        >
             {stats.map((stat, index) => (
-                <StatCard key={index} {...stat} />
+                <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: stat.delay }}
+                >
+                    <StatCard {...stat} />
+                </motion.div>
             ))}
-        </div>
+        </motion.div>
     );
-};
+});
+
+StatsGrid.displayName = 'StatsGrid';
 
 export default StatsGrid;
