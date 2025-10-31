@@ -13,14 +13,15 @@ export interface DirectProfileData {
   selected_threads?: string[];
   minors?: string[];
   graduation_year?: number;
-  current_gpa?: number;
-  total_credits_earned?: number;
+  degree_program_id?: number;
   plan_settings?: any;
   // Additional fields from form
   start_date?: string;
   expected_graduation?: string;
   is_transfer_student?: boolean;
   transfer_credits?: number;
+  current_gpa?: number;
+  total_credits_earned?: number;
 }
 
 /**
@@ -64,22 +65,23 @@ export async function saveProfileDirect(profileData: DirectProfileData): Promise
       selected_threads: profileData.selected_threads || [],
       minors: profileData.minors || [],
       graduation_year: profileData.graduation_year || null,
-      current_gpa: profileData.current_gpa || null,
-      total_credits_earned: profileData.total_credits_earned || 0,
+      degree_program_id: profileData.degree_program_id || null,
       updated_at: new Date().toISOString()
     };
 
-    // Handle plan_settings with all the additional fields
+    // Handle plan_settings with all the additional fields including GPA and credits
     dbData.plan_settings = {
       ...(profileData.plan_settings || {}),
       start_date: profileData.start_date || '',
       expected_graduation: profileData.expected_graduation || '',
       is_transfer_student: profileData.is_transfer_student || false,
-      transfer_credits: profileData.transfer_credits || 0
+      transfer_credits: profileData.transfer_credits || 0,
+      current_gpa: profileData.current_gpa || null,
+      total_credits_earned: profileData.total_credits_earned || 0
     };
 
-    // Also set threads to match selected_threads for compatibility
-    dbData.threads = dbData.selected_threads;
+    // Note: current_gpa and total_credits_earned are stored in plan_settings
+    // Top-level columns would require database schema changes
 
     let result;
 

@@ -11,10 +11,13 @@ import { CourseGrid } from './parts/CourseGrid';
 import { CourseList } from './parts/CourseList';
 import { CourseModal } from './parts/CourseModal';
 import { authService } from '@/lib/auth';
+import { useEffect } from 'react';
+import { fetchAllCourses } from '@/data/courses';
 
 function CourseExplorer() {
   const [courses, setCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [allCourses, setAllCourses] = useState<Course[]>([]); // Store all courses
+  const [loading, setLoading] = useState(true); // Start with loading true
   const [error, setError] = useState<string | null>(null);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -38,46 +41,69 @@ function CourseExplorer() {
     sortOrder: 'asc'
   });
 
-  // Search courses using the API - memoized with debouncing concept
-  const searchCourses = useCallback(async (query: string) => {
+  // Load all courses on mount
+  useEffect(() => {
+    const loadCourses = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        // First try to load from database
+        const coursesData = await fetchAllCourses();
+        setAllCourses(coursesData);
+        setCourses(coursesData);
+        
+        // Extract unique colleges for filters
+        const colleges = [...new Set(coursesData?.map((c: Course) => c.college).filter(Boolean))];
+        setAvailableColleges(colleges.filter((college): college is string => typeof college === 'string'));
+      } catch (err) {
+        console.error('Error loading courses:', err);
+        
+        // Fallback to API if database fails
+        try {
+          const response = await fetch('/api/courses/all?limit=2000');
+          if (!response.ok) {
+            throw new Error('Failed to load courses from API');
+          }
+          
+          const data = await response.json();
+          const coursesData = data.data || [];
+          setAllCourses(coursesData);
+          setCourses(coursesData);
+          
+          // Extract unique colleges for filters
+          const colleges = [...new Set(coursesData?.map((c: Course) => c.college).filter(Boolean))];
+          setAvailableColleges(colleges.filter((college): college is string => typeof college === 'string'));
+        } catch (apiErr) {
+          setError(apiErr instanceof Error ? apiErr.message : 'Failed to load courses');
+          setCourses([]);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadCourses();
+  }, []);
+
+  // Search courses from pre-loaded data
+  const searchCourses = useCallback((query: string) => {
     if (!query.trim()) {
-      setCourses([]);
+      // Show all courses when search is empty
+      setCourses(allCourses);
       return;
     }
 
-    setLoading(true);
-    setError(null);
-
-    try {
-      const { data: sessionData } = await authService.getSession();
-      if (!sessionData.session?.access_token) {
-        throw new Error('Not authenticated');
-      }
-
-      const response = await fetch(`/api/courses/search?q=${encodeURIComponent(query)}`, {
-        headers: {
-          'Authorization': `Bearer ${sessionData.session.access_token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to search courses');
-      }
-
-      const data = await response.json();
-      setCourses(data.courses || []);
-      
-      // Extract unique colleges for filters
-      const colleges = [...new Set(data.courses?.map((c: Course) => c.college).filter(Boolean))];
-      setAvailableColleges(colleges.filter((college): college is string => typeof college === 'string'));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      setCourses([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    // Filter courses locally from pre-loaded data
+    const searchLower = query.toLowerCase();
+    const filtered = allCourses.filter(course => 
+      course.code?.toLowerCase().includes(searchLower) ||
+      course.title?.toLowerCase().includes(searchLower) ||
+      course.description?.toLowerCase().includes(searchLower)
+    );
+    
+    setCourses(filtered);
+  }, [allCourses]);
 
   // Handle search bar events
   const handleSearch = useCallback((query: string) => {
@@ -170,16 +196,16 @@ function CourseExplorer() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <header className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+      <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#003057] mb-2">Course Explorer</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#003057] mb-2">Course Explorer</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Search and explore Georgia Tech courses across all colleges.
           </p>
         </div>
 
         {/* View Controls */}
-        <div className="flex items-center gap-3 mt-4 lg:mt-0">
+        <div className="flex items-center gap-2 sm:gap-3">
           <div role="group" aria-label="View mode selection" className="flex items-center border rounded-lg p-1">
             <Button
               variant={viewMode.type === 'grid' ? 'default' : 'ghost'}
@@ -242,8 +268,7 @@ function CourseExplorer() {
               filters={filters}
               onFiltersChange={setFilters}
               availableColleges={availableColleges}
-              viewMode={viewMode}
-              onViewModeChange={setViewMode}
+              isLoading={loading}
             />
           </motion.div>
         )}

@@ -6,6 +6,9 @@ interface UserInitializationResult {
     errors: string[];
 }
 
+// Keep track of users currently being initialized to prevent concurrent calls
+const initializingUsers = new Set<number>();
+
 /**
  * Initialize a user in all required tables if they don't exist
  */
@@ -54,11 +57,18 @@ async function initializeUserRequirementProgress(userId: number, result: UserIni
 
         if (userError || !user) {
             result.errors.push('Could not find user or degree program');
+            console.warn(`User ${userId} not found or error:`, userError);
             return;
         }
 
+        console.log(`User ${userId} data for initialization:`, { 
+            degree_program_id: user.degree_program_id, 
+            major: user.major 
+        });
+
         if (!user.degree_program_id) {
             // User hasn't selected a degree program yet, skip initialization
+            console.log(`User ${userId} has no degree_program_id, skipping requirement progress initialization`);
             return;
         }
 
@@ -168,10 +178,34 @@ export async function checkUserInitialization(userId: number): Promise<{
  * Auto-initialize user on first API call
  */
 export async function ensureUserInitialized(userId: number): Promise<void> {
+    // Prevent concurrent initialization attempts for the same user
+    if (initializingUsers.has(userId)) {
+        console.log(`🔄 User ${userId} is already being initialized, skipping`);
+        return;
+    }
+
     const check = await checkUserInitialization(userId);
     
     if (check.needsInitialization) {
         console.log(`User ${userId} needs initialization in tables:`, check.missingTables);
-        await initializeUserInAllTables(userId);
+        
+        // Mark user as being initialized
+        initializingUsers.add(userId);
+        
+        try {
+            const result = await initializeUserInAllTables(userId);
+            
+            // Double-check if initialization worked
+            const recheckAfterInit = await checkUserInitialization(userId);
+            if (recheckAfterInit.needsInitialization) {
+                console.warn(`⚠️ User ${userId} still needs initialization after attempt:`, recheckAfterInit.missingTables);
+                console.warn('Initialization result was:', result);
+            } else {
+                console.log(`✅ User ${userId} successfully initialized`);
+            }
+        } finally {
+            // Always remove from the set, even if initialization fails
+            initializingUsers.delete(userId);
+        }
     }
 }

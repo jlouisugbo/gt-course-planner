@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { createSecureRoute, SECURITY_CONFIGS } from '@/lib/security/middleware';
 import { z } from 'zod';
-import { createSecureErrorHandler } from '@/lib/security/errorHandler';
 
 // Validation schema for course query parameters
 const CourseAllQuerySchema = z.object({
@@ -17,34 +15,47 @@ const CourseAllQuerySchema = z.object({
         .regex(/^[A-Z]{2,4}$/, "Invalid subject code")
         .optional(),
         
+    page: z.string()
+        .regex(/^\d+$/, "Page must be a number")
+        .transform(Number)
+        .refine(n => n > 0, "Page must be positive")
+        .optional(),
+        
     limit: z.string()
         .regex(/^\d+$/, "Limit must be a number")
         .transform(Number)
         .refine(n => n > 0 && n <= 2000, "Limit must be between 1 and 2000")
-        .default("1000"),
+        .optional(),
         
     offset: z.string()
         .regex(/^\d+$/, "Offset must be a number")
         .transform(Number)
         .refine(n => n >= 0, "Offset cannot be negative")
-        .default("0")
+        .optional()
 });
 
-// Secure GET handler for all courses
-export const GET = createSecureRoute(async (request) => {
+// GET handler for all courses - simplified for demo
+export const GET = async (request: Request) => {
     try {
         const url = new URL(request.url);
         
-        // Validate query parameters
+        // Validate query parameters (filter out null values)
         const queryParams = CourseAllQuerySchema.parse({
-            search: url.searchParams.get('search'),
-            subject: url.searchParams.get('subject'),
-            limit: url.searchParams.get('limit') || "1000",
-            offset: url.searchParams.get('offset') || "0"
+            search: url.searchParams.get('search') || undefined,
+            subject: url.searchParams.get('subject') || undefined,
+            page: url.searchParams.get('page') || undefined,
+            limit: url.searchParams.get('limit') || undefined,
+            offset: url.searchParams.get('offset') || undefined
         });
 
+        // Calculate offset from page if provided
+        const limit = queryParams.limit || 1000;
+        const offset = queryParams.page 
+            ? (queryParams.page - 1) * limit 
+            : (queryParams.offset || 0);
+
         let query = supabaseAdmin()
-            .from('courses_enhanced')
+            .from('courses')
             .select(`
                 id,
                 code,
@@ -52,10 +63,7 @@ export const GET = createSecureRoute(async (request) => {
                 credits,
                 description,
                 course_type,
-                department,
                 college_id,
-                college,
-                offerings,
                 prerequisites,
                 postrequisites
             `)
@@ -72,13 +80,16 @@ export const GET = createSecureRoute(async (request) => {
         }
 
         // Apply pagination (safe - validated numbers)
-        query = query.range(queryParams.offset, queryParams.offset + queryParams.limit - 1);
+        query = query.range(offset, offset + limit - 1);
 
         const { data: courses, error, count } = await query;
 
         if (error) {
-            const errorHandler = createSecureErrorHandler('/api/courses/all', 'GET');
-            return errorHandler.handleError(error, 'Failed to fetch courses');
+            console.error('Error fetching courses:', error);
+            return NextResponse.json(
+                { error: 'Failed to fetch courses' },
+                { status: 500 }
+            );
         }
 
         // Transform the data to match expected format
@@ -91,25 +102,23 @@ export const GET = createSecureRoute(async (request) => {
             prerequisites: course.prerequisites || [],
             postrequisites: course.postrequisites || [],
             type: course.course_type || 'elective',
-            college: course.college || 'Unknown',
-            department: course.department || (typeof course.code === 'string' ? course.code.split(' ')[0] : 'Unknown'),
+            college: course.college_id || 'Unknown',
+            department: (typeof course.code === 'string' ? course.code.split(' ')[0] : 'Unknown'),
             difficulty: 3, // Default difficulty
-            offerings: course.offerings || { fall: true, spring: true, summer: false }
+            offerings: { fall: true, spring: true, summer: false } // Default offerings
         })) || [];
 
         return NextResponse.json({
             data: transformedCourses,
             count: count || 0,
-            hasMore: transformedCourses.length === queryParams.limit
+            hasMore: transformedCourses.length === limit
         });
 
     } catch (error: any) {
-        const errorHandler = createSecureErrorHandler('/api/courses/all', 'GET');
-        return errorHandler.handleError(error);
+        console.error('Error in courses API:', error);
+        return NextResponse.json(
+            { error: 'Failed to fetch courses', details: error.message },
+            { status: 500 }
+        );
     }
-}, {
-    ...SECURITY_CONFIGS.LOW_SECURITY,
-    validationSchema: {
-        query: CourseAllQuerySchema
-    }
-});
+};

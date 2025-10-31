@@ -1,45 +1,44 @@
 "use client";
 
 import React from 'react';
-import { BookOpen, User } from 'lucide-react';
-import { useAuth } from '@/providers/AuthProvider';
-import { useUserAwarePlannerStore } from '@/hooks/useUserAwarePlannerStore';
+import { usePathname } from 'next/navigation';
+import { BookOpen, Bell } from 'lucide-react';
 
 export default function Header() {
-  const { user } = useAuth();
-  const { userProfile } = useUserAwarePlannerStore();
+  const pathname = usePathname();
 
-  // Get user display information
-  const userName = userProfile?.first_name && userProfile?.last_name 
-    ? `${userProfile.first_name} ${userProfile.last_name}`
-    : user?.email?.split('@')[0] || 'Student';
-  
-  const userDetails = userProfile?.major 
-    ? `${userProfile.major} • ${userProfile.expected_graduation || 'TBD'}`
-    : 'Georgia Tech Student';
+  // Get page title based on current route
+  const getPageTitle = () => {
+    if (pathname.startsWith('/dashboard')) return 'Dashboard';
+    if (pathname.startsWith('/planner')) return 'Course Planner';
+    if (pathname.startsWith('/requirements')) return 'Requirements';
+    if (pathname.startsWith('/courses')) return 'Course Explorer';
+    if (pathname.startsWith('/opportunities')) return 'Opportunities';
+    if (pathname.startsWith('/advisors')) return 'Advisors';
+    if (pathname.startsWith('/record')) return 'Academic Record';
+    if (pathname.startsWith('/profile')) return 'Profile';
+    return 'GT Academic Planner';
+  };
 
   return (
-    <header className="bg-gt-navy text-white shadow-md">
-      <div className="px-6 py-4 flex justify-between items-center">
-        {/* Left side - Logo and title */}
-        <div className="flex items-center space-x-3">
-          <BookOpen className="h-6 w-6 text-gt-gold" />
-          <div>
-            <h1 className="text-lg font-semibold">GT Academic Planner</h1>
-            <p className="text-sm text-gray-300">Georgia Institute of Technology</p>
-          </div>
-        </div>
+    <header className="h-16 border-b bg-white flex items-center justify-between px-6 flex-shrink-0">
+      {/* Left side - Page Title */}
+      <div className="flex items-center space-x-3">
+        <BookOpen className="h-5 w-5 text-gt-gold hidden sm:block" />
+        <h1 className="text-xl font-semibold text-gray-900">{getPageTitle()}</h1>
+      </div>
 
-        {/* Right side - User info */}
-        <div className="flex items-center space-x-3">
-          <div className="text-right">
-            <p className="text-sm font-medium">{userName}</p>
-            <p className="text-xs text-gt-gold">{userDetails}</p>
-          </div>
-          <div className="w-8 h-8 bg-gt-gold rounded-full flex items-center justify-center">
-            <User className="h-4 w-4 text-gt-navy" />
-          </div>
-        </div>
+      {/* Right side - Notifications and other actions */}
+      <div className="flex items-center space-x-4">
+        {/* Notifications icon - placeholder for future feature */}
+        <button
+          className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
+          aria-label="Notifications"
+        >
+          <Bell className="h-5 w-5 text-gray-600" />
+          {/* Notification badge - uncomment when implementing notifications */}
+          {/* <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span> */}
+        </button>
       </div>
     </header>
   );

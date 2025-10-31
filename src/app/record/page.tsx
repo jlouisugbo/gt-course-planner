@@ -104,13 +104,13 @@ export default function AcademicRecordPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 space-y-6">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gt-navy flex items-center gap-3">
-            <GraduationCap className="h-8 w-8 text-gt-gold" />
-            Academic Record
+          <h1 className="text-2xl sm:text-3xl font-bold text-gt-navy flex items-center gap-3">
+            <GraduationCap className="h-6 w-6 sm:h-8 sm:w-8 text-gt-gold flex-shrink-0" />
+            <span className="truncate">Academic Record</span>
           </h1>
           <p className="text-gray-600 mt-2">
             Track your academic progress, manage semester GPAs, and view planned courses
@@ -321,7 +321,7 @@ export default function AcademicRecordPage() {
                             <Badge variant="outline">{course.credits} cr</Badge>
                           </div>
                           <p className="text-sm text-gray-600 mb-2">{course.title}</p>
-                          {course.college && (
+                          {course.college && typeof course.college === 'string' && (
                             <Badge variant="secondary" className="text-xs">
                               {course.college.replace('College of ', '')}
                             </Badge>
@@ -370,7 +370,7 @@ export default function AcademicRecordPage() {
                             </div>
                           </div>
                           <p className="text-sm text-gray-600 mb-2">{course.title}</p>
-                          {course.college && (
+                          {course.college && typeof course.college === 'string' && (
                             <Badge variant="secondary" className="text-xs">
                               {course.college.replace('College of ', '')}
                             </Badge>

@@ -184,7 +184,16 @@ export const CourseCard: React.FC<CourseCardProps> = ({
                                     )}
                                 </div>
                                 
-                                <h4 className="font-semibold text-slate-900 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors duration-300 leading-snug">
+                                <h4 className="font-semibold text-slate-900 mb-3 group-hover:text-blue-600 transition-colors duration-300 leading-snug"
+                                    title={enhancedCourse.title}
+                                    style={{
+                                        display: '-webkit-box',
+                                        WebkitLineClamp: 2,
+                                        WebkitBoxOrient: 'vertical',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        wordBreak: 'break-word'
+                                    }}>
                                     {enhancedCourse.title}
                                 </h4>
                                 
@@ -202,7 +211,15 @@ export const CourseCard: React.FC<CourseCardProps> = ({
                                 </div>
                                 
                                 {enhancedCourse.description && (
-                                    <p className="text-sm text-slate-600 line-clamp-2 leading-relaxed">
+                                    <p className="text-sm text-slate-600 leading-relaxed"
+                                        style={{
+                                            display: '-webkit-box',
+                                            WebkitLineClamp: 2,
+                                            WebkitBoxOrient: 'vertical',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            wordBreak: 'break-word'
+                                        }}>
                                         {enhancedCourse.description}
                                     </p>
                                 )}

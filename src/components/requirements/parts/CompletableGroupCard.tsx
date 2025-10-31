@@ -74,10 +74,10 @@ export const CompletableGroupCard: React.FC<CompletableGroupCardProps> = ({
             </div>
           </div>
           <div className="flex items-center space-x-1">
-            <Badge className={`${badgeBg} ${badgeText} border-0 text-xs px-1 py-0 h-4`}>
-              {course.groupCourses.length} opts
+            <Badge className={`${badgeBg} ${badgeText} border-0 text-[10px] px-0.5 py-0 h-3`}>
+              {course.groupCourses.length}
             </Badge>
-            <Badge variant="outline" className="text-xs px-1 py-0 h-4">OR</Badge>
+            <Badge variant="outline" className="text-[9px] px-0.5 py-0 h-3 border-0 bg-purple-100">OR</Badge>
           </div>
         </div>
       );

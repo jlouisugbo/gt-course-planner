@@ -10,6 +10,7 @@ import { RequirementsCourseModal } from './RequirementsCourseModal';
 import { VisualCourse } from '@/types/requirements';
 import { BookOpen, Users, Info, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PrerequisiteBadges } from '@/components/ui/PrerequisiteDisplay';
 
 interface RequirementsCourseCardProps {
   course: VisualCourse;
@@ -39,36 +40,30 @@ export const RequirementsCourseCard: React.FC<RequirementsCourseCardProps> = ({
   const renderCourseContent = () => {
     if (course.type === 'or_group') {
       return (
-        <div className="space-y-3">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <Users className="h-4 w-4 text-orange-600" />
-                <h4 className="font-semibold text-sm">{course.title}</h4>
-                <Badge variant="outline" className="text-xs">
-                  Choose One
-                </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground mb-2">
-                Select one of the following courses:
-              </p>
-            </div>
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <Users className="h-3.5 w-3.5 text-orange-600" />
+            <span className="font-medium text-xs">{course.title}</span>
+            <Badge variant="outline" className="text-xs h-4 px-1">
+              Choose 1
+            </Badge>
           </div>
           
-          <div className="space-y-2 pl-6 border-l-2 border-orange-200">
+          <div className="space-y-1 pl-4 border-l-2 border-orange-200/50">
             {course.courses?.map((groupCourse: VisualCourse, idx: number) => (
-              <div key={`${groupCourse.code}-${idx}`} className="flex items-center justify-between p-2 rounded bg-muted/50">
-                <div className="flex-1">
-                  <p className="font-medium text-xs">{groupCourse.code}</p>
-                  <p className="text-xs text-muted-foreground">{groupCourse.title}</p>
+              <div key={`${groupCourse.code}-${idx}`} className="flex items-center justify-between py-0.5">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="font-medium text-xs">{groupCourse.code}</span>
+                  <span className="text-xs text-muted-foreground truncate">{groupCourse.title}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="text-xs">
-                    {groupCourse.credits} cr
+                <div className="flex items-center gap-1">
+                  <Badge variant="secondary" className="text-xs h-4 px-1">
+                    {groupCourse.credits}cr
                   </Badge>
                   <Checkbox
-                    checked={isCompleted}
+                    checked={completedCourses?.has(groupCourse.code)}
                     onCheckedChange={() => onToggleComplete(groupCourse.code)}
+                    className="h-3.5 w-3.5"
                   />
                 </div>
               </div>
@@ -80,90 +75,67 @@ export const RequirementsCourseCard: React.FC<RequirementsCourseCardProps> = ({
 
     if (course.type === 'flexible' || course.type === 'selection') {
       return (
-        <div className="space-y-3">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <BookOpen className="h-4 w-4 text-blue-600" />
-                <h4 className="font-semibold text-sm">{course.title}</h4>
-                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
-                  {course.type === 'flexible' ? 'Flexible' : 'Selection'}
-                </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground mb-2">
-                {course.description || 'Flexible requirement - consult with advisor'}
-              </p>
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="text-xs">
-                  {course.credits} credits
-                </Badge>
-                {course.selectionCount && (
-                  <Badge variant="outline" className="text-xs">
-                    Choose {course.selectionCount}
-                  </Badge>
-                )}
-              </div>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-3.5 w-3.5 text-blue-600" />
+              <span className="font-medium text-sm">{course.title}</span>
+              <Badge variant="outline" className="text-xs h-4 px-1 bg-blue-50 text-blue-700">
+                {course.type === 'flexible' ? 'Flex' : 'Select'}
+              </Badge>
             </div>
-            <Checkbox
-              checked={isCompleted}
-              onCheckedChange={handleToggleComplete}
-            />
+            <div className="flex items-center gap-1 mt-0.5">
+              <Badge variant="secondary" className="text-xs h-4 px-1">
+                {course.credits} cr
+              </Badge>
+              {course.selectionCount && (
+                <Badge variant="outline" className="text-xs h-4 px-1">
+                  Pick {course.selectionCount}
+                </Badge>
+              )}
+            </div>
           </div>
+          <Checkbox
+            checked={isCompleted}
+            onCheckedChange={handleToggleComplete}
+            className="h-4 w-4"
+          />
         </div>
       );
     }
 
     // Regular course
     return (
-      <div className="space-y-3">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <h4 className="font-semibold text-sm mb-1">{course.code}</h4>
-            <p className="text-sm text-muted-foreground mb-2">{course.title}</p>
-            
-            <div className="flex flex-wrap items-center gap-1 mb-2">
-              <Badge variant="secondary" className="text-xs">
-                {course.credits} credits
-              </Badge>
-            </div>
-
-            {course.description && (
-              <p className="text-xs text-muted-foreground line-clamp-2">
-                {course.description}
-              </p>
-            )}
-
-            {course.footnoteRefs && course.footnoteRefs.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                {course.footnoteRefs.map(ref => {
-                  const footnote = footnotes.find(f => f.id === ref);
-                  return (
-                    <Badge key={ref} variant="outline" className="text-xs" title={footnote?.text}>
-                      Note {ref}
-                    </Badge>
-                  );
-                })}
-              </div>
-            )}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <h4 className="font-semibold text-sm">{course.code}</h4>
+            <span className="text-xs text-muted-foreground truncate">{course.title}</span>
           </div>
           
-          <div className="flex flex-col items-center gap-2 ml-4">
-            <Checkbox
-              checked={isCompleted}
-              onCheckedChange={handleToggleComplete}
-            />
-            {course.description && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsModalOpen(true)}
-                className="p-1 h-auto"
-              >
-                <Info className="h-3 w-3" />
-              </Button>
+          <div className="flex items-center gap-1 mt-0.5">
+            <Badge variant="secondary" className="text-xs h-4 px-1">
+              {course.credits} cr
+            </Badge>
+            {course.prerequisites && (
+              <>
+                <span className="text-xs text-muted-foreground">•</span>
+                <PrerequisiteBadges prerequisites={course.prerequisites} maxShow={1} />
+              </>
+            )}
+            {course.footnoteRefs && course.footnoteRefs.length > 0 && (
+              <Badge variant="outline" className="text-xs h-4 px-1" title={footnotes.find(f => f.id === course.footnoteRefs[0])?.text}>
+                Note {course.footnoteRefs[0]}
+              </Badge>
             )}
           </div>
         </div>
+        
+        <Checkbox
+          checked={isCompleted}
+          onCheckedChange={handleToggleComplete}
+          className="h-4 w-4"
+        />
       </div>
     );
   };
@@ -171,40 +143,15 @@ export const RequirementsCourseCard: React.FC<RequirementsCourseCardProps> = ({
   return (
     <>
       <Card className={cn(
-        "transition-all duration-200 hover:shadow-md cursor-pointer group py-1",
-        isCompleted && "border-green-500 shadow-green-100 bg-green-50/50 dark:bg-green-900/10",
-        isPlanned && !isCompleted && "border-blue-500 shadow-blue-100 bg-blue-50/50 dark:bg-blue-900/10",
+        "transition-all duration-200 hover:shadow-sm cursor-pointer group",
+        isCompleted && "border-green-400 bg-green-50/30 dark:bg-green-900/10",
+        isPlanned && !isCompleted && "border-blue-400 bg-blue-50/30 dark:bg-blue-900/10",
         course.type === 'or_group' && "border-orange-200",
         (course.type === 'flexible' || course.type === 'selection') && "border-blue-200"
       )}>
-        <CardContent className="py-2 px-3">
+        <CardContent className="p-2">
           {renderCourseContent()}
           
-          {isCompleted && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="flex items-center justify-center mt-2 py-1 px-2 bg-green-100 dark:bg-green-900/20 rounded border border-green-200 dark:border-green-800"
-            >
-              <CheckCircle2 className="h-3 w-3 text-green-600 mr-1" />
-              <span className="text-green-700 dark:text-green-300 text-xs font-medium">
-                Completed
-              </span>
-            </motion.div>
-          )}
-          
-          {isPlanned && !isCompleted && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="flex items-center justify-center mt-2 py-1 px-2 bg-blue-100 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800"
-            >
-              <BookOpen className="h-3 w-3 text-blue-600 mr-1" />
-              <span className="text-blue-700 dark:text-blue-300 text-xs font-medium">
-                Planned
-              </span>
-            </motion.div>
-          )}
         </CardContent>
       </Card>
 

@@ -65,7 +65,7 @@ export class CourseRecommendationEngine {
         }
 
         const data = await response.json();
-        const courses = data.courses || [];
+        const courses = data.data || data.courses || [];
         
         if (courses.length === 0) {
           break;
@@ -139,11 +139,13 @@ export class CourseRecommendationEngine {
     
     // Check prerequisites satisfaction
     const prerequisitesSatisfied = this.checkPrerequisites(course);
+    
+    // Include ALL courses, but mark locked ones with lower scores
     if (!prerequisitesSatisfied.satisfied) {
-      return null; // Can't take this course yet
-    }
-
-    if (prerequisitesSatisfied.readyToTake) {
+      score = -10; // Negative score for locked courses
+      reasons.push('Prerequisites not met');
+      category = 'foundation';
+    } else if (prerequisitesSatisfied.readyToTake) {
       score += 50;
       reasons.push('Prerequisites completed');
       category = 'prerequisite-ready';

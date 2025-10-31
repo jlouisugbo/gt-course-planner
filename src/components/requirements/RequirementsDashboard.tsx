@@ -8,7 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RequirementsSearch } from './RequirementsSearch';
 import { RequirementsCategoryList } from './RequirementsCategoryList';
-import { GraduationCap, BookOpen, Clock, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
+import { GraduationCap, BookOpen, Clock, CheckCircle, Loader2, AlertCircle, Info, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useCompletionTracking } from '@/hooks/useCompletionTracking';
 import { useRequirements } from '@/hooks/useRequirements';
 
@@ -41,6 +43,14 @@ export const RequirementsDashboard: React.FC = () => {
   const { 
     toggleCourseCompletion
   } = useCompletionTracking();
+
+  // State for warnings modal
+  const [showWarningsModal, setShowWarningsModal] = useState(false);
+  const hasWarnings = progressSummary && (
+    progressSummary.warnings.length > 0 || 
+    progressSummary.blockers.length > 0 || 
+    progressSummary.recommendations.length > 0
+  );
 
   // Save all completions to database when component unmounts or tab changes
   useEffect(() => {
@@ -120,84 +130,96 @@ export const RequirementsDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
+      <div className="max-w-7xl mx-auto space-y-3">
+        {/* Compact Header with Warnings Button */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <Card className="gt-card p-6">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gt-gradient rounded-xl flex items-center justify-center">
-                <GraduationCap className="h-6 w-6 text-white" />
+          <Card className="gt-card p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gt-gradient rounded-lg flex items-center justify-center">
+                  <GraduationCap className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gt-navy">Degree Requirements</h1>
+                  <p className="text-sm text-gray-600">Computer Science Program Requirements</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-2xl lg:text-3xl font-bold text-gt-navy">Degree Requirements</h1>
-                <p className="text-gray-600">Computer Science Program Requirements</p>
-              </div>
+              {hasWarnings && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowWarningsModal(true)}
+                  className="border-yellow-400 text-yellow-700 hover:bg-yellow-50"
+                >
+                  <Info className="h-4 w-4 mr-2" />
+                  View Alerts
+                  {progressSummary.blockers.length > 0 && (
+                    <Badge className="ml-2 bg-red-500 text-white">{progressSummary.blockers.length}</Badge>
+                  )}
+                </Button>
+              )}
             </div>
           </Card>
         </motion.div>
 
-        {/* Progress Overview */}
+        {/* Compact Progress Overview */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-4 gap-6"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
         >
           <Card className="gt-card border-l-4 border-l-gt-gold">
-            <CardContent className="p-6">
+            <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Overall Progress</p>
-                  <p className="text-2xl font-bold text-gt-gold">{progress.percentage}%</p>
+                  <p className="text-xs font-medium text-gray-600">Progress</p>
+                  <p className="text-xl font-bold text-gt-gold">{progress.percentage}%</p>
                 </div>
-                <CheckCircle className="h-8 w-8 text-gt-gold" />
+                <CheckCircle className="h-6 w-6 text-gt-gold" />
               </div>
-              <Progress value={progress.percentage} className="mt-4" />
+              <Progress value={progress.percentage} className="mt-2 h-1" />
             </CardContent>
           </Card>
 
           <Card className="gt-card">
-            <CardContent className="p-6">
+            <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Credits Completed</p>
-                  <p className="text-2xl font-bold text-gt-navy">{progress.completedCredits}</p>
+                  <p className="text-xs font-medium text-gray-600">Credits</p>
+                  <p className="text-xl font-bold text-gt-navy">{progress.completedCredits}/{progress.totalCredits}</p>
                 </div>
-                <BookOpen className="h-8 w-8 text-gt-navy" />
-              </div>
-              <p className="text-xs text-gray-500 mt-2">of {progress.totalCredits} total</p>
-            </CardContent>
-          </Card>
-
-          <Card className="gt-card">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Completed Courses</p>
-                  <p className="text-2xl font-bold text-gt-navy">{completedCourseCodes.size}</p>
-                </div>
-                <CheckCircle className="h-8 w-8 text-gt-gold" />
+                <BookOpen className="h-6 w-6 text-gt-navy" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="gt-card">
-            <CardContent className="p-6">
+            <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Graduation</p>
-                  <p className="text-lg font-bold text-gt-navy">
+                  <p className="text-xs font-medium text-gray-600">Courses</p>
+                  <p className="text-xl font-bold text-gt-navy">{completedCourseCodes.size}</p>
+                </div>
+                <CheckCircle className="h-6 w-6 text-gt-gold" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="gt-card">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-gray-600">Graduation</p>
+                  <p className="text-sm font-bold text-gt-navy">
                     {progressSummary?.estimatedGraduationSemester || 'TBD'}
                   </p>
                 </div>
-                <Clock className="h-8 w-8 text-orange-600" />
+                <Clock className="h-6 w-6 text-orange-600" />
               </div>
-              <p className="text-xs text-gray-500 mt-2">
-                {progress.totalCredits - progress.completedCredits} credits remaining
-              </p>
             </CardContent>
           </Card>
         </motion.div>
@@ -211,36 +233,26 @@ export const RequirementsDashboard: React.FC = () => {
           <RequirementsSearch filters={filters} onFiltersChange={setFilters} />
         </motion.div>
 
-        {/* Phase 2.1.2 Enhancement: Warnings & Recommendations */}
-        {progressSummary && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-            className="space-y-4"
-          >
-            {/* Warnings */}
-            {progressSummary.warnings.length > 0 && (
-              <Card className="gt-card border-l-4 border-l-yellow-500 bg-yellow-50">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <AlertCircle className="h-5 w-5 text-yellow-600" />
-                    <h3 className="font-semibold text-yellow-800">Attention Required</h3>
-                  </div>
-                  <ul className="space-y-1">
-                    {progressSummary.warnings.map((warning, index) => (
-                      <li key={index} className="text-sm text-yellow-700">• {warning}</li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Blockers */}
-            {progressSummary.blockers.length > 0 && (
-              <Card className="gt-card border-l-4 border-l-red-500 bg-red-50">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-3">
+        {/* Warnings Modal */}
+        <Dialog open={showWarningsModal} onOpenChange={setShowWarningsModal}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto p-4 sm:p-6">
+            <DialogHeader>
+              <DialogTitle className="flex items-center justify-between">
+                <span>Academic Alerts & Recommendations</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowWarningsModal(false)}
+                  className="h-8 w-8 p-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 mt-4">
+              {progressSummary?.blockers && progressSummary.blockers.length > 0 && (
+                <div className="border-l-4 border-l-red-500 bg-red-50 p-4 rounded">
+                  <div className="flex items-center gap-2 mb-2">
                     <AlertCircle className="h-5 w-5 text-red-600" />
                     <h3 className="font-semibold text-red-800">Critical Issues</h3>
                   </div>
@@ -249,15 +261,24 @@ export const RequirementsDashboard: React.FC = () => {
                       <li key={index} className="text-sm text-red-700">• {blocker}</li>
                     ))}
                   </ul>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Recommendations */}
-            {progressSummary.recommendations.length > 0 && (
-              <Card className="gt-card border-l-4 border-l-blue-500 bg-blue-50">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-3">
+                </div>
+              )}
+              {progressSummary?.warnings && progressSummary.warnings.length > 0 && (
+                <div className="border-l-4 border-l-yellow-500 bg-yellow-50 p-4 rounded">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle className="h-5 w-5 text-yellow-600" />
+                    <h3 className="font-semibold text-yellow-800">Attention Required</h3>
+                  </div>
+                  <ul className="space-y-1">
+                    {progressSummary.warnings.map((warning, index) => (
+                      <li key={index} className="text-sm text-yellow-700">• {warning}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {progressSummary?.recommendations && progressSummary.recommendations.length > 0 && (
+                <div className="border-l-4 border-l-blue-500 bg-blue-50 p-4 rounded">
+                  <div className="flex items-center gap-2 mb-2">
                     <CheckCircle className="h-5 w-5 text-blue-600" />
                     <h3 className="font-semibold text-blue-800">Recommendations</h3>
                   </div>
@@ -266,11 +287,11 @@ export const RequirementsDashboard: React.FC = () => {
                       <li key={index} className="text-sm text-blue-700">• {rec}</li>
                     ))}
                   </ul>
-                </CardContent>
-              </Card>
-            )}
-          </motion.div>
-        )}
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Main Content */}
         <motion.div
@@ -279,31 +300,34 @@ export const RequirementsDashboard: React.FC = () => {
           transition={{ delay: 0.3 }}
         >
           <Tabs defaultValue="requirements" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 bg-white border border-gray-200 rounded-lg p-1">
-              <TabsTrigger 
-                value="requirements" 
-                className="flex items-center gap-2 data-[state=active]:bg-gt-navy data-[state=active]:text-white"
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 bg-white border border-gray-200 rounded-lg p-1">
+              <TabsTrigger
+                value="requirements"
+                className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-gt-navy data-[state=active]:text-white text-xs sm:text-sm"
               >
                 <BookOpen className="h-4 w-4" />
-                Requirements
+                <span className="hidden sm:inline">Requirements</span>
+                <span className="sm:hidden">Reqs</span>
               </TabsTrigger>
-              <TabsTrigger 
-                value="progress" 
-                className="flex items-center gap-2 data-[state=active]:bg-gt-navy data-[state=active]:text-white"
+              <TabsTrigger
+                value="progress"
+                className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-gt-navy data-[state=active]:text-white text-xs sm:text-sm"
               >
                 <CheckCircle className="h-4 w-4" />
-                Progress View
+                <span className="hidden sm:inline">Progress View</span>
+                <span className="sm:hidden">Progress</span>
               </TabsTrigger>
-              <TabsTrigger 
-                value="recommendations" 
-                className="flex items-center gap-2 data-[state=active]:bg-gt-navy data-[state=active]:text-white"
+              <TabsTrigger
+                value="recommendations"
+                className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-gt-navy data-[state=active]:text-white text-xs sm:text-sm"
               >
                 <GraduationCap className="h-4 w-4" />
-                Next Steps
+                <span className="hidden sm:inline">Next Steps</span>
+                <span className="sm:hidden">Next</span>
               </TabsTrigger>
-              <TabsTrigger 
-                value="export" 
-                className="flex items-center gap-2 data-[state=active]:bg-gt-navy data-[state=active]:text-white"
+              <TabsTrigger
+                value="export"
+                className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-gt-navy data-[state=active]:text-white text-xs sm:text-sm"
               >
                 <Clock className="h-4 w-4" />
                 Export

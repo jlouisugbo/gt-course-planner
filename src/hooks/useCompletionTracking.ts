@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
 import { usePlannerStore } from './usePlannerStore';
 import { createComponentLogger } from '@/lib/security/logger';
+import { supabase } from '@/lib/supabaseClient';
 
 export const useCompletionTracking = () => {
   const { user } = useAuth();
@@ -56,10 +57,17 @@ export const useCompletionTracking = () => {
     if (!user) return;
 
     try {
+      // Get the current session for authentication
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session) {
+        throw new Error('No active session');
+      }
+
       const response = await fetch('/api/course-completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionData.session.access_token}`,
         },
         body: JSON.stringify({
           courseCode,
@@ -86,8 +94,8 @@ export const useCompletionTracking = () => {
     }
   }, [user]);
 
-  // Toggle course completion using Zustand store
-  const toggleCourseCompletion = useCallback(async (courseCode: string) => {
+  // Toggle course completion locally using Zustand store (no database save)
+  const toggleCourseCompletion = useCallback((courseCode: string) => {
     if (!user) return;
 
     const { getAllCourses, updateCourseStatus, addCourseToSemester, getSafeSemesters } = usePlannerStore.getState();
@@ -129,8 +137,8 @@ export const useCompletionTracking = () => {
       };
 
       addCourseToSemester(newCourse);
-      await saveCompletionToDatabase(courseCode, true, 'A', `${earliestSemester.year}-${earliestSemester.season}`);
-      logger.debug('Added and marked course as completed');
+      // Don't save to database here - wait for explicit save
+      logger.debug('Added and marked course as completed (local only)');
       return;
     }
 
@@ -138,17 +146,15 @@ export const useCompletionTracking = () => {
     
     if (wasCompleted) {
       updateCourseStatus(course.id, course.semesterId, 'planned');
-      await saveCompletionToDatabase(courseCode, false);
       const logger = createComponentLogger('COMPLETION_TRACKING');
-      logger.debug('Marked course as planned');
+      logger.debug('Marked course as planned (local only)');
     } else {
       updateCourseStatus(course.id, course.semesterId, 'completed', 'A'); // Default grade
-      await saveCompletionToDatabase(courseCode, true, 'A');
       const logger = createComponentLogger('COMPLETION_TRACKING');
-      logger.debug('Marked course as completed');
+      logger.debug('Marked course as completed (local only)');
     }
     
-  }, [user, saveCompletionToDatabase]);
+  }, [user]);
 
   // Set group completion (local state only - no database persistence needed)
   const setGroupCompletion = useCallback(async (groupId: string, isSatisfied: boolean) => {
@@ -218,6 +224,49 @@ export const useCompletionTracking = () => {
     return flexibleCourseSelections[requirementType];
   }, [flexibleCourseSelections]);
 
+  // Save all completions to database at once
+  const saveAllCompletions = useCallback(async () => {
+    if (!user) return { success: false, error: 'No user authenticated' };
+
+    const logger = createComponentLogger('COMPLETION_TRACKING');
+    
+    try {
+      // Get the current session for authentication
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session) {
+        throw new Error('No active session');
+      }
+
+      const { getAllCourses } = usePlannerStore.getState();
+      const completedCoursesData = getAllCourses().filter(c => c.status === 'completed');
+      
+      // Batch save all completed courses
+      const savePromises = completedCoursesData.map(course => 
+        fetch('/api/course-completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionData.session.access_token}`,
+          },
+          body: JSON.stringify({
+            courseCode: course.code,
+            grade: course.grade || 'A',
+            semester: `${course.year}-${course.season.toLowerCase()}`,
+            credits: course.credits || 3,
+            status: 'completed'
+          })
+        })
+      );
+
+      await Promise.all(savePromises);
+      logger.debug(`Saved ${completedCoursesData.length} course completions to database`);
+      return { success: true };
+    } catch (error) {
+      logger.error('Error saving completions to database', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }, [user]);
+
   // Load data on mount and user change
   useEffect(() => {
     loadCompletionData();
@@ -236,5 +285,7 @@ export const useCompletionTracking = () => {
     getFlexibleCourseSelection,
     preserveCompletionsOnMajorChange,
     reloadCompletionData: loadCompletionData,
+    saveAllCompletions, // New batch save function
+    saveCompletionToDatabase, // Keep for backward compatibility
   };
 };

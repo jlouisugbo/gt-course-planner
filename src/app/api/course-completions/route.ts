@@ -1,13 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { createSecureRoute, SECURITY_CONFIGS } from '@/lib/security/middleware';
-import { CourseCompletionSchema, CourseCompletionDeleteSchema } from '@/lib/validation/schemas';
-import { 
-    safeGetUserCompletions, 
-    safeUpsertCourseCompletion, 
-    safeDeleteCourseCompletion
-} from '@/lib/security/database';
-
+import { createClient } from '@/lib/supabaseServer';
 
 interface SemesterGPA {
     semester: string;
@@ -31,75 +23,105 @@ const GRADE_POINTS: Record<string, number> = {
     'P': -1, // Pass - not counted in GPA
 };
 
-// Secure GET handler for user course completions
-export const GET = createSecureRoute(async (request, context) => {
+// GET handler for user course completions
+export async function GET() {
     try {
-        // Get user record using safe method
-        const { data: userRecord } = await supabaseAdmin()
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Get user record
+        const { data: userRecord } = await supabase
             .from('users')
             .select('id')
-            .eq('auth_id', context.user!.id)
-            .single() as { data: { id: number } | null };
+            .eq('auth_id', user.id)
+            .single();
 
         if (!userRecord) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
-        // Use safe database query for completions
-        const completions = await safeGetUserCompletions(userRecord.id);
+        // Get course completions
+        const { data: completions, error } = await supabase
+            .from('user_courses')
+            .select('*')
+            .eq('user_id', userRecord.id);
+
+        if (error) throw error;
 
         // Transform to legacy format for frontend compatibility
-        const completedCourses = completions.map(c => c.course_code).filter(Boolean);
-        
-        // Calculate semester GPAs from normalized data
-        const semesterGPAs = calculateSemesterGPAsFromCompletions(completions);
-        
+        const completedCourses = (completions || [])
+            .map(c => c.course_code)
+            .filter(Boolean);
+
+        // Calculate semester GPAs
+        const semesterGPAs = calculateSemesterGPAsFromCompletions(completions || []);
+
         return NextResponse.json({
             completedCourses,
             semesterGPAs,
             overallGPA: calculateOverallGPA(semesterGPAs),
-            // Also include detailed completions for future frontend updates
-            detailedCompletions: completions
+            detailedCompletions: completions || []
         });
     } catch (error) {
         console.error('API Error:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
-}, SECURITY_CONFIGS.MEDIUM_SECURITY);
+}
 
-// Secure POST handler for adding course completions
-export const POST = createSecureRoute(async (request, context) => {
+// POST handler for adding course completions
+export async function POST(request: Request) {
     try {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const body = await request.json();
-        
-        // Validate input using Zod schema
-        const validatedCompletion = CourseCompletionSchema.parse(body);
 
         // Get user record
-        const { data: userRecord } = await supabaseAdmin()
+        const { data: userRecord } = await supabase
             .from('users')
             .select('id')
-            .eq('auth_id', context.user!.id)
-            .single() as { data: { id: number } | null };
+            .eq('auth_id', user.id)
+            .single();
 
         if (!userRecord) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
-        // Use safe database method to save completion
-        await safeUpsertCourseCompletion(userRecord.id, {
-            courseCode: validatedCompletion.courseCode,
-            grade: validatedCompletion.grade,
-            semester: validatedCompletion.semester,
-            credits: validatedCompletion.credits
-        });
+        // Save course completion
+        const { error: upsertError } = await supabase
+            .from('user_courses')
+            .upsert({
+                user_id: userRecord.id,
+                course_code: body.courseCode,
+                grade: body.grade,
+                semester: body.semester,
+                credits: body.credits,
+                status: 'completed',
+                updated_at: new Date().toISOString()
+            }, {
+                onConflict: 'user_id,course_code'
+            });
 
-        // Get updated completions using safe method
-        const completions = await safeGetUserCompletions(userRecord.id);
+        if (upsertError) throw upsertError;
 
-        // Transform for frontend compatibility
-        const completedCourses = completions.map(c => c.course_code).filter(Boolean);
-        const semesterGPAs = calculateSemesterGPAsFromCompletions(completions);
+        // Get updated completions
+        const { data: completions } = await supabase
+            .from('user_courses')
+            .select('*')
+            .eq('user_id', userRecord.id);
+
+        const completedCourses = (completions || [])
+            .map(c => c.course_code)
+            .filter(Boolean);
+        const semesterGPAs = calculateSemesterGPAsFromCompletions(completions || []);
 
         return NextResponse.json({
             message: 'Course completion saved successfully',
@@ -107,71 +129,66 @@ export const POST = createSecureRoute(async (request, context) => {
             semesterGPAs,
             overallGPA: calculateOverallGPA(semesterGPAs)
         });
-    } catch (error: any) {
+    } catch (error) {
         console.error('API Error:', error);
-        
-        // Handle validation errors
-        if (error.name === 'ZodError') {
-            return NextResponse.json({
-                error: 'Validation failed',
-                details: error.errors
-            }, { status: 400 });
-        }
-        
-        // Handle database security errors
-        if (error.name === 'DatabaseSecurityError') {
-            return NextResponse.json({
-                error: error.message,
-                code: error.code
-            }, { status: 400 });
-        }
-        
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
-}, {
-    ...SECURITY_CONFIGS.HIGH_SECURITY,
-    validationSchema: {
-        body: CourseCompletionSchema
-    }
-});
+}
 
-// Secure DELETE handler for removing course completions
-export const DELETE = createSecureRoute(async (request, context) => {
+// DELETE handler for removing course completions
+export async function DELETE(request: Request) {
     try {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const { searchParams } = new URL(request.url);
         const courseCode = searchParams.get('courseCode');
         const semester = searchParams.get('semester');
 
-        // Validate input using Zod schema
-        const validatedData = CourseCompletionDeleteSchema.parse({
-            courseCode,
-            semester
-        });
+        if (!courseCode) {
+            return NextResponse.json({ error: 'Course code required' }, { status: 400 });
+        }
 
         // Get user record
-        const { data: userRecord } = await supabaseAdmin()
+        const { data: userRecord } = await supabase
             .from('users')
             .select('id')
-            .eq('auth_id', context.user!.id)
-            .single() as { data: { id: number } | null };
+            .eq('auth_id', user.id)
+            .single();
 
         if (!userRecord) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
-        // Use safe database method to delete completion
-        await safeDeleteCourseCompletion(
-            userRecord.id!, 
-            validatedData.courseCode!, 
-            validatedData.semester
-        );
+        // Delete course completion
+        let query = supabase
+            .from('user_courses')
+            .delete()
+            .eq('user_id', userRecord.id)
+            .eq('course_code', courseCode);
 
-        // Get updated completions using safe method
-        const completions = await safeGetUserCompletions(userRecord.id);
+        if (semester) {
+            query = query.eq('semester', semester);
+        }
 
-        // Transform for frontend compatibility
-        const completedCourses = completions.map(c => c.course_code).filter(Boolean);
-        const semesterGPAs = calculateSemesterGPAsFromCompletions(completions);
+        const { error: deleteError } = await query;
+
+        if (deleteError) throw deleteError;
+
+        // Get updated completions
+        const { data: completions } = await supabase
+            .from('user_courses')
+            .select('*')
+            .eq('user_id', userRecord.id);
+
+        const completedCourses = (completions || [])
+            .map(c => c.course_code)
+            .filter(Boolean);
+        const semesterGPAs = calculateSemesterGPAsFromCompletions(completions || []);
 
         return NextResponse.json({
             message: 'Course removed successfully',
@@ -179,44 +196,22 @@ export const DELETE = createSecureRoute(async (request, context) => {
             semesterGPAs,
             overallGPA: calculateOverallGPA(semesterGPAs)
         });
-    } catch (error: any) {
+    } catch (error) {
         console.error('API Error:', error);
-        
-        // Handle validation errors
-        if (error.name === 'ZodError') {
-            return NextResponse.json({
-                error: 'Validation failed',
-                details: error.errors
-            }, { status: 400 });
-        }
-        
-        // Handle database security errors
-        if (error.name === 'DatabaseSecurityError') {
-            return NextResponse.json({
-                error: error.message,
-                code: error.code
-            }, { status: 400 });
-        }
-        
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
-}, {
-    ...SECURITY_CONFIGS.HIGH_SECURITY,
-    validationSchema: {
-        query: CourseCompletionDeleteSchema
-    }
-});
+}
 
 // Helper function to calculate semester GPAs from completions
 function calculateSemesterGPAsFromCompletions(completions: any[]): SemesterGPA[] {
     const semesterMap = new Map<string, SemesterGPA>();
-    
+
     completions.forEach(completion => {
         if (!completion.semester || !completion.grade) return;
-        
+
         const gradePoints = GRADE_POINTS[completion.grade];
         if (gradePoints < 0) return; // Skip non-GPA grades
-        
+
         if (!semesterMap.has(completion.semester)) {
             semesterMap.set(completion.semester, {
                 semester: completion.semester,
@@ -226,30 +221,30 @@ function calculateSemesterGPAsFromCompletions(completions: any[]): SemesterGPA[]
                 gpa: 0
             });
         }
-        
+
         const sem = semesterMap.get(completion.semester)!;
         const credits = completion.credits || 3;
-        
+
         sem.courses.push({
             code: completion.course_code,
             grade: completion.grade,
             credits: credits
         });
-        
+
         sem.totalPoints += gradePoints * credits;
         sem.totalCredits += credits;
         sem.gpa = sem.totalCredits > 0 ? sem.totalPoints / sem.totalCredits : 0;
     });
-    
+
     return Array.from(semesterMap.values());
 }
 
 // Helper function to calculate overall GPA
 function calculateOverallGPA(semesterGPAs: SemesterGPA[]): number {
     if (!semesterGPAs || semesterGPAs.length === 0) return 0;
-    
+
     const totalPoints = semesterGPAs.reduce((sum, sem) => sum + (sem.totalPoints || 0), 0);
     const totalCredits = semesterGPAs.reduce((sum, sem) => sum + (sem.totalCredits || 0), 0);
-    
+
     return totalCredits > 0 ? totalPoints / totalCredits : 0;
 }

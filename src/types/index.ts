@@ -96,6 +96,32 @@ export type {
 } from './dashboard';
 
 // =====================================================
+// OPPORTUNITIES-RELATED EXPORTS
+// =====================================================
+
+export type {
+    Opportunity,
+    OpportunityApplication,
+    OpportunityFilters,
+    CreateApplicationData,
+    UpdateApplicationData
+} from './opportunities';
+
+// =====================================================
+// ADVISORS-RELATED EXPORTS
+// =====================================================
+
+export type {
+    Advisor,
+    AdvisorConnection,
+    AdvisorAppointment,
+    AdvisorFilters,
+    CreateConnectionData,
+    CreateAppointmentData,
+    UpdateAppointmentData
+} from './advisors';
+
+// =====================================================
 // COMPONENT PROPS EXPORTS
 // =====================================================
 

@@ -6,44 +6,63 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, AlertTriangle, CheckCircle } from "lucide-react";
-
-interface Deadline {
-    id: string;
-    title: string;
-    date: Date;
-    daysLeft: number;
-    type: 'registration' | 'deadline' | 'graduation';
-}
+import { Deadline } from "@/types/dashboard";
 
 interface DashboardDeadlinesProps {
     deadlines: Deadline[];
 }
 
 export const DashboardDeadlines: React.FC<DashboardDeadlinesProps> = ({ deadlines }) => {
-    // If no deadlines from database, show some sample important dates
-    const displayDeadlines = deadlines.length > 0 ? deadlines : [
-        {
-            id: "1",
-            title: "Course Registration Opens",
-            date: new Date(2025, 2, 15), // March 15, 2025
-            daysLeft: Math.ceil((new Date(2025, 2, 15).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
-            type: "registration" as const
-        },
-        {
-            id: "2", 
-            title: "Add/Drop Deadline",
-            date: new Date(2025, 7, 25), // August 25, 2025
-            daysLeft: Math.ceil((new Date(2025, 7, 25).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
-            type: "deadline" as const
-        },
-        {
-            id: "3",
-            title: "Graduation Application Due",
-            date: new Date(2025, 1, 1), // February 1, 2025
-            daysLeft: Math.ceil((new Date(2025, 1, 1).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
-            type: "graduation" as const
+    // Helper function to compute days left from date
+    const getDaysLeft = (dateString: string): number => {
+        try {
+            const deadline = new Date(dateString);
+            const now = new Date();
+            const diffTime = deadline.getTime() - now.getTime();
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        } catch {
+            return 0;
         }
-    ].filter(d => d.daysLeft > -30); // Show past deadlines up to 30 days
+    };
+
+    // If no deadlines from database, show some sample important dates
+    const sampleDeadlines: Deadline[] = [
+        {
+            id: 1,
+            title: "Course Registration Opens",
+            date: "2025-03-15T08:00:00-04:00",
+            type: "registration",
+            urgent: false,
+            is_active: true
+        },
+        {
+            id: 2,
+            title: "Add/Drop Deadline", 
+            date: "2025-08-25T23:59:59-04:00",
+            type: "registration",
+            urgent: true,
+            is_active: true
+        },
+        {
+            id: 3,
+            title: "Graduation Application Due",
+            date: "2025-02-01T23:59:59-05:00",
+            type: "graduation",
+            urgent: true,
+            is_active: true
+        }
+    ];
+
+    const sourceDeadlines = deadlines.length > 0 ? deadlines : sampleDeadlines;
+    
+    // Add computed properties and filter recent deadlines
+    const displayDeadlines = sourceDeadlines
+        .map(deadline => ({
+            ...deadline,
+            daysLeft: getDaysLeft(deadline.date),
+            dateObject: new Date(deadline.date) // For rendering
+        }))
+        .filter(d => d.daysLeft > -30); // Show past deadlines up to 30 days
 
     const getDeadlineIcon = (type: string) => {
         switch (type) {
@@ -108,7 +127,7 @@ export const DashboardDeadlines: React.FC<DashboardDeadlinesProps> = ({ deadline
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: index * 0.1 }}
-                                        className={`p-4 border-l-4 rounded-lg transition-colors ${
+                                        className={`p-3 sm:p-4 border-l-4 rounded-lg transition-colors ${
                                             deadline.daysLeft <= 7 && deadline.daysLeft >= 0
                                                 ? 'border-l-red-500 bg-red-50'
                                                 : deadline.daysLeft <= 30 && deadline.daysLeft >= 0
@@ -116,15 +135,15 @@ export const DashboardDeadlines: React.FC<DashboardDeadlinesProps> = ({ deadline
                                                 : 'border-l-slate-300 bg-slate-50'
                                         }`}
                                     >
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center space-x-3">
-                                                <Icon className={`h-5 w-5 ${getDeadlineColor(deadline.daysLeft)}`} />
-                                                <div>
-                                                    <h4 className="font-medium text-slate-900">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="flex items-center space-x-3 min-w-0 flex-1">
+                                                <Icon className={`h-5 w-5 flex-shrink-0 ${getDeadlineColor(deadline.daysLeft)}`} />
+                                                <div className="min-w-0 flex-1">
+                                                    <h4 className="font-medium text-slate-900 truncate">
                                                         {deadline.title}
                                                     </h4>
                                                     <p className="text-sm text-slate-600">
-                                                        {deadline.date.toLocaleDateString('en-US', {
+                                                        {deadline.dateObject.toLocaleDateString('en-US', {
                                                             weekday: 'short',
                                                             month: 'short',
                                                             day: 'numeric',

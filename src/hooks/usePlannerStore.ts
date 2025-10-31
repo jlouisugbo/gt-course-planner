@@ -124,10 +124,11 @@ interface PlannerState {
         warnings: string[];
         errors: string[];
     };
-    
-    // User isolation methods - DEPRECATED: Use useUserAwarePlannerStore instead
-    checkAndHandleUserChange: () => void;
-    getCurrentStorageUserId: () => string;
+
+    // Supabase sync for persistence
+    syncToSupabase: () => Promise<void>;
+
+    // User data management
     clearUserData: () => void;
 }
 
@@ -470,118 +471,104 @@ export const usePlannerStore = create<PlannerState>()(
                 );
             },
 
-            // Initialize store with database data
+            // Initialize store with database data (or demo data in demo mode)
             initializeStore: async () => {
                 const state = get();
+
+                // Check for demo mode
+                if (typeof window !== 'undefined') {
+                    const { isDemoMode } = await import('@/lib/demo-mode');
+
+                    if (isDemoMode()) {
+                        console.log('[Demo Mode] Initializing store with demo data');
+
+                        // Import demo data
+                        const {
+                            generateDemoSemesters,
+                            DEMO_DEADLINES,
+                            DEMO_ACTIVITY
+                        } = await import('@/lib/demo-data');
+
+                        // Set demo semesters
+                        const demoSemesters = generateDemoSemesters();
+                        set({ semesters: demoSemesters });
+
+                        // Set demo deadlines
+                        set({ deadlines: DEMO_DEADLINES });
+
+                        // Set demo activity
+                        set({ recentActivity: DEMO_ACTIVITY });
+
+                        // Calculate academic progress
+                        state.updateAcademicProgress();
+
+                        console.log('[Demo Mode] Store initialized with demo data');
+                        return;
+                    }
+                }
+
+                // Normal mode - fetch from database
                 await Promise.all([
                     state.fetchDeadlines(),
                 ]);
             },
 
-            // Fetch degree program requirements for visual system (NEW: using major column)
+            // Fetch degree program requirements for visual system (using API route)
             fetchDegreeProgramRequirements: async (): Promise<VisualDegreeProgram | null> => {
                 try {
                     // Get the current user
                     const { data: { user } } = await supabase.auth.getUser();
                     if (!user) {
-                        console.error('No authenticated user found');
+                        console.log('No authenticated user - skipping degree program fetch');
                         return null;
                     }
 
-                    // Get user's major from users table (new approach using major text column)
+                    // Get user's profile data to check if they're validated
                     const { data: userRecord, error: userError } = await supabase
                         .from('users')
-                        .select('major')
+                        .select('major, full_name, graduation_year')
                         .eq('auth_id', user.id)
                         .single();
 
                     if (userError) {
-                        console.error('Error fetching user record:', userError);
+                        if (userError.code === 'PGRST116') {
+                            console.log('User record not found - user needs to complete profile setup');
+                        } else {
+                            console.log('Error fetching user record:', userError);
+                        }
                         return null;
                     }
 
-                    if (!userRecord?.major) {
-                        console.error('User has no major assigned. User needs to complete profile setup.');
+                    // Check if user has completed profile setup
+                    if (!userRecord?.major || !userRecord?.full_name || !userRecord?.graduation_year) {
+                        console.log('User profile incomplete - skipping degree program fetch');
                         return null;
                     }
 
                     const majorName = userRecord.major;
+                    console.log(`Fetching degree program for validated user with major: ${majorName}`);
 
-                    // Query degree program by major name with college information
-                    const { data: program, error: programError } = await supabase
-                        .from('degree_programs')
-                        .select(`
-                            id, 
-                            name, 
-                            degree_type, 
-                            total_credits, 
-                            requirements,
-                            colleges!degree_programs_college_id_fkey(name)
-                        `)
-                        .eq('name', majorName)
-                        .eq('is_active', true)
-                        .single();
-
-                    if (programError) {
-                        const errorDetails = {
-                            message: programError?.message || 'Unknown error',
-                            details: programError?.details || 'No details available',
-                            hint: programError?.hint || 'No hint provided',
-                            code: programError?.code || 'No error code',
-                            full_error: JSON.stringify(programError, Object.getOwnPropertyNames(programError))
-                        };
-                        console.error('Error fetching degree program:', errorDetails);
-
-                        // Try case-insensitive fallback
-                        const { data: fallbackProgram, error: fallbackError } = await supabase
-                            .from('degree_programs')
-                            .select(`
-                                id, 
-                                name, 
-                                degree_type, 
-                                total_credits, 
-                                requirements,
-                                colleges!degree_programs_college_id_fkey(name)
-                            `)
-                            .ilike('name', majorName)
-                            .eq('is_active', true)
-                            .single();
-
-                        if (fallbackError) {
-                            console.error('Case-insensitive fallback also failed:', fallbackError);
-                            return null;
-                        }
-
-                        
-                        // Convert fallback program to visual format
-                        const visualProgram: VisualDegreeProgram = {
-                            id: fallbackProgram.id,
-                            name: fallbackProgram.name,
-                            degreeType: fallbackProgram.degree_type,
-                            college: (fallbackProgram.colleges as any)?.name || undefined,
-                            totalCredits: fallbackProgram.total_credits || undefined,
-                            requirements: Array.isArray(fallbackProgram.requirements) ? fallbackProgram.requirements : [],
-                            footnotes: []
-                        };
-                        
-                        return visualProgram;
-                    }
-
-                    if (!program) {
-                        console.error(`No degree program found for major: ${majorName}`);
+                    // Use API route instead of direct Supabase call
+                    const response = await fetch(`/api/degree-programs?major=${encodeURIComponent(majorName)}&degree_type=BS`);
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        console.error('API error fetching degree program:', errorData);
                         return null;
                     }
 
+                    const program = await response.json();
+                    console.log('✅ Successfully fetched degree program via API:', program.name);
 
-                    // Convert to visual program format
+                    // Convert API response to visual program format
                     const visualProgram: VisualDegreeProgram = {
                         id: program.id,
                         name: program.name,
                         degreeType: program.degree_type,
-                        college: (program.colleges as any)?.name || undefined,
+                        college: undefined, // API doesn't include college info yet
                         totalCredits: program.total_credits || undefined,
                         requirements: Array.isArray(program.requirements) ? program.requirements : [],
-                        footnotes: []
+                        footnotes: Array.isArray(program.footnotes) ? program.footnotes : []
                     };
 
                     return visualProgram;
@@ -696,10 +683,45 @@ export const usePlannerStore = create<PlannerState>()(
                         
                         const formattedStartDate = `${startSemester} ${startYear}`;
                         
+                        // Also format graduation date if it's not already in semester format
+                        let formattedGraduationDate = graduationDate;
+                        if (typeof graduationDate === 'string') {
+                            // Check if already in semester format (e.g., "Fall 2023")
+                            if (!graduationDate.match(/^(Fall|Spring|Summer)\s+\d{4}$/)) {
+                                // Convert from YYYY-MM-DD format or similar
+                                const convertToSeasonYear = (dateString: string): string => {
+                                    const [year, month] = dateString.split('-');
+                                    const monthNum = parseInt(month);
+                                    
+                                    let season: string;
+                                    if (monthNum >= 8 && monthNum <= 12) {
+                                        season = 'Fall';
+                                    } else if (monthNum >= 1 && monthNum <= 5) {
+                                        season = 'Spring';
+                                    } else {
+                                        season = 'Summer';
+                                    }
+                                    
+                                    return `${season} ${year}`;
+                                };
+                                
+                                try {
+                                    formattedGraduationDate = convertToSeasonYear(graduationDate);
+                                } catch (error) {
+                                    console.error('Error converting graduation date format:', error);
+                                    // Use a default graduation date
+                                    const currentYear = new Date().getFullYear();
+                                    formattedGraduationDate = `Spring ${currentYear + 4}`;
+                                }
+                            }
+                        }
+                        
+                        console.log(`🎓 Formatted dates for semester generation: ${formattedStartDate} → ${formattedGraduationDate}`);
+                        
                         // Generate semesters immediately without setTimeout for better performance
                         const { semesters } = get();
                         if (Object.keys(semesters).length === 0) {
-                            get().generateSemesters(formattedStartDate, graduationDate);
+                            get().generateSemesters(formattedStartDate, formattedGraduationDate);
                         }
                     }
 
@@ -764,6 +786,12 @@ export const usePlannerStore = create<PlannerState>()(
 
                 // Use batch update instead of setTimeout to prevent unnecessary re-renders
                 get().updateSemesterGPA(course.semesterId);
+
+                // Auto-sync to Supabase after 2s delay (debounced for UX)
+                // User sees instant localStorage save, then background Supabase sync
+                setTimeout(() => {
+                    get().syncToSupabase();
+                }, 2000);
             },
 
             removeCourseFromSemester: (
@@ -812,6 +840,11 @@ export const usePlannerStore = create<PlannerState>()(
 
                 // Use batch update instead of setTimeout to prevent unnecessary re-renders
                 get().updateSemesterGPA(semesterId);
+
+                // Auto-sync to Supabase after 2s delay (debounced for UX)
+                setTimeout(() => {
+                    get().syncToSupabase();
+                }, 2000);
             },
 
             moveCourse: (
@@ -1019,6 +1052,11 @@ export const usePlannerStore = create<PlannerState>()(
 
                 // Use batch update instead of setTimeout to prevent unnecessary re-renders
                 get().updateSemesterGPA(semesterId);
+
+                // Auto-sync to Supabase after 2s delay (debounced for UX)
+                setTimeout(() => {
+                    get().syncToSupabase();
+                }, 2000);
             },
 
             setSelectedSemester: (semesterId: number | null) => {
@@ -1314,11 +1352,28 @@ export const usePlannerStore = create<PlannerState>()(
                 // Add extra semesters beyond graduation to ensure all options are available
                 const extendedFinalYear = finalYear + 1;
 
+                // Determine current semester based on current date
+                const now = new Date();
+                const currentCalendarYear = now.getFullYear();
+                const currentMonth = now.getMonth() + 1; // getMonth() returns 0-11
+                
+                let currentSemesterSeason: string;
+                if (currentMonth >= 8 && currentMonth <= 12) {
+                    currentSemesterSeason = 'Fall';
+                } else if (currentMonth >= 1 && currentMonth <= 5) {
+                    currentSemesterSeason = 'Spring';
+                } else {
+                    currentSemesterSeason = 'Summer';
+                }
+
                 // Generate ALL semesters from start to extended final year
                 while (currentYear <= extendedFinalYear) {
                     const season = seasons[currentSeasonIndex];
                     // Unique semester ID generation: YYYYSS (year + season index)
                     const semesterId = currentYear * 100 + currentSeasonIndex;
+
+                    // Check if this is the current semester
+                    const isCurrentSemester = currentYear === currentCalendarYear && season === currentSemesterSeason;
 
                     semesters[semesterId] = {
                         id: semesterId,
@@ -1327,7 +1382,7 @@ export const usePlannerStore = create<PlannerState>()(
                         courses: [], // Always initialize as empty array
                         totalCredits: 0,
                         maxCredits: 18,
-                        isActive: semesterCount === 0,
+                        isActive: isCurrentSemester,
                         gpa: 0,
                     };
 
@@ -1471,15 +1526,87 @@ export const usePlannerStore = create<PlannerState>()(
                 };
             },
 
-            // User isolation methods - SECURITY FIX: These methods are now deprecated
-            // Components should use useUserAwarePlannerStore instead
-            checkAndHandleUserChange: () => {
-                // For backward compatibility, still clear data if somehow called
-                get().clearUserData();
-            },
+            // Sync planner data to Supabase (debounced auto-sync for persistence)
+            syncToSupabase: async () => {
+                const state = get();
 
-            getCurrentStorageUserId: () => {
-                return getAnonymousSessionId();
+                try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) {
+                        console.log('No authenticated user - skipping sync');
+                        return;
+                    }
+
+                    const userId = user.id;
+
+                    // Get all courses from semesters
+                    const allCourses = state.getAllCourses();
+                    const plannedCourses = allCourses.filter(c => c.status === 'planned');
+                    const completedCourses = allCourses.filter(c => c.status === 'completed');
+
+                    // Sync planned courses to user_semester_plans table
+                    if (plannedCourses.length > 0) {
+                        const planRecords = plannedCourses.map(course => {
+                            const semester = state.semesters[course.semesterId];
+                            return {
+                                user_id: userId,
+                                semester_id: course.semesterId.toString(),
+                                course_id: course.id,
+                                course_code: course.code,
+                                credits: course.credits,
+                                status: 'planned',
+                                semester_name: semester ? `${semester.season} ${semester.year}` : '',
+                                updated_at: new Date().toISOString()
+                            };
+                        });
+
+                        const { error: planError } = await supabase
+                            .from('user_semester_plans')
+                            .upsert(planRecords, {
+                                onConflict: 'user_id,semester_id,course_id',
+                                ignoreDuplicates: false
+                            });
+
+                        if (planError) {
+                            console.error('Error syncing planned courses:', planError);
+                        }
+                    }
+
+                    // Sync completed courses to user_course_completions table
+                    if (completedCourses.length > 0) {
+                        const completionRecords = completedCourses.map(course => {
+                            const semester = state.semesters[course.semesterId];
+                            return {
+                                user_id: userId,
+                                course_id: course.id,
+                                course_code: course.code,
+                                grade: course.grade || null,
+                                semester: semester ? `${semester.season} ${semester.year}` : '',
+                                credits: course.credits,
+                                status: 'completed',
+                                updated_at: new Date().toISOString()
+                            };
+                        });
+
+                        const { error: compError } = await supabase
+                            .from('user_course_completions')
+                            .upsert(completionRecords, {
+                                onConflict: 'user_id,course_id',
+                                ignoreDuplicates: false
+                            });
+
+                        if (compError) {
+                            console.error('Error syncing completed courses:', compError);
+                        }
+                    }
+
+                    console.log('✅ Synced to Supabase:', {
+                        planned: plannedCourses.length,
+                        completed: completedCourses.length
+                    });
+                } catch (error) {
+                    console.error('Error in syncToSupabase:', error);
+                }
             },
 
             clearUserData: () => {

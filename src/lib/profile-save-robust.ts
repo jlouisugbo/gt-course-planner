@@ -13,12 +13,11 @@ export interface ProfileData {
   selected_threads?: string[];
   minors?: string[];
   graduation_year?: number;
+  degree_program_id?: number;
   start_date?: string;
   expected_graduation?: string;
   is_transfer_student?: boolean;
   transfer_credits?: number;
-  current_gpa?: number;
-  total_credits_earned?: number;
   plan_settings?: any;
   gt_username?: string;
 }
@@ -49,8 +48,7 @@ export async function saveProfileRobust(profileData: ProfileData): Promise<Profi
       selected_threads: profileData.selected_threads,
       minors: profileData.minors,
       graduation_year: profileData.graduation_year,
-      current_gpa: profileData.current_gpa,
-      total_credits_earned: profileData.total_credits_earned,
+      degree_program_id: profileData.degree_program_id,
       plan_settings: profileData.plan_settings,
       start_date: profileData.start_date,
       expected_graduation: profileData.expected_graduation,

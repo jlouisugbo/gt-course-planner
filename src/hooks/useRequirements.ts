@@ -264,6 +264,24 @@ export const useRequirements = (
 
   // PHASE 2.1.2 ENHANCEMENTS - Advanced requirement tracking
 
+  // Calculate estimated graduation semester (moved before useMemo to avoid temporal dead zone)
+  const calculateGraduationSemester = useCallback((remainingCredits: number): string => {
+    const currentYear = new Date().getFullYear();
+    const averageCreditsPerSemester = 15;
+    const remainingSemesters = Math.ceil(remainingCredits / averageCreditsPerSemester);
+    const currentMonth = new Date().getMonth();
+    
+    // Determine current/next semester
+    const isFallSemester = currentMonth >= 8; // August onwards
+    const yearOffset = Math.floor(remainingSemesters / 2);
+    const isEvenSemester = remainingSemesters % 2 === 0;
+    
+    const graduationYear = currentYear + yearOffset + (isEvenSemester && !isFallSemester ? 1 : 0);
+    const graduationSemester = (remainingSemesters % 2 === 1) ? 'Spring' : 'Fall';
+    
+    return `${graduationSemester} ${graduationYear}`;
+  }, []);
+
   // Enhanced progress summary with Phase 2 features
   const enhancedProgressSummary = useMemo((): DegreeProgressSummary | null => {
     if (!degreeProgram || allRequirements.length === 0) return null;
@@ -360,25 +378,7 @@ export const useRequirements = (
       blockers,
       recommendations
     };
-  }, [degreeProgram, allRequirements, overallProgress, semesters, authUser]);
-
-  // Calculate estimated graduation semester
-  const calculateGraduationSemester = useCallback((remainingCredits: number): string => {
-    const currentYear = new Date().getFullYear();
-    const averageCreditsPerSemester = 15;
-    const remainingSemesters = Math.ceil(remainingCredits / averageCreditsPerSemester);
-    const currentMonth = new Date().getMonth();
-    
-    // Determine current/next semester
-    const isFallSemester = currentMonth >= 8; // August onwards
-    const yearOffset = Math.floor(remainingSemesters / 2);
-    const isEvenSemester = remainingSemesters % 2 === 0;
-    
-    const graduationYear = currentYear + yearOffset + (isEvenSemester && !isFallSemester ? 1 : 0);
-    const graduationSemester = (remainingSemesters % 2 === 1) ? 'Spring' : 'Fall';
-    
-    return `${graduationSemester} ${graduationYear}`;
-  }, []);
+  }, [degreeProgram, allRequirements, overallProgress, semesters, authUser, calculateGraduationSemester]);
 
   // Enhanced actions for Phase 2
   const refreshRequirements = useCallback(async () => {

@@ -27,6 +27,9 @@ const coursesCache = new Map<string, {
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const BATCH_SIZE = 500;
 
+// Global request deduplication
+const pendingRequests = new Map<string, Promise<any>>();
+
 export const useAllCourses = (filters: CourseFilters = {}): UseAllCoursesResult => {
     const [allCourses, setAllCourses] = useState<Course[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -36,6 +39,7 @@ export const useAllCourses = (filters: CourseFilters = {}): UseAllCoursesResult 
     
     const abortControllerRef = useRef<AbortController | null>(null);
     const loadingRef = useRef(false);
+    const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // Memoized cache key
     const cacheKey = useMemo(() => {
@@ -86,9 +90,29 @@ export const useAllCourses = (filters: CourseFilters = {}): UseAllCoursesResult 
             if (filters.search) params.set('search', filters.search);
             if (filters.subject) params.set('subject', filters.subject);
 
-            const response = await fetch(`/api/courses/all?${params}`, {
+            const requestUrl = `/api/courses/all?${params}`;
+            const requestKey = `${requestUrl}-${append ? 'append' : 'initial'}`;
+            
+            console.log(`🌐 Fetching courses: ${requestUrl} (${append ? 'append' : 'initial'})`);
+
+            // Check for duplicate requests
+            if (pendingRequests.has(requestKey)) {
+                console.log(`⚠️ Duplicate request detected, using existing promise: ${requestKey}`);
+                const result = await pendingRequests.get(requestKey);
+                return result;
+            }
+
+            // Make the request and store the promise
+            const requestPromise = fetch(requestUrl, {
                 signal: abortControllerRef.current.signal,
             });
+            
+            pendingRequests.set(requestKey, requestPromise);
+            
+            const response = await requestPromise;
+            
+            // Clean up the pending request
+            pendingRequests.delete(requestKey);
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -121,6 +145,16 @@ export const useAllCourses = (filters: CourseFilters = {}): UseAllCoursesResult 
             setHasMore(result.hasMore || false);
 
         } catch (err: any) {
+            // Clean up pending request on error
+            const params = new URLSearchParams({
+                limit: BATCH_SIZE.toString(),
+                offset: offset.toString(),
+            });
+            if (filters.search) params.set('search', filters.search);
+            if (filters.subject) params.set('subject', filters.subject);
+            const requestKey = `/api/courses/all?${params}-${append ? 'append' : 'initial'}`;
+            pendingRequests.delete(requestKey);
+            
             if (err.name !== 'AbortError') {
                 console.error('Error fetching courses:', err);
                 setError('Failed to load courses. Please try again.');
@@ -129,7 +163,7 @@ export const useAllCourses = (filters: CourseFilters = {}): UseAllCoursesResult 
             loadingRef.current = false;
             setIsLoading(false);
         }
-    }, [getCachedData, cacheKey, filters.search, filters.subject]);
+    }, [getCachedData, cacheKey]);
 
     // Load more courses
     const loadMore = useCallback(() => {
@@ -168,17 +202,42 @@ export const useAllCourses = (filters: CourseFilters = {}): UseAllCoursesResult 
         });
     }, [allCourses, filters.search, filters.subject]);
 
-    // Initial fetch
+    // Initial fetch with debouncing for search
     useEffect(() => {
-        fetchCourses(0, false);
+        // Clear existing debounce timeout
+        if (debounceTimeoutRef.current) {
+            clearTimeout(debounceTimeoutRef.current);
+        }
+        
+        // Cancel current request
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        
+        // Debounce search requests (300ms delay)
+        const delay = filters.search ? 300 : 0;
+        
+        debounceTimeoutRef.current = setTimeout(() => {
+            console.log(`🔍 useAllCourses effect triggered with filters:`, filters);
+            
+            // Reset state when filters change
+            setAllCourses([]);
+            setHasMore(true);
+            setTotalCount(0);
+            
+            fetchCourses(0, false);
+        }, delay);
         
         // Cleanup on unmount
         return () => {
+            if (debounceTimeoutRef.current) {
+                clearTimeout(debounceTimeoutRef.current);
+            }
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort();
             }
         };
-    }, [fetchCourses, filters.search, filters.subject]); // Only refetch when filters actually change
+    }, [filters.search, filters.subject]); // Only refetch when filters actually change
 
     return {
         courses: allCourses,

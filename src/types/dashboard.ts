@@ -26,10 +26,16 @@ export interface Activity {
 export interface Deadline {
     id: number;
     title: string;
-    date: Date;
-    type: "registration" | "withdrawal" | "graduation";
+    description?: string;
+    date: string; // ISO timestamp string from database (actual column name)
+    due_date?: string; // For backward compatibility if needed
+    type: "registration" | "withdrawal" | "graduation" | "thread-confirmation" | "financial" | "housing";
+    category?: string;
     urgent: boolean;
     is_active: boolean;
+    source?: string; // URL to official GT page
+    created_at?: string;
+    updated_at?: string;
 }
 
 export interface GPAHistoryItem {

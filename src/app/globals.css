@@ -27,6 +27,25 @@ body {
   background: linear-gradient(135deg, var(--gt-navy) 0%, var(--gt-gold) 100%);
 }
 
+/* Gradient text styling - with proper browser support */
+.bg-clip-text {
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+}
+
+.text-transparent {
+  color: transparent !important;
+}
+
+/* Combined gradient text utility */
+.gradient-text {
+  background: linear-gradient(135deg, var(--gt-navy) 0%, var(--gt-gold) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+}
+
 /* GT Brand Colors */
 .text-gt-navy { color: var(--gt-navy); }
 .text-gt-gold { color: var(--gt-gold); }

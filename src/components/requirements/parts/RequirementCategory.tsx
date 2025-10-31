@@ -31,7 +31,7 @@ export const RequirementCategory: React.FC<RequirementCategoryProps> = ({
     onCourseToggle,
     onGroupCompletion
 }) => {
-    const [isExpanded, setIsExpanded] = useState(true); // Start expanded by default
+    const [isExpanded, setIsExpanded] = useState(false); // Start collapsed for more compact view
     
     // Combined function to check if a course/group is satisfied (handles recursion properly)
     const isCourseSatisfied: (course: VisualCourse) => boolean = useCallback((course: VisualCourse): boolean => {
@@ -195,26 +195,26 @@ export const RequirementCategory: React.FC<RequirementCategoryProps> = ({
     };
 
     return (
-        <div className="space-y-1">
-            {/* Category Header with Collapse Toggle */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-1">
+        <div className="space-y-0.5">
+            {/* Compact Category Header with Collapse Toggle */}
+            <div className="flex items-center justify-between py-1">
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() => setIsExpanded(!isExpanded)}
+                    >
+                        {isExpanded ? (
+                            <ChevronDown className="h-4 w-4" />
+                        ) : (
+                            <ChevronRight className="h-4 w-4" />
+                        )}
+                    </Button>
                     <span className="text-xs text-slate-600">
-                        {category.courses.length} course{category.courses.length !== 1 ? 's' : ''}
+                        {category.courses.filter((c: any) => completedCourses?.has(c.code)).length}/{category.courses.length} courses
                     </span>
                 </div>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-4 w-4 p-0"
-                    onClick={() => setIsExpanded(!isExpanded)}
-                >
-                    {isExpanded ? (
-                        <ChevronDown className="h-3 w-3" />
-                    ) : (
-                        <ChevronRight className="h-3 w-3" />
-                    )}
-                </Button>
             </div>
 
             {/* Collapsible Content */}
@@ -226,19 +226,16 @@ export const RequirementCategory: React.FC<RequirementCategoryProps> = ({
                                 initial={{ opacity: 0, height: 0 }}
                                 animate={{ opacity: 1, height: "auto" }}
                                 exit={{ opacity: 0, height: 0 }}
-                                transition={{ duration: 0.2 }}
+                                transition={{ duration: 0.15 }}
+                                className="space-y-0.5 pl-4"
                             >
                                 {category.courses.length === 0 ? (
-                                    <div className="text-center py-2 text-slate-500">
-                                        <p className="text-xs">No courses defined for this requirement</p>
+                                    <div className="text-center py-1 text-slate-500">
+                                        <p className="text-xs">No courses defined</p>
                                     </div>
                                 ) : (
-                                    <div className="flex flex-wrap gap-1">
-                                        {category.courses.map((course, index) => (
-                                            <div key={index} className="flex-shrink-0 min-w-0">
-                                                {renderCourse(course, index)}
-                                            </div>
-                                        ))}
+                                    <div className="space-y-0.5">
+                                        {category.courses.map((course, index) => renderCourse(course, index))}
                                     </div>
                                 )}
                             </motion.div>

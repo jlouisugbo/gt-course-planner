@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 // import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   BookOpen, 
@@ -17,9 +18,14 @@ import {
   GripVertical,
   CheckCircle2,
   Lightbulb,
-  Zap
+  Zap,
+  MoreVertical,
+  Lock,
+  Unlock,
+  Info,
+  AlertTriangle
 } from 'lucide-react';
-import { useDrag } from 'react-dnd';
+import { useDrag, useDrop } from 'react-dnd';
 import { DragTypes, VisualMinorProgram } from '@/types';
 import { useUserAwarePlannerStore } from '@/hooks/useUserAwarePlannerStore';
 import { useAuth } from '@/providers/AuthProvider';
@@ -29,32 +35,74 @@ import { CourseRecommendationEngine, AIRecommendationEnhancer, CourseRecommendat
 
 interface CourseRecommendationsAIProps {
   showAllTabs?: boolean;
+  userProfile?: any; // Accept profile as prop to avoid data inconsistency
 }
 
-export const CourseRecommendationsAI: React.FC<CourseRecommendationsAIProps> = ({
-  showAllTabs = false
+const CourseRecommendationsAIComponent: React.FC<CourseRecommendationsAIProps> = ({
+  showAllTabs = false,
+  userProfile: propUserProfile
 }) => {
   const { user } = useAuth();
   const plannerStore = useUserAwarePlannerStore();
-  const { userProfile } = plannerStore;
+  
+  // Use prop profile if provided, otherwise fall back to store
+  const userProfile = propUserProfile || plannerStore.userProfile;
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('ready');
+  const [activeTab, setActiveTab] = useState('all');
   const [minorPrograms, setMinorPrograms] = useState<VisualMinorProgram[]>([]);
 
-  // Intelligent course recommendations
-  const [readyToTake, setReadyToTake] = useState<CourseRecommendation[]>([]);
-  const [foundationCourses, setFoundationCourses] = useState<CourseRecommendation[]>([]);
-  const [threadCourses, setThreadCourses] = useState<CourseRecommendation[]>([]);
-  const [aiRecommendations, setAiRecommendations] = useState<CourseRecommendation[]>([]);
+  // Pre-load and cache course recommendations to prevent re-renders
+  const [allRecommendations, setAllRecommendations] = useState<CourseRecommendation[]>([]);
   const [coursesLoading, setCoursesLoading] = useState(false);
+  const [coursesLoaded, setCoursesLoaded] = useState(false);
 
   // Memoize threads to prevent infinite re-renders
   const threadsKey = userProfile?.threads?.join(',') || '';
+  
+  // Memoize categorized recommendations to prevent re-computation during drag
+  const { readyToTake, foundationCourses, threadCourses, aiRecommendations } = useMemo(() => {
+    if (!coursesLoaded || allRecommendations.length === 0) {
+      return { readyToTake: [], foundationCourses: [], threadCourses: [], aiRecommendations: [] };
+    }
+    
+    const ready = allRecommendations.filter(r => 
+      r.category === 'prerequisite-ready' && r.priority === 'high'
+    ).slice(0, 6);
+    
+    const foundation = allRecommendations.filter(r => 
+      r.category === 'foundation' || r.category === 'major-requirement'
+    ).slice(0, 8);
+    
+    const thread = allRecommendations.filter(r => 
+      r.category === 'thread-related'
+    ).slice(0, 6);
+    
+    const ai = allRecommendations
+      .filter(r => r.priority === 'high')
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10);
+      
+    return { readyToTake: ready, foundationCourses: foundation, threadCourses: thread, aiRecommendations: ai };
+  }, [allRecommendations, coursesLoaded]);
 
-  // Load intelligent course recommendations
+  // Load course recommendations once and cache them
   useEffect(() => {
     const loadRecommendations = async () => {
-      if (!user || !userProfile) return;
+      if (!user || !userProfile || coursesLoaded) {
+        return;
+      }
+
+      // Check if user has a complete profile before loading recommendations
+      if (!userProfile.major || !userProfile.full_name || !userProfile.graduation_year) {
+        console.log('User profile incomplete - skipping course recommendations', {
+          major: userProfile.major,
+          full_name: userProfile.full_name,
+          graduation_year: userProfile.graduation_year
+        });
+        setAllRecommendations([]);
+        setCoursesLoaded(true);
+        return;
+      }
       
       setCoursesLoading(true);
       try {
@@ -63,67 +111,31 @@ export const CourseRecommendationsAI: React.FC<CourseRecommendationsAIProps> = (
         const plannedCourses = plannerStore.getCoursesByStatus('planned');
         const inProgressCourses = plannerStore.getCoursesByStatus('in-progress');
         
-        // Create recommendation engine
+        // Create recommendation engine with user's actual profile
         const engine = new CourseRecommendationEngine(
           completedCourses,
           [...plannedCourses, ...inProgressCourses],
-          userProfile.major || '',
+          userProfile.major || 'Computer Science',
           Array.isArray(userProfile.threads) ? userProfile.threads : []
         );
 
-        // Generate different types of recommendations
-        const allRecommendations = await engine.generateRecommendations({ maxCourses: 20 });
+        // Generate ALL course recommendations (not filtered by major)
+        const recommendations = await engine.generateRecommendations({ maxCourses: 200 });
+        setAllRecommendations(recommendations);
+        setCoursesLoaded(true);
         
-        // Categorize recommendations
-        const ready = allRecommendations.filter(r => 
-          r.category === 'prerequisite-ready' && r.priority === 'high'
-        ).slice(0, 6);
-        
-        const foundation = allRecommendations.filter(r => 
-          r.category === 'foundation' || r.category === 'major-requirement'
-        ).slice(0, 6);
-        
-        const thread = allRecommendations.filter(r => 
-          r.category === 'thread-related'
-        ).slice(0, 6);
-        
-        // AI-enhanced recommendations (top picks)
-        const topPicks = allRecommendations.slice(0, 5);
-        
-        // Try AI enhancement
-        const userProfileAI = {
-          major: userProfile.major || '',
-          threads: Array.isArray(userProfile.threads) ? userProfile.threads : [],
-          completedCourses: completedCourses.map(c => c.code)
-        };
-        
-        const [enhancedReady, enhancedFoundation, enhancedThread, enhancedAI] = await Promise.all([
-          AIRecommendationEnhancer.enhanceRecommendations(ready, userProfileAI, 4),
-          AIRecommendationEnhancer.enhanceRecommendations(foundation, userProfileAI, 4),
-          AIRecommendationEnhancer.enhanceRecommendations(thread, userProfileAI, 4),
-          AIRecommendationEnhancer.enhanceRecommendations(topPicks, userProfileAI, 5)
-        ]);
-        
-        setReadyToTake(enhancedReady);
-        setFoundationCourses(enhancedFoundation);
-        setThreadCourses(enhancedThread);
-        setAiRecommendations(enhancedAI);
-        
-        console.log('Generated intelligent course recommendations');
+        console.log('Loaded and cached course recommendations');
       } catch (error) {
-        console.error('Error generating recommendations:', error);
-        // Fallback to empty arrays
-        setReadyToTake([]);
-        setFoundationCourses([]);
-        setThreadCourses([]);
-        setAiRecommendations([]);
+        console.error('Error loading course recommendations:', error);
+        setAllRecommendations([]);
+        setCoursesLoaded(true);
       } finally {
         setCoursesLoading(false);
       }
     };
 
     loadRecommendations();
-  }, [user, userProfile?.id, userProfile?.major, threadsKey, plannerStore, userProfile]);
+  }, [user, userProfile?.major, coursesLoaded, plannerStore]); // Minimal dependencies to prevent re-runs
 
 
   // Load minor programs
@@ -131,19 +143,42 @@ export const CourseRecommendationsAI: React.FC<CourseRecommendationsAIProps> = (
     const loadMinorPrograms = async () => {
       if (!user || !userProfile?.minors) return;
       
+      console.log('🔍 Debug CourseRecommendationsAI - userProfile.major:', userProfile.major);
+      console.log('🔍 Debug CourseRecommendationsAI - userProfile.minors:', userProfile.minors);
+      
+      // Filter out the major from minors (common data issue)
+      const actualMinors = userProfile.minors.filter(minor => 
+        minor && 
+        typeof minor === 'string' && 
+        minor.trim().length > 0 &&
+        minor !== userProfile.major // Don't treat major as a minor
+      );
+      
+      console.log('🔍 Debug CourseRecommendationsAI - actualMinors after filtering:', actualMinors);
+      
+      if (actualMinors.length === 0) {
+        console.log('No valid minors to load after filtering');
+        return;
+      }
+      
+      console.log('Loading minor programs (filtered):', actualMinors);
+      
       try {
         const { data: sessionData } = await authService.getSession();
         if (!sessionData.session?.access_token) return;
 
         const programs: VisualMinorProgram[] = [];
-        for (const minorName of userProfile.minors) {
+        for (const minorName of actualMinors) {
           try {
+            console.log(`🔍 Attempting to fetch minor program: ${minorName}`);
+            
             const response = await fetch(`/api/degree-programs?major=${encodeURIComponent(minorName)}&degree_type=Minor`, {
               headers: {
                 'Authorization': `Bearer ${sessionData.session.access_token}`,
                 'Content-Type': 'application/json'
               }
             });
+            
             if (response.ok) {
               const data = await response.json();
               programs.push({
@@ -152,6 +187,12 @@ export const CourseRecommendationsAI: React.FC<CourseRecommendationsAIProps> = (
                 requirements: data.requirements || [],
                 footnotes: data.footnotes || []
               });
+              console.log(`✅ Successfully loaded minor program: ${minorName}`);
+            } else {
+              console.warn(`❌ Failed to load minor ${minorName}: ${response.status} ${response.statusText}`);
+              if (response.status === 500) {
+                console.warn(`Minor program "${minorName}" likely doesn't exist in database`);
+              }
             }
           } catch (error) {
             console.warn(`Failed to load minor: ${minorName}`, error);
@@ -166,9 +207,41 @@ export const CourseRecommendationsAI: React.FC<CourseRecommendationsAIProps> = (
     loadMinorPrograms();
   }, [user?.id, userProfile?.minors, user]);
 
-  const DraggableCourseCard: React.FC<{ recommendation: CourseRecommendation; index: number }> = ({ recommendation, index }) => {
+  // Helper function to check prerequisites
+  const checkPrerequisites = (course: any, completedCourses: any[]) => {
+    if (!course.prerequisites || course.prerequisites.length === 0) {
+      return { satisfied: true, missing: [] };
+    }
+
+    const completedCodes = new Set(completedCourses.map(c => c.code));
+    const missingPrereqs: string[] = [];
+
+    // Handle different prerequisite formats
+    const prereqs = Array.isArray(course.prerequisites) ? course.prerequisites : [];
+    
+    for (const prereq of prereqs) {
+      if (typeof prereq === 'string') {
+        if (!completedCodes.has(prereq)) {
+          missingPrereqs.push(prereq);
+        }
+      } else if (prereq && typeof prereq === 'object' && prereq.code) {
+        if (!completedCodes.has(prereq.code)) {
+          missingPrereqs.push(prereq.code);
+        }
+      }
+    }
+
+    return {
+      satisfied: missingPrereqs.length === 0,
+      missing: missingPrereqs
+    };
+  };
+
+  const DraggableCourseCardComponent: React.FC<{ recommendation: CourseRecommendation; index: number }> = ({ recommendation, index }) => {
     const { course } = recommendation;
     const dragRef = useRef<HTMLDivElement>(null);
+    const completedCourses = plannerStore.getCoursesByStatus('completed');
+    const prerequisiteCheck = checkPrerequisites(course, completedCourses);
     
     const [{ isDragging }, drag] = useDrag({
       type: DragTypes.COURSE,
@@ -209,61 +282,111 @@ export const CourseRecommendationsAI: React.FC<CourseRecommendationsAIProps> = (
         ref={dragRef}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.1 }}
+        transition={{ delay: index * 0.05 }} // Faster transitions
         className={cn(
-          "group cursor-move transition-all duration-200",
+          "group cursor-move transition-all duration-150", // Faster transitions
           isDragging && "opacity-50 scale-95"
         )}
       >
-        <Card className="hover:shadow-md transition-all duration-200 border-l-4 border-l-[#B3A369]/20 hover:border-l-[#B3A369]">
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <GripVertical className="h-4 w-4 text-muted-foreground group-hover:text-[#B3A369] transition-colors" />
-                  <h4 className="font-bold text-sm text-[#003057]">{course.code}</h4>
-                  <Badge variant="secondary" className="text-xs">
-                    {course.credits} cr
-                  </Badge>
-                  <Badge className={cn("text-xs border", getPriorityColor(recommendation.priority))}>
-                    {recommendation.priority}
-                  </Badge>
+        <Card className={cn(
+          "hover:shadow-sm transition-all duration-200 border-l-4",
+          recommendation.priority === 'high' && "border-l-green-500",
+          recommendation.priority === 'medium' && "border-l-yellow-500",
+          recommendation.priority === 'low' && "border-l-gray-400",
+          !prerequisiteCheck.satisfied && "border-l-red-500 bg-red-50/20"
+        )}>
+          <CardContent className="py-2 px-2">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start gap-1 flex-1 min-w-0">
+                <GripVertical className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1 mb-1">
+                    {prerequisiteCheck.satisfied ? (
+                      <Unlock className="w-3 h-3 text-green-600 flex-shrink-0" />
+                    ) : (
+                      <Lock className="w-3 h-3 text-red-600 flex-shrink-0" />
+                    )}
+                    <h4 className="font-bold text-xs text-[#003057] truncate">{course.code}</h4>
+                    <Badge variant="secondary" className="text-xs h-4">
+                      {course.credits}
+                    </Badge>
+                    <div className={cn(
+                      "w-2 h-2 rounded-full flex-shrink-0",
+                      recommendation.priority === 'high' && "bg-green-500",
+                      recommendation.priority === 'medium' && "bg-yellow-500",
+                      recommendation.priority === 'low' && "bg-gray-400"
+                    )} title={`${recommendation.priority} priority`} />
+                  </div>
+                  <p className="text-xs text-muted-foreground line-clamp-1 mb-1">
+                    {course.title || course.name}
+                  </p>
+                  {!prerequisiteCheck.satisfied && prerequisiteCheck.missing.length > 0 && (
+                    <div className="flex items-center gap-1 mb-1">
+                      <AlertTriangle className="w-3 h-3 text-amber-600" />
+                      <span className="text-xs text-amber-600 truncate">
+                        Need: {prerequisiteCheck.missing.slice(0, 2).join(', ')}{prerequisiteCheck.missing.length > 2 ? '...' : ''}
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
-                  {course.title}
-                </p>
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex flex-wrap gap-1">
-                {course.college && (
-                  <Badge className={cn("text-xs", getCollegeColor(course.college))}>
-                    {course.college.replace('College of ', '')}
-                  </Badge>
-                )}
-                {course.course_type && (
-                  <Badge variant="outline" className="text-xs">
-                    {course.course_type}
-                  </Badge>
-                )}
-              </div>
-              
-              {recommendation.reasons.length > 0 && (
-                <div className="bg-blue-50 p-2 rounded text-xs">
-                  <p className="text-blue-800 font-medium">Why recommended:</p>
-                  <p className="text-blue-700">{recommendation.reasons[0]}</p>
-                </div>
-              )}
-              
-              <div className="flex items-center justify-between">
-                <Badge variant="outline" className="text-xs">
-                  Score: {recommendation.score}
-                </Badge>
+              <div className="flex items-center gap-1">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity h-5 w-5 p-0"
+                    >
+                      <MoreVertical className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-64">
+                    <DropdownMenuItem>
+                      <Info className="mr-2 h-4 w-4" />
+                      <span className="truncate">{course.title}</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <BookOpen className="mr-2 h-4 w-4" />
+                      <span>{course.credits} Credits</span>
+                    </DropdownMenuItem>
+                    {course.college && (
+                      <DropdownMenuItem>
+                        <span className="mr-2">🏛️</span>
+                        <span className="truncate">{course.college}</span>
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>
+                      {prerequisiteCheck.satisfied ? (
+                        <>
+                          <Unlock className="mr-2 h-4 w-4 text-green-600" />
+                          <span className="text-green-600">Ready to take</span>
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="mr-2 h-4 w-4 text-red-600" />
+                          <span className="text-red-600">Prerequisites required</span>
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                    {!prerequisiteCheck.satisfied && prerequisiteCheck.missing.length > 0 && (
+                      <DropdownMenuItem>
+                        <AlertTriangle className="mr-2 h-4 w-4 text-amber-600" />
+                        <div className="flex flex-col">
+                          <span className="text-xs text-amber-600 font-medium">Missing Prerequisites:</span>
+                          <span className="text-xs text-muted-foreground">{prerequisiteCheck.missing.join(', ')}</span>
+                        </div>
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity h-5 w-5 p-0"
+                  title="Add to planner"
+                  disabled={!prerequisiteCheck.satisfied}
                 >
                   <Plus className="h-3 w-3" />
                 </Button>
@@ -275,17 +398,21 @@ export const CourseRecommendationsAI: React.FC<CourseRecommendationsAIProps> = (
     );
   };
 
+  // Memoize the draggable course card to prevent re-renders during drag
+  const DraggableCourseCard = React.memo(DraggableCourseCardComponent);
+  DraggableCourseCard.displayName = 'DraggableCourseCard';
+
   const CourseSection: React.FC<{ 
     title: string; 
     recommendations: CourseRecommendation[]; 
     icon: React.ReactNode;
     description?: string;
   }> = ({ title, recommendations, icon, description }) => (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-3">
-        {icon}
+    <div className="space-y-2">
+      <div className="flex items-center gap-1 mb-2">
+        <div className="scale-75">{icon}</div>
         <div>
-          <h3 className="font-semibold text-[#003057]">{title}</h3>
+          <h3 className="font-semibold text-xs text-[#003057]">{title}</h3>
           {description && (
             <p className="text-xs text-muted-foreground">{description}</p>
           )}
@@ -293,15 +420,15 @@ export const CourseRecommendationsAI: React.FC<CourseRecommendationsAIProps> = (
       </div>
       
       {recommendations.length > 0 ? (
-        <div className="space-y-3">
+        <div className="space-y-1">
           {recommendations.map((recommendation, index) => (
             <DraggableCourseCard key={recommendation.course.code} recommendation={recommendation} index={index} />
           ))}
         </div>
       ) : (
-        <div className="text-center py-8 text-muted-foreground">
-          <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">No recommendations available</p>
+        <div className="text-center py-4 text-muted-foreground">
+          <BookOpen className="h-6 w-6 mx-auto mb-1 opacity-50" />
+          <p className="text-xs">No recommendations available</p>
         </div>
       )}
     </div>
@@ -315,46 +442,92 @@ export const CourseRecommendationsAI: React.FC<CourseRecommendationsAIProps> = (
     );
   };
 
+  // Show profile setup prompt if user profile is incomplete
+  const isProfileIncomplete = !userProfile?.major || 
+                              (!userProfile?.full_name && !userProfile?.name) || 
+                              (!userProfile?.graduation_year && !userProfile?.expectedGraduation);
+
+  // Add drop zone for courses dragged back from semesters
+  const [{ isOver: isDropZoneOver }, dropRef] = useDrop(() => ({
+    accept: DragTypes.PLANNED_COURSE,
+    drop: (item: any) => {
+      // Remove course from semester when dropped back to recommendations
+      if (item.semesterId && plannerStore.removeCourseFromSemester) {
+        plannerStore.removeCourseFromSemester(item.semesterId, item.id);
+      }
+    },
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
+    }),
+  }), [plannerStore]);
+
   return (
-    <Card className="h-full">
+    <Card ref={dropRef} className={cn("h-full transition-all", isDropZoneOver && "ring-2 ring-red-400 bg-red-50")}>
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Lightbulb className="h-5 w-5 text-[#B3A369]" />
           Intelligent Course Recommendations
         </CardTitle>
         
-        {/* Search Bar */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search courses..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 h-9"
-          />
-        </div>
+        {!isProfileIncomplete && (
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search courses..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-9"
+            />
+          </div>
+        )}
       </CardHeader>
 
       <CardContent className="pt-0">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
-            <TabsTrigger value="ready" className="text-xs">
-              <CheckCircle2 className="h-3 w-3 mr-1" />
-              Ready
-            </TabsTrigger>
-            <TabsTrigger value="foundation" className="text-xs">
-              <Target className="h-3 w-3 mr-1" />
-              Foundation
-            </TabsTrigger>
-            <TabsTrigger value="threads" className="text-xs">
-              <Star className="h-3 w-3 mr-1" />
-              Threads
-            </TabsTrigger>
-            <TabsTrigger value="ai" className="text-xs">
-              <Zap className="h-3 w-3 mr-1" />
+        {isProfileIncomplete ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-16 h-16 bg-[#B3A369]/10 rounded-full flex items-center justify-center mb-4">
+              <Lightbulb className="h-8 w-8 text-[#B3A369]" />
+            </div>
+            <h3 className="text-lg font-semibold text-[#003057] mb-2">Complete Your Profile</h3>
+            <p className="text-sm text-muted-foreground mb-4 max-w-sm">
+              Set up your major and graduation year to get personalized course recommendations.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-[#B3A369] text-[#B3A369] hover:bg-[#B3A369] hover:text-white"
+            >
+              Complete Profile Setup
+            </Button>
+          </div>
+        ) : (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <div className="flex flex-col gap-2 mb-6">
+            <Button
+              variant={activeTab === 'all' ? 'default' : 'outline'}
+              onClick={() => setActiveTab('all')}
+              className="w-full justify-start text-left"
+            >
+              <BookOpen className="h-4 w-4 mr-2" />
+              All Courses
+            </Button>
+            <Button
+              variant={activeTab === 'ai' ? 'default' : 'outline'}
+              onClick={() => setActiveTab('ai')}
+              className="w-full justify-start text-left"
+            >
+              <Zap className="h-4 w-4 mr-2" />
               AI Picks
-            </TabsTrigger>
-          </TabsList>
+            </Button>
+            <Button
+              variant={activeTab === 'required' ? 'default' : 'outline'}
+              onClick={() => setActiveTab('required')}
+              className="w-full justify-start text-left"
+            >
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              Required
+            </Button>
+          </div>
 
           <div className="h-[600px] pr-4 overflow-y-auto">
             {coursesLoading ? (
@@ -366,30 +539,12 @@ export const CourseRecommendationsAI: React.FC<CourseRecommendationsAIProps> = (
               </div>
             ) : (
               <>
-                <TabsContent value="ready" className="mt-0 space-y-6">
+                <TabsContent value="all" className="mt-0 space-y-6">
                   <CourseSection
-                    title="Ready to Take"
-                    recommendations={filteredRecommendations(readyToTake)}
-                    icon={<CheckCircle2 className="h-4 w-4 text-green-600" />}
-                    description="Courses with satisfied prerequisites"
-                  />
-                </TabsContent>
-
-                <TabsContent value="foundation" className="mt-0 space-y-6">
-                  <CourseSection
-                    title="Foundation & Major Requirements"
-                    recommendations={filteredRecommendations(foundationCourses)}
-                    icon={<Target className="h-4 w-4 text-[#003057]" />}
-                    description="Essential courses for your degree program"
-                  />
-                </TabsContent>
-
-                <TabsContent value="threads" className="mt-0 space-y-6">
-                  <CourseSection
-                    title={`${userProfile?.threads?.[0] || 'Specialization'} Courses`}
-                    recommendations={filteredRecommendations(threadCourses)}
-                    icon={<Star className="h-4 w-4 text-[#B3A369]" />}
-                    description="Courses supporting your specialization threads"
+                    title="All Available Courses"
+                    recommendations={filteredRecommendations([...readyToTake, ...foundationCourses, ...threadCourses])}
+                    icon={<BookOpen className="h-4 w-4 text-[#003057]" />}
+                    description="All recommended courses based on your profile"
                   />
                 </TabsContent>
 
@@ -399,6 +554,15 @@ export const CourseRecommendationsAI: React.FC<CourseRecommendationsAIProps> = (
                     recommendations={filteredRecommendations(aiRecommendations)}
                     icon={<Zap className="h-4 w-4 text-purple-600" />}
                     description="Personalized picks based on your academic profile"
+                  />
+                </TabsContent>
+
+                <TabsContent value="required" className="mt-0 space-y-6">
+                  <CourseSection
+                    title="Required Courses"
+                    recommendations={filteredRecommendations(foundationCourses)}
+                    icon={<CheckCircle2 className="h-4 w-4 text-green-600" />}
+                    description="Essential courses for your degree program"
                   />
                 </TabsContent>
               </>
@@ -431,7 +595,11 @@ export const CourseRecommendationsAI: React.FC<CourseRecommendationsAIProps> = (
             )}
           </div>
         </Tabs>
+        )}
       </CardContent>
     </Card>
   );
 };
+
+export const CourseRecommendationsAI = React.memo(CourseRecommendationsAIComponent);
+CourseRecommendationsAI.displayName = 'CourseRecommendationsAI';

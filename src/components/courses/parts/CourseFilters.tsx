@@ -90,7 +90,7 @@ export const CourseFilters: React.FC<CourseFiltersProps> = ({
   return (
     <Card>
       <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Filter className="h-5 w-5" />
             Filters
@@ -100,7 +100,7 @@ export const CourseFilters: React.FC<CourseFiltersProps> = ({
               variant="ghost"
               size="sm"
               onClick={clearAllFilters}
-              className="text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground w-fit self-start sm:self-auto"
             >
               <X className="h-4 w-4 mr-1" />
               Clear All
@@ -135,12 +135,12 @@ export const CourseFilters: React.FC<CourseFiltersProps> = ({
         {/* Credit Hours */}
         <div className="space-y-3">
           <h3 className="text-sm font-semibold text-foreground">Credit Hours</h3>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
             {[1, 2, 3, 4, 5].map((credits) => (
               <Badge
                 key={credits}
                 variant={filters.creditHours.includes(credits) ? "default" : "outline"}
-                className="cursor-pointer hover:bg-primary/80"
+                className="cursor-pointer hover:bg-primary/80 text-xs px-2 py-1 whitespace-nowrap"
                 onClick={() => toggleCreditHour(credits)}
               >
                 {credits} {credits === 1 ? 'credit' : 'credits'}
@@ -152,12 +152,12 @@ export const CourseFilters: React.FC<CourseFiltersProps> = ({
         {/* Course Types */}
         <div className="space-y-3">
           <h3 className="text-sm font-semibold text-foreground">Course Types</h3>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
             {['core', 'elective', 'lab'].map((type) => (
               <Badge
                 key={type}
                 variant={filters.courseTypes.includes(type) ? "default" : "outline"}
-                className="cursor-pointer hover:bg-primary/80 capitalize"
+                className="cursor-pointer hover:bg-primary/80 capitalize text-xs px-2 py-1 whitespace-nowrap"
                 onClick={() => toggleCourseType(type)}
               >
                 {type}
@@ -169,12 +169,12 @@ export const CourseFilters: React.FC<CourseFiltersProps> = ({
         {/* Semesters Offered */}
         <div className="space-y-3">
           <h3 className="text-sm font-semibold text-foreground">Semesters Offered</h3>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
             {['Fall', 'Spring', 'Summer'].map((semester) => (
               <Badge
                 key={semester}
                 variant={filters.semesters.includes(semester) ? "default" : "outline"}
-                className="cursor-pointer hover:bg-primary/80"
+                className="cursor-pointer hover:bg-primary/80 text-xs px-2 py-1 whitespace-nowrap"
                 onClick={() => toggleSemester(semester)}
               >
                 {semester}
@@ -208,50 +208,70 @@ export const CourseFilters: React.FC<CourseFiltersProps> = ({
         {hasActiveFilters && (
           <div className="pt-4 border-t">
             <h3 className="text-sm font-semibold text-foreground mb-2">Active Filters</h3>
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-2 items-center">
               {filters.colleges.map((college) => (
-                <Badge key={college} variant="secondary" className="text-xs">
-                  {college}
-                  <X 
-                    className="h-3 w-3 ml-1 cursor-pointer" 
+                <Badge key={college} variant="secondary" className="text-xs px-2 py-1 flex items-center gap-1">
+                  <span className="truncate max-w-[120px]">{college}</span>
+                  <button
+                    type="button"
+                    className="h-4 w-4 flex items-center justify-center cursor-pointer hover:bg-destructive/20 rounded"
                     onClick={() => toggleCollege(college)}
-                  />
+                    aria-label={`Remove ${college} filter`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
                 </Badge>
               ))}
               {filters.creditHours.map((credits) => (
-                <Badge key={credits} variant="secondary" className="text-xs">
-                  {credits} cr
-                  <X 
-                    className="h-3 w-3 ml-1 cursor-pointer" 
+                <Badge key={credits} variant="secondary" className="text-xs px-2 py-1 flex items-center gap-1">
+                  <span>{credits} cr</span>
+                  <button
+                    type="button"
+                    className="h-4 w-4 flex items-center justify-center cursor-pointer hover:bg-destructive/20 rounded"
                     onClick={() => toggleCreditHour(credits)}
-                  />
+                    aria-label={`Remove ${credits} credits filter`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
                 </Badge>
               ))}
               {filters.courseTypes.map((type) => (
-                <Badge key={type} variant="secondary" className="text-xs capitalize">
-                  {type}
-                  <X 
-                    className="h-3 w-3 ml-1 cursor-pointer" 
+                <Badge key={type} variant="secondary" className="text-xs px-2 py-1 flex items-center gap-1 capitalize">
+                  <span>{type}</span>
+                  <button
+                    type="button"
+                    className="h-4 w-4 flex items-center justify-center cursor-pointer hover:bg-destructive/20 rounded"
                     onClick={() => toggleCourseType(type)}
-                  />
+                    aria-label={`Remove ${type} filter`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
                 </Badge>
               ))}
               {filters.semesters.map((semester) => (
-                <Badge key={semester} variant="secondary" className="text-xs">
-                  {semester}
-                  <X 
-                    className="h-3 w-3 ml-1 cursor-pointer" 
+                <Badge key={semester} variant="secondary" className="text-xs px-2 py-1 flex items-center gap-1">
+                  <span>{semester}</span>
+                  <button
+                    type="button"
+                    className="h-4 w-4 flex items-center justify-center cursor-pointer hover:bg-destructive/20 rounded"
                     onClick={() => toggleSemester(semester)}
-                  />
+                    aria-label={`Remove ${semester} filter`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
                 </Badge>
               ))}
               {filters.hasPrerequisites !== null && (
-                <Badge variant="secondary" className="text-xs">
-                  {filters.hasPrerequisites ? 'Has' : 'No'} Prerequisites
-                  <X 
-                    className="h-3 w-3 ml-1 cursor-pointer" 
+                <Badge variant="secondary" className="text-xs px-2 py-1 flex items-center gap-1">
+                  <span>{filters.hasPrerequisites ? 'Has' : 'No'} Prerequisites</span>
+                  <button
+                    type="button"
+                    className="h-4 w-4 flex items-center justify-center cursor-pointer hover:bg-destructive/20 rounded"
                     onClick={() => updateFilter('hasPrerequisites', null)}
-                  />
+                    aria-label="Remove prerequisites filter"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
                 </Badge>
               )}
             </div>

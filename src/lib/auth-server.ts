@@ -1,8 +1,6 @@
-// lib/auth-server.ts - Server-side ONLY authentication functions
-import { supabaseAdmin } from "@/lib/supabaseAdmin";
+// lib/auth-server.ts - Simplified server-side authentication for MVP
+import { createClient } from "@/lib/supabaseServer";
 import { NextRequest } from 'next/server';
-import { ensureUserInitialized } from './user-initialization';
-import { createAPILogger } from './security/logger';
 
 export interface AuthenticatedUser {
   id: string;
@@ -11,111 +9,58 @@ export interface AuthenticatedUser {
 }
 
 /**
- * SECURE SERVER-SIDE AUTHENTICATION FUNCTIONS
- * These replace the vulnerable client-side getUserId() function
- */
-
-/**
- * Secure server-side authentication for API routes
- * Replaces the vulnerable client-side getUserId() function
+ * Simplified server-side authentication for API routes (MVP version)
+ * Removed: Security logging, FERPA access logging, monitoring
+ * Uses: Supabase server client with cookie-based sessions
  */
 export async function authenticateRequest(request: NextRequest): Promise<{
   user: AuthenticatedUser | null;
   error: string | null;
 }> {
   try {
-    // Extract authorization header
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return {
-        user: null,
-        error: 'Missing or invalid authorization header'
-      };
-    }
+    const supabase = await createClient();
 
-    const token = authHeader.replace('Bearer ', '');
+    // Get authenticated user from session
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    // Verify token with Supabase
-    const { data: { user }, error: authError } = await supabaseAdmin().auth.getUser(token);
-    
     if (authError || !user) {
-      const logger = createAPILogger('auth', 'authenticate');
-      logger.warn('Authentication failed', { errorCode: authError?.message });
+      console.warn('Authentication failed:', authError?.message);
       return {
         user: null,
-        error: 'Invalid or expired token'
+        error: 'Invalid or expired session'
       };
     }
 
     // Verify user exists in GT system
-    const { data: userRecord, error: userError } = await supabaseAdmin()
+    const { data: userRecord, error: userError } = await supabase
       .from('users')
       .select('id, auth_id, full_name, email')
       .eq('auth_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (userError || !userRecord) {
-      const logger = createAPILogger('auth', 'verify_user');
-      logger.warn('GT user verification failed', { errorCode: userError?.message });
+      console.warn('GT user verification failed:', userError?.message);
       return {
         user: null,
         error: 'User not authorized for GT Course Planner'
       };
     }
 
-    // Log access for FERPA compliance
-    await logAcademicDataAccess(user.id, request.url, request.method);
-
-    // Auto-initialize user in required tables if needed
-    try {
-      const userId = typeof userRecord.id === 'number' ? userRecord.id : parseInt(String(userRecord.id));
-      await ensureUserInitialized(userId);
-    } catch (initError) {
-      const logger = createAPILogger('auth', 'user_init');
-      logger.warn('User initialization failed (non-critical)', initError);
-    }
-
     return {
       user: {
         id: user.id,
         email: user.email || '',
-        gtUserId: typeof userRecord.auth_id === 'string' ? userRecord.auth_id : String(userRecord.auth_id)
+        gtUserId: userRecord.auth_id
       },
       error: null
     };
 
   } catch (error) {
-    const logger = createAPILogger('auth', 'authenticate');
-    logger.error('Authentication service error', error);
+    console.error('Authentication service error:', error);
     return {
       user: null,
       error: 'Authentication service unavailable'
     };
-  }
-}
-
-/**
- * FERPA-compliant access logging for academic data
- */
-async function logAcademicDataAccess(userId: string, endpoint: string, method: string) {
-  try {
-    await supabaseAdmin()
-      .from('access_logs')
-      .insert({
-        user_id: userId,
-        endpoint,
-        method,
-        accessed_at: new Date().toISOString(),
-        access_type: 'academic_data'
-      });
-  } catch (error) {
-    const logger = createAPILogger('auth', 'access_log');
-    logger.error('FERPA access logging failed', error, {
-      critical: true,
-      userId,
-      endpoint
-    });
-    // Don't fail the request if logging fails, but alert monitoring
   }
 }
 
@@ -125,7 +70,7 @@ async function logAcademicDataAccess(userId: string, endpoint: string, method: s
 export function withAuth(handler: (request: NextRequest, user: AuthenticatedUser) => Promise<Response>) {
   return async (request: NextRequest) => {
     const { user, error } = await authenticateRequest(request);
-    
+
     if (!user || error) {
       return Response.json(
         { error: error || 'Authentication required' },
@@ -138,8 +83,7 @@ export function withAuth(handler: (request: NextRequest, user: AuthenticatedUser
 }
 
 /**
- * Secure replacement for client-side getUserId()
- * This should only be used server-side
+ * Get authenticated user ID from request
  */
 export async function getAuthenticatedUserId(request: NextRequest): Promise<string | null> {
   const { user } = await authenticateRequest(request);

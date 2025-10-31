@@ -56,25 +56,10 @@ export const useUserAwarePlannerStore = () => {
     }, [user?.id]);
 
     /**
-     * SECURITY FIX: Enhanced user change detection with complete data clearing
+     * SIMPLIFIED: User change detection removed - handled by auth state change listener below
+     * The store will be cleared on SIGNED_OUT event, which is more reliable than
+     * trying to track user changes manually
      */
-    useEffect(() => {
-        if (user?.id) {
-            // Check if the current store data belongs to this user
-            const currentUserId = baseStore.getCurrentStorageUserId();
-            const newUserId = user.id;
-
-            // If user has changed, completely clear the store to prevent data leakage
-            if (currentUserId && currentUserId !== newUserId) {
-                
-                // Use the enhanced clearUserData method
-                baseStore.clearUserData();
-                
-                // Also clear localStorage for the previous user
-                clearUserPlanningData(currentUserId);
-            }
-        }
-    }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps -- Remove baseStore from dependencies to prevent infinite loop
 
     // SECURITY FIX: Monitor auth state changes
     useEffect(() => {

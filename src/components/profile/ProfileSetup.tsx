@@ -16,6 +16,7 @@ import { CheckCircle, Loader2, ArrowRight, ArrowLeft, User, GraduationCap, BookO
 import { useProfileSetup } from "@/hooks/useProfileSetup";
 import { UserProfile } from "@/types";
 import { CriticalErrorBoundary } from "@/components/error/GlobalErrorBoundary";
+import { syncUserProfile } from "@/lib/profileSync";
 
 // Import step components
 import { InfoSetup } from "./steps/InfoSetup";
@@ -33,6 +34,7 @@ interface ProfileSetupProps {
 const ProfileSetup: React.FC<ProfileSetupProps> = ({
   existingProfile,
   pageMode = false,
+  onClose,
 }) => {
   const { user } = useAuth();
   const {
@@ -47,7 +49,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
     totalSteps,
     progressPercentage,
     isValid,
-  } = useProfileSetup(existingProfile);
+  } = useProfileSetup(existingProfile, onClose);
 
   if (!user) {
     return (
@@ -153,7 +155,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
             </div>
 
             {/* Step Navigation */}
-            <nav 
+            <nav
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mt-3"
               role="navigation"
               aria-label="Setup steps navigation"
@@ -170,11 +172,11 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: stepData.number * 0.1 }}
                     className={`
-                      relative p-3 rounded-lg border-2 transition-all duration-200 min-h-[76px]
-                      ${isActive 
-                        ? 'border-[#B3A369] bg-[#B3A369]/10' 
-                        : isCompleted 
-                        ? 'border-green-500 bg-green-50' 
+                      relative p-3 rounded-lg border-2 transition-all duration-200 min-h-[80px]
+                      ${isActive
+                        ? 'border-[#B3A369] bg-[#B3A369]/10'
+                        : isCompleted
+                        ? 'border-green-500 bg-green-50'
                         : 'border-gray-200 bg-gray-50'
                       }
                     `}
@@ -283,7 +285,13 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
               {step === totalSteps ? (
                 <Button
                   type="button"
-                  onClick={handleSave}
+                  onClick={async () => {
+                    await handleSave();
+                    // Ensure profile syncs after save
+                    setTimeout(async () => {
+                      await syncUserProfile();
+                    }, 500);
+                  }}
                   disabled={!isValid || isSaving}
                   className="bg-[#B3A369] hover:bg-[#B3A369]/90 text-white flex items-center justify-center gap-2 px-8 min-h-[44px]"
                   aria-describedby={isSaving ? 'saving-status' : undefined}

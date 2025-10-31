@@ -155,8 +155,8 @@ const CourseCard: React.FC<CourseCardProps> = ({
             </Badge>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-5 w-5 p-0 opacity-100">
-                  <MoreVertical className="h-3 w-3" />
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-100">
+                  <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-white min-w-48 w-auto">
@@ -184,9 +184,10 @@ const CourseCard: React.FC<CourseCardProps> = ({
         </div>
         
         <p className={cn(
-          "text-xs text-slate-700 font-medium line-clamp-2 mb-2",
+          "text-xs text-slate-700 font-medium mb-2 line-clamp-2 break-words",
           courseStatus === 'completed' && "opacity-60"
-        )}>
+        )}
+        title={courseTitle}>
           {courseTitle}
         </p>
         

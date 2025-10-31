@@ -407,10 +407,5 @@ export interface Insight {
   actionLink?: string;
 }
 
-export interface Deadline {
-  id: number;
-  title: string;
-  date: string;
-  category: string;
-  priority: 'high' | 'medium' | 'low';
-}
+// Use consistent Deadline interface from dashboard types
+export type { Deadline } from './dashboard';

@@ -11,7 +11,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { userDataService } from '@/lib/database/userDataService';
 import { usePlannerStore } from '@/hooks/usePlannerStore';
-// import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/lib/supabaseClient';
 import { UserProfile } from '@/types';
 import { ProfileData } from '@/types/user';
 
@@ -47,6 +47,28 @@ const convertSemesterToDate = (semesterString: string): string => {
 // Use the main ProfileData interface from types/user.ts
 // Create a local type alias for hooks that need additional integration fields
 export interface ExtendedProfileData extends ProfileData {
+  // Basic profile fields
+  name?: string; // Keep for backward compatibility
+  full_name?: string;
+  email?: string;
+  major?: string;
+  threads?: string[];
+  minors?: string[];
+  gtId?: number;
+  graduation_year?: number;
+  degree_program_id?: number;
+  
+  // Additional profile fields
+  startDate?: string;
+  expectedGraduation?: string;
+  currentGPA?: number;
+  totalCreditsEarned?: number;
+  isTransferStudent?: boolean;
+  transferCredits?: number;
+  year?: string;
+  isDoubleMajor?: boolean;
+  secondMajor?: string;
+  
   // Computed fields (from EnhancedProfileData)
   credits_completed?: number;
   credits_remaining?: number;
@@ -78,7 +100,7 @@ export interface ExtendedProfileData extends ProfileData {
   };
 }
 
-export const useProfileSetup = (existingProfile?: Partial<UserProfile>) => {
+export const useProfileSetup = (existingProfile?: Partial<UserProfile>, onSuccess?: () => void) => {
   const { user } = useAuth();
   const router = useRouter();
   const plannerStore = usePlannerStore();
@@ -87,10 +109,11 @@ export const useProfileSetup = (existingProfile?: Partial<UserProfile>) => {
   const [profile, setProfile] = useState<Partial<ExtendedProfileData>>(() => {
     const currentYear = new Date().getFullYear();
     return {
-      name: existingProfile?.name || user?.user_metadata?.full_name || '',
+      full_name: existingProfile?.full_name || existingProfile?.name || user?.user_metadata?.full_name || '',
+      name: existingProfile?.full_name || existingProfile?.name || user?.user_metadata?.full_name || '', // Keep for backward compatibility
       email: existingProfile?.email || user?.email || '',
       gtId: existingProfile?.gtId || 0,
-      major: existingProfile?.major || 'Computer Science',
+      major: existingProfile?.major || 'Aerospace Engineering', // Match what's in your database
       threads: existingProfile?.threads || [],
       minors: existingProfile?.minors || [],
       startDate: existingProfile?.startDate || `Fall ${currentYear}`,
@@ -124,32 +147,64 @@ export const useProfileSetup = (existingProfile?: Partial<UserProfile>) => {
   const [isSaving, setIsSaving] = useState(false);
   const [step, setStep] = useState(1);
 
-  // Load existing profile data on mount
+  // Load existing profile data from database on mount
   useEffect(() => {
     const loadExistingData = async () => {
-      if (!user || !existingProfile) return;
+      if (!user) return;
 
       try {
-        // Load comprehensive user data
-        const userData = await userDataService.getUserProfile();
+        console.log('Loading existing profile data for user:', user.id);
+        
+        // Get user's current profile from database
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select(`
+            full_name,
+            email,
+            major,
+            selected_threads,
+            minors,
+            graduation_year,
+            degree_program_id,
+            plan_settings
+          `)
+          .eq('auth_id', user.id)
+          .single();
+
+        if (userError && userError.code !== 'PGRST116') {
+          console.error('Error loading user profile:', userError);
+          return;
+        }
+
         if (userData) {
-          const enhanced: Partial<ExtendedProfileData> = {
-            ...profile,
-            name: userData.full_name,
-            email: userData.email,
-            major: userData.major,
-            threads: userData.threads || [],
+          console.log('Loaded existing profile data:', userData);
+          
+          // Update profile state with database data
+          setProfile(prev => ({
+            ...prev,
+            full_name: userData.full_name || '',
+            name: userData.full_name || '', // Keep for compatibility
+            email: userData.email || user.email || '',
+            major: userData.major || '',
+            threads: userData.selected_threads || [],
             minors: userData.minors || [],
-            expectedGraduation: userData.expected_graduation,
-            currentGPA: userData.current_gpa,
-            totalCreditsEarned: userData.total_credits_earned,
-            plan_settings: {
-              ...profile.plan_settings!,
-              ...userData.plan_settings,
-              graduation_year: userData.graduation_year,
-            }
-          };
-          setProfile(enhanced);
+            graduation_year: userData.graduation_year,
+            degree_program_id: userData.degree_program_id,
+            // Load additional fields from plan_settings
+            currentGPA: userData.plan_settings?.current_gpa || 0,
+            totalCreditsEarned: userData.plan_settings?.total_credits_earned || 0,
+            isTransferStudent: userData.plan_settings?.is_transfer_student || false,
+            transferCredits: userData.plan_settings?.transfer_credits || 0,
+            startDate: userData.plan_settings?.start_date || '',
+            expectedGraduation: userData.plan_settings?.expected_graduation || '',
+            isDoubleMajor: userData.plan_settings?.is_double_major || false,
+            secondMajor: userData.plan_settings?.second_major || '',
+            plan_settings: userData.plan_settings || {}
+          }));
+          
+          console.log('Profile state updated with database data');
+        } else {
+          console.log('No existing profile data found, using defaults');
         }
       } catch (error) {
         console.error('Error loading existing profile:', error);
@@ -227,14 +282,14 @@ export const useProfileSetup = (existingProfile?: Partial<UserProfile>) => {
 
   // Save profile with COMPLETE INTEGRATION
   const saveProfile = useCallback(async (): Promise<boolean> => {
-    if (!user || (!profile.full_name && !profile.name) || !profile.email || !profile.major) {
+    if (!user || !profile.full_name || !profile.email || !profile.major) {
       console.error('Missing required profile data:', {
         hasUser: !!user,
-        hasName: !!(profile.full_name || profile.name),
+        hasFullName: !!profile.full_name,
         hasEmail: !!profile.email,
         hasMajor: !!profile.major
       });
-      setErrors({ save: 'Missing required fields: name, email, and major are required' });
+      setErrors({ save: 'Missing required fields: full name, email, and major are required' });
       return false;
     }
 
@@ -243,11 +298,12 @@ export const useProfileSetup = (existingProfile?: Partial<UserProfile>) => {
       console.log('🚀 Starting COMPLETE profile save integration...');
       console.log('Profile data being saved:', {
         user_id: user.id,
-        full_name: profile.full_name || profile.name,
+        full_name: profile.full_name,
         email: profile.email,
         major: profile.major,
         threads: profile.threads,
-        gtId: profile.gtId
+        gtId: profile.gtId,
+        graduation_year: profile.graduation_year
       });
 
       // Step 1: Use comprehensive profile save system with ALL fallbacks
@@ -261,11 +317,13 @@ export const useProfileSetup = (existingProfile?: Partial<UserProfile>) => {
       const graduationDateFormatted = convertSemesterToDate(profile.expectedGraduation || '');
 
       const profileDataToSave = {
-        full_name: profile.full_name || profile.name || '',
+        full_name: profile.full_name,
+        email: profile.email || user.email,
         major: profile.major || '',
         selected_threads: profile.threads || [],
         minors: profile.minors || [],
-        graduation_year: profile.plan_settings?.graduation_year,
+        graduation_year: profile.graduation_year || (profile.expectedGraduation ? parseInt(profile.expectedGraduation.match(/\d{4}/)?.[0] || '') || null : null),
+        degree_program_id: profile.degree_program_id,
         has_detailed_gpa: (profile.currentGPA && profile.currentGPA > 0) || false,
         semester_gpas: profile.semester_gpas || [],
         plan_settings: {
@@ -392,12 +450,19 @@ export const useProfileSetup = (existingProfile?: Partial<UserProfile>) => {
 
     const success = await saveProfile();
     if (success) {
-      // Navigate to dashboard with success
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 1000);
+      console.log('✅ Profile setup completed successfully');
+      
+      // Call onSuccess if provided (e.g. from ProfileGate)
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        // Navigate to edit profile page after successful setup
+        setTimeout(() => {
+          router.push('/profile');
+        }, 1000);
+      }
     }
-  }, [saveProfile, router, validateStep]);
+  }, [saveProfile, router, validateStep, onSuccess]);
 
   // Navigation helpers
   const nextStep = useCallback(() => {

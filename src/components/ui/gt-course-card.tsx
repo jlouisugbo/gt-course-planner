@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { PrerequisiteDisplay, PrerequisiteBadges } from '@/components/ui/PrerequisiteDisplay';
 import {
   BookOpen,
   Calendar,
@@ -586,22 +587,19 @@ export const GTCourseCard = memo<GTCourseCardProps>(({
           </div>
           
           {/* Prerequisites */}
-          {!compact && showPrerequisites && course.prerequisites && Array.isArray(course.prerequisites) && course.prerequisites.length > 0 && (
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground">Prerequisites:</p>
-              <div className="flex flex-wrap gap-1">
-                {course.prerequisites.slice(0, 3).map((prereq, index) => (
-                  <Badge key={index} variant="outline" className="text-xs">
-                    {typeof prereq === 'string' ? prereq : prereq.courses?.[0] || 'N/A'}
-                  </Badge>
-                ))}
-                {course.prerequisites.length > 3 && (
-                  <Badge variant="outline" className="text-xs">
-                    +{course.prerequisites.length - 3} more
-                  </Badge>
-                )}
+          {showPrerequisites && course.prerequisites && (
+            compact ? (
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">Prereq:</span>
+                <PrerequisiteBadges prerequisites={course.prerequisites} maxShow={2} />
               </div>
-            </div>
+            ) : (
+              <PrerequisiteDisplay 
+                prerequisites={course.prerequisites} 
+                compact={false}
+                onCourseClick={(code) => console.log('Navigate to course:', code)}
+              />
+            )
           )}
           
           {/* Footnotes */}

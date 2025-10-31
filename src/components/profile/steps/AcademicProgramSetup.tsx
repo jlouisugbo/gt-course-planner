@@ -17,6 +17,7 @@ import { GraduationCap, Plus, X, BookOpen, Award } from "lucide-react";
 import { FormError, FormLoadingSpinner } from "@/components/ui/form-validation";
 import { ExtendedProfileData } from "@/hooks/useProfileSetup";
 import { supabase } from "@/lib/supabaseClient";
+import { majors as constantMajors, minors as constantMinors, CS_THREADS, COE_THREADS } from "@/lib/constants";
 
 interface AcademicProgramSetupProps {
   profile: Partial<ExtendedProfileData>;
@@ -41,6 +42,7 @@ export const AcademicProgramSetup: React.FC<AcademicProgramSetupProps> = ({
     const loadPrograms = async () => {
       try {
         setIsLoading(true);
+        console.log('🔄 Loading programs from database...');
         
         // Get all degree programs
         const { data: programs, error } = await supabase
@@ -49,7 +51,21 @@ export const AcademicProgramSetup: React.FC<AcademicProgramSetupProps> = ({
           .eq('is_active', true)
           .order('name');
 
-        if (error) throw error;
+        console.log('📊 Raw programs data:', { programs, error });
+
+        if (error) {
+          console.error('❌ Database error:', error);
+          throw error;
+        }
+
+        if (!programs || programs.length === 0) {
+          console.warn('⚠️ No programs returned from database');
+          throw new Error('No programs found');
+        }
+
+        // Show all degree types to understand the data
+        const degreeTypes = [...new Set(programs.map(p => p.degree_type))];
+        console.log('📋 Available degree types:', degreeTypes);
 
         const majors = programs
           ?.filter(p => p.degree_type === 'BS' || p.degree_type === 'Major')
@@ -63,51 +79,62 @@ export const AcademicProgramSetup: React.FC<AcademicProgramSetupProps> = ({
           ?.filter(p => p.degree_type === 'Minor')
           .map(p => p.name) || [];
 
-        setAvailableMajors(majors);
-        setAvailableThreads(threads);
-        setAvailableMinors(minors);
-        
-        console.log('Loaded programs from database:', { majors: majors.length, threads: threads.length, minors: minors.length });
+        console.log('✅ Filtered programs:', { 
+          majors: { count: majors.length, sample: majors.slice(0, 3) },
+          threads: { count: threads.length, sample: threads.slice(0, 3) },
+          minors: { count: minors.length, sample: minors.slice(0, 3) }
+        });
+
+        // Ensure we have some data, use comprehensive constants if needed
+        if (majors.length === 0) {
+          console.warn('🔄 No majors found in database, using complete GT major list');
+          const fallbackMajors = constantMajors.map(major => major.value);
+          console.log(`📚 Using ${fallbackMajors.length} majors from constants`);
+          setAvailableMajors(fallbackMajors);
+        } else {
+          setAvailableMajors(majors);
+        }
+
+        if (threads.length === 0) {
+          console.warn('🔄 No threads found in database, using CS threads from constants');
+          // Deduplicate threads when combining CS and COE threads
+          const fallbackThreads = [...new Set([...CS_THREADS, ...COE_THREADS])];
+          console.log(`📚 Using ${fallbackThreads.length} unique threads from constants`);
+          setAvailableThreads(fallbackThreads);
+        } else {
+          // Also deduplicate threads from database to avoid any duplicates
+          const uniqueThreads = [...new Set(threads)];
+          setAvailableThreads(uniqueThreads);
+        }
+
+        if (minors.length === 0) {
+          console.warn('🔄 No minors found in database, using complete GT minor list');
+          // Deduplicate minors in case of any duplicates
+          const fallbackMinors = [...new Set(constantMinors.map(minor => minor.value))];
+          console.log(`📚 Using ${fallbackMinors.length} unique minors from constants`);
+          setAvailableMinors(fallbackMinors);
+        } else {
+          // Also deduplicate minors from database to avoid any duplicates
+          const uniqueMinors = [...new Set(minors)];
+          setAvailableMinors(uniqueMinors);
+        }
         
       } catch (error) {
-        console.error('Error loading programs:', error);
-        // Set comprehensive fallback data
-        setAvailableMajors([
-          'Computer Science',
-          'Computer Engineering', 
-          'Electrical Engineering',
-          'Mechanical Engineering',
-          'Industrial Engineering',
-          'Aerospace Engineering',
-          'Biomedical Engineering',
-          'Chemical Engineering',
-          'Civil Engineering',
-          'Materials Science and Engineering',
-          'Nuclear Engineering'
-        ]);
-        setAvailableThreads([
-          'Intelligence',
-          'Theory',
-          'Systems & Architecture', 
-          'People',
-          'Information Internetworks',
-          'Media',
-          'Modeling & Simulation',
-          'Devices'
-        ]);
-        setAvailableMinors([
-          'Mathematics',
-          'Business',
-          'Psychology',
-          'Physics',
-          'Chemistry',
-          'Biology',
-          'History',
-          'Literature',
-          'Economics',
-          'Philosophy'
-        ]);
-        console.log('Using fallback program data due to database error');
+        console.error('❌ Error loading programs:', error);
+        // Set comprehensive fallback data from constants
+        console.log('🔄 Using complete GT program data from constants due to error');
+        
+        const fallbackMajors = constantMajors.map(major => major.value);
+        // Deduplicate threads when combining CS and COE threads
+        const fallbackThreads = [...new Set([...CS_THREADS, ...COE_THREADS])];
+        // Deduplicate minors in case of any duplicates
+        const fallbackMinors = [...new Set(constantMinors.map(minor => minor.value))];
+        
+        console.log(`📚 Fallback data: ${fallbackMajors.length} majors, ${fallbackThreads.length} unique threads, ${fallbackMinors.length} minors`);
+        
+        setAvailableMajors(fallbackMajors);
+        setAvailableThreads(fallbackThreads);
+        setAvailableMinors(fallbackMinors);
       } finally {
         setIsLoading(false);
       }
@@ -171,33 +198,40 @@ export const AcademicProgramSetup: React.FC<AcademicProgramSetupProps> = ({
         animate={{ opacity: 1, y: 0 }}
       >
         <Card className={`transition-all duration-200 ${errors.major ? 'border-red-300 bg-red-50/50' : 'hover:shadow-md'}`}>
-          <CardHeader className="py-2">
+          <CardHeader className="pb-3 pt-4 px-4">
             <CardTitle className="flex items-center gap-2 text-lg">
               <GraduationCap className="h-5 w-5 text-[#B3A369]" />
               Primary Major *
             </CardTitle>
-            <CardDescription className="py-1">
+            <CardDescription className="text-sm text-gray-600 mt-1">
               Select your primary degree program at Georgia Tech
             </CardDescription>
           </CardHeader>
-          <CardContent className="py-2">
+          <CardContent className="pb-4 px-4">
             <Select
               value={profile.major || ''}
-              onValueChange={(value) => updateProfile('major', value)}
+              onValueChange={(value) => {
+                console.log('Major selected:', value);
+                updateProfile('major', value);
+              }}
             >
               <SelectTrigger 
-                className={errors.major ? 'border-red-300' : ''}
+                className={`h-11 ${errors.major ? 'border-red-300' : 'border-gray-300'}`}
                 aria-invalid={!!errors.major}
                 aria-describedby={errors.major ? 'major-error' : undefined}
               >
                 <SelectValue placeholder="Choose your major" />
               </SelectTrigger>
-              <SelectContent className="z-50 max-h-[200px]">
-                {availableMajors.map((major) => (
-                  <SelectItem key={major} value={major}>
-                    {major}
-                  </SelectItem>
-                ))}
+              <SelectContent className="z-[60] max-h-[300px] w-[--radix-select-trigger-width]">
+                {availableMajors.length > 0 ? (
+                  availableMajors.map((major) => (
+                    <SelectItem key={major} value={major} className="cursor-pointer">
+                      {major}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem disabled value="no-majors">No majors available</SelectItem>
+                )}
               </SelectContent>
             </Select>
             <FormError error={errors.major} />
@@ -212,7 +246,7 @@ export const AcademicProgramSetup: React.FC<AcademicProgramSetupProps> = ({
         transition={{ delay: 0.1 }}
       >
         <Card>
-          <CardContent className="py-2 px-3">
+          <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="isDoubleMajor"
@@ -234,10 +268,10 @@ export const AcademicProgramSetup: React.FC<AcademicProgramSetupProps> = ({
                   value={profile.secondMajor || ''}
                   onValueChange={(value) => updateProfile('secondMajor', value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-11">
                     <SelectValue placeholder="Choose your second major" />
                   </SelectTrigger>
-                  <SelectContent className="z-50 max-h-[200px]">
+                  <SelectContent className="z-[60] max-h-[300px] w-[--radix-select-trigger-width]">
                     {availableMajors
                       .filter(major => major !== profile.major)
                       .map((major) => (
@@ -260,16 +294,16 @@ export const AcademicProgramSetup: React.FC<AcademicProgramSetupProps> = ({
         transition={{ delay: 0.2 }}
       >
         <Card>
-          <CardHeader className="py-2">
+          <CardHeader className="pb-3 pt-4 px-4">
             <CardTitle className="flex items-center gap-2 text-lg">
               <BookOpen className="h-5 w-5 text-[#B3A369]" />
               Threads
             </CardTitle>
-            <CardDescription className="py-1">
+            <CardDescription className="text-sm text-gray-600 mt-1">
               Select your areas of specialization (typically 2 threads required for CS)
             </CardDescription>
           </CardHeader>
-          <CardContent className="py-2 space-y-3">
+          <CardContent className="pb-4 px-4 space-y-3">
             {/* Current Threads */}
             {profile.threads && profile.threads.length > 0 && (
               <div className="space-y-2">
@@ -300,10 +334,10 @@ export const AcademicProgramSetup: React.FC<AcademicProgramSetupProps> = ({
             {/* Add Thread */}
             <div className="flex gap-2">
               <Select value={newThread} onValueChange={setNewThread}>
-                <SelectTrigger className="flex-1">
+                <SelectTrigger className="flex-1 h-11">
                   <SelectValue placeholder="Choose a thread to add" />
                 </SelectTrigger>
-                <SelectContent className="z-50 max-h-[200px]">
+                <SelectContent className="z-[60] max-h-[300px] w-[--radix-select-trigger-width]">
                   {availableThreads
                     .filter(thread => !profile.threads?.includes(thread))
                     .map((thread) => (
@@ -333,16 +367,16 @@ export const AcademicProgramSetup: React.FC<AcademicProgramSetupProps> = ({
         transition={{ delay: 0.3 }}
       >
         <Card>
-          <CardHeader className="py-2">
+          <CardHeader className="pb-3 pt-4 px-4">
             <CardTitle className="flex items-center gap-2 text-lg">
               <Award className="h-5 w-5 text-[#B3A369]" />
               Minors
             </CardTitle>
-            <CardDescription className="py-1">
-              Add any minors you&apos;re pursuing (optional)
+            <CardDescription className="text-sm text-gray-600 mt-1">
+              Add any minors you're pursuing (optional)
             </CardDescription>
           </CardHeader>
-          <CardContent className="py-2 space-y-3">
+          <CardContent className="pb-4 px-4 space-y-3">
             {/* Current Minors */}
             {profile.minors && profile.minors.length > 0 && (
               <div className="space-y-2">
@@ -373,10 +407,10 @@ export const AcademicProgramSetup: React.FC<AcademicProgramSetupProps> = ({
             {/* Add Minor */}
             <div className="flex gap-2">
               <Select value={newMinor} onValueChange={setNewMinor}>
-                <SelectTrigger className="flex-1">
+                <SelectTrigger className="flex-1 h-11">
                   <SelectValue placeholder="Choose a minor to add" />
                 </SelectTrigger>
-                <SelectContent className="z-50 max-h-[200px]">
+                <SelectContent className="z-[60] max-h-[300px] w-[--radix-select-trigger-width]">
                   {availableMinors
                     .filter(minor => !profile.minors?.includes(minor))
                     .map((minor) => (
@@ -406,7 +440,7 @@ export const AcademicProgramSetup: React.FC<AcademicProgramSetupProps> = ({
         transition={{ delay: 0.4 }}
       >
         <Card className="bg-[#003057]/5 border-[#003057]/20">
-          <CardContent className="py-2 px-3">
+          <CardContent className="p-4">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 bg-[#003057] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                 <GraduationCap className="h-4 w-4 text-white" />

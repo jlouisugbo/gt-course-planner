@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ import {
   Upload,
   Target
 } from 'lucide-react';
-import { usePlannerInitialization } from '@/hooks/usePlannerInitialization';
+import { useReliablePlannerStore } from '@/hooks/useReliablePlannerStore';
 import { PlannerGrid } from './PlannerGrid';
 import { CourseRecommendationsAI } from './CourseRecommendationsAI';
 import { AcademicTimeline } from './AcademicTimeline';
@@ -27,9 +27,22 @@ import { PlannerStats } from './PlannerStats';
 import ProfileSetup from '@/components/profile/ProfileSetup';
 
 export const PlannerDashboard: React.FC = () => {
-  const plannerStore = usePlannerInitialization();
-  const { semesters, userProfile } = plannerStore;
   const [showProfileSetup, setShowProfileSetup] = useState(false);
+  
+  // Use reliable planner store that combines data loading with planner functionality
+  const {
+    semesters,
+    userProfile,
+    degreeProgram,
+    minorPrograms,
+    dataLoading,
+    dataError,
+    isFullyInitialized,
+    reloadData,
+    ...plannerStore
+  } = useReliablePlannerStore();
+  
+  const activeUserProfile = userProfile;
 
   const safeSemesters = useMemo(() => {
     if (!semesters || typeof semesters !== 'object') {
@@ -39,11 +52,11 @@ export const PlannerDashboard: React.FC = () => {
   }, [semesters]);
 
   const safeUserProfile = useMemo(() => {
-    if (!userProfile || typeof userProfile !== 'object') {
+    if (!activeUserProfile || typeof activeUserProfile !== 'object') {
       return null;
     }
-    return userProfile;
-  }, [userProfile]);
+    return activeUserProfile;
+  }, [activeUserProfile]);
 
   // Calculate stats
   const totalCreditsPlanned = useMemo(() => {
@@ -67,9 +80,58 @@ export const PlannerDashboard: React.FC = () => {
   const totalSemesters = Object.keys(safeSemesters).length;
   const progressPercentage = totalSemesters > 0 ? Math.round((completedSemesters / totalSemesters) * 100) : 0;
 
+  // Add a timeout to prevent infinite loading
+  useEffect(() => {
+    if (dataLoading || !isFullyInitialized) {
+      const timeout = setTimeout(() => {
+        if (dataLoading) {
+          console.error('Loading timeout - forcing initialization');
+          // Force a reload or show error
+          if (reloadData) {
+            reloadData();
+          }
+        }
+      }, 10000); // 10 second timeout
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [dataLoading, isFullyInitialized, reloadData]);
+
+  // Show loading state while initializing
+  if (dataLoading || !isFullyInitialized) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center space-y-4"
+        >
+          <div className="w-16 h-16 bg-gt-gradient rounded-full flex items-center justify-center mx-auto animate-pulse">
+            <GraduationCap className="h-8 w-8 text-white" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gt-navy">Loading Your Academic Plan</h3>
+            <p className="text-gray-600">Setting up your personalized course schedule...</p>
+            {dataError && (
+              <div className="mt-4">
+                <p className="text-red-600 text-sm mb-2">Loading is taking longer than expected</p>
+                <Button
+                  variant="outline"
+                  onClick={reloadData}
+                  className="text-sm"
+                >
+                  Try Again
+                </Button>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -83,11 +145,25 @@ export const PlannerDashboard: React.FC = () => {
                 </div>
                 <div>
                   <h1 className="text-2xl lg:text-3xl font-bold text-gt-navy">Academic Planner</h1>
-                  <p className="text-gray-600">Plan your journey to graduation</p>
+                  <p className="text-gray-600">
+                    {safeUserProfile?.major || 'Plan your journey to graduation'}
+                    {degreeProgram?.totalCredits && ` • ${degreeProgram.totalCredits} credits total`}
+                  </p>
                 </div>
               </div>
               
               <div className="flex items-center gap-3">
+                {dataError && (
+                  <Button
+                    variant="outline"
+                    onClick={reloadData}
+                    className="flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-50"
+                    disabled={dataLoading}
+                  >
+                    <Target className={`h-4 w-4 ${dataLoading ? 'animate-spin' : ''}`} />
+                    {dataLoading ? 'Loading...' : 'Retry'}
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   onClick={() => setShowProfileSetup(true)}
@@ -112,62 +188,81 @@ export const PlannerDashboard: React.FC = () => {
           </Card>
         </motion.div>
 
-        {/* Student Profile Banner */}
-        {safeUserProfile && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <Card className="bg-gt-gradient text-white border-0 shadow-lg">
-              <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
-                  <div className="flex items-center gap-4 mb-4 md:mb-0">
-                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                      <User className="h-8 w-8 text-white" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-bold">{safeUserProfile.name || 'Student'}</h2>
-                      <p className="text-white/90 mb-2">
-                        {safeUserProfile.major || 'Undeclared'} • Class of {safeUserProfile.expectedGraduation || 'TBD'}
-                      </p>
-                      {Array.isArray(safeUserProfile.threads) && safeUserProfile.threads.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {safeUserProfile.threads.map((thread, index) => (
-                            <Badge
-                              key={`${thread}-${index}`}
-                              variant="secondary"
-                              className="bg-white/20 text-white border-white/20 text-xs backdrop-blur-sm"
-                            >
-                              <Target className="h-3 w-3 mr-1" />
-                              {thread}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-white">
-                      {typeof safeUserProfile.currentGPA === 'number' 
-                        ? safeUserProfile.currentGPA.toFixed(2) 
-                        : '0.00'}
-                    </div>
-                    <div className="text-sm text-white/90">Current GPA</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {/* Stats Overview */}
+        {/* Main Content */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="grid grid-cols-1 md:grid-cols-4 gap-6"
+          transition={{ delay: 0.1 }}
+        >
+          <Tabs defaultValue="planner" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 bg-white border border-gray-200 rounded-lg p-1">
+              <TabsTrigger 
+                value="planner" 
+                className="flex items-center gap-2 transition-all data-[state=active]:bg-gt-navy data-[state=active]:text-white text-gray-700"
+              >
+                <Calendar className="h-4 w-4" />
+                <span>Academic Plan</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="timeline" 
+                className="flex items-center gap-2 transition-all data-[state=active]:bg-gt-navy data-[state=active]:text-white text-gray-700"
+              >
+                <Clock className="h-4 w-4" />
+                <span>Timeline View</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="recommendations" 
+                className="flex items-center gap-2 transition-all data-[state=active]:bg-gt-navy data-[state=active]:text-white text-gray-700"
+              >
+                <Target className="h-4 w-4" />
+                <span>Course Recommendations</span>
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="planner" className="space-y-6 mt-6">
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                {/* Course Recommendations Sidebar - 25% */}
+                <div className="lg:col-span-1">
+                  <div className="sticky top-4">
+                    <CourseRecommendationsAI userProfile={userProfile} />
+                  </div>
+                </div>
+                
+                {/* Main Planning Grid - 75% */}
+                <div className="lg:col-span-3">
+                  <PlannerGrid 
+                    semesters={semesters}
+                    userProfile={userProfile}
+                    isLoading={dataLoading}
+                    isInitialized={isFullyInitialized}
+                  />
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="timeline" className="space-y-6 mt-6">
+              <AcademicTimeline />
+            </TabsContent>
+
+            <TabsContent value="recommendations" className="space-y-6 mt-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                  <CourseRecommendationsAI showAllTabs userProfile={userProfile} />
+                </div>
+                <div className="lg:col-span-1">
+                  <PlannerStats />
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </motion.div>
+
+        {/* Stats Overview - Moved to Bottom */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-4"
         >
           <Card className="gt-card border-l-4 border-l-gt-gold">
             <CardContent className="p-4">
@@ -176,7 +271,7 @@ export const PlannerDashboard: React.FC = () => {
                   <p className="text-sm font-medium text-gray-600">Progress</p>
                   <p className="text-2xl font-bold text-gt-gold">{progressPercentage}%</p>
                 </div>
-                <TrendingUp className="h-8 w-8 text-gt-gold" />
+                <TrendingUp className="h-6 w-6 text-gt-gold" />
               </div>
               <Progress value={progressPercentage} className="mt-2" />
             </CardContent>
@@ -189,7 +284,7 @@ export const PlannerDashboard: React.FC = () => {
                   <p className="text-sm font-medium text-gray-600">Credits Planned</p>
                   <p className="text-2xl font-bold text-gt-navy">{totalCreditsPlanned}</p>
                 </div>
-                <BookOpen className="h-8 w-8 text-gt-navy" />
+                <BookOpen className="h-6 w-6 text-gt-navy" />
               </div>
               <p className="text-xs text-gray-500 mt-1">of ~120 total</p>
             </CardContent>
@@ -202,7 +297,7 @@ export const PlannerDashboard: React.FC = () => {
                   <p className="text-sm font-medium text-gray-600">Semesters</p>
                   <p className="text-2xl font-bold text-gt-navy">{completedSemesters}/{totalSemesters}</p>
                 </div>
-                <Calendar className="h-8 w-8 text-gt-navy" />
+                <Calendar className="h-6 w-6 text-gt-navy" />
               </div>
             </CardContent>
           </Card>
@@ -216,74 +311,10 @@ export const PlannerDashboard: React.FC = () => {
                     {safeUserProfile?.expectedGraduation || 'TBD'}
                   </p>
                 </div>
-                <CheckCircle className="h-8 w-8 text-gt-gold" />
+                <CheckCircle className="h-6 w-6 text-gt-gold" />
               </div>
             </CardContent>
           </Card>
-        </motion.div>
-
-        {/* Main Content */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <Tabs defaultValue="planner" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-white border border-gray-200 rounded-lg p-1">
-              <TabsTrigger 
-                value="planner" 
-                className="flex items-center gap-2 data-[state=active]:bg-gt-navy data-[state=active]:text-white"
-              >
-                <Calendar className="h-4 w-4" />
-                Academic Plan
-              </TabsTrigger>
-              <TabsTrigger 
-                value="timeline" 
-                className="flex items-center gap-2 data-[state=active]:bg-gt-navy data-[state=active]:text-white"
-              >
-                <Clock className="h-4 w-4" />
-                Timeline View
-              </TabsTrigger>
-              <TabsTrigger 
-                value="recommendations" 
-                className="flex items-center gap-2 data-[state=active]:bg-gt-navy data-[state=active]:text-white"
-              >
-                <Target className="h-4 w-4" />
-                Course Recommendations
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="planner" className="space-y-6 mt-6">
-              <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-                {/* Course Recommendations Sidebar */}
-                <div className="xl:col-span-1">
-                  <div className="sticky top-6">
-                    <CourseRecommendationsAI />
-                  </div>
-                </div>
-                
-                {/* Main Planning Grid */}
-                <div className="xl:col-span-3">
-                  <PlannerGrid />
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="timeline" className="space-y-6 mt-6">
-              <AcademicTimeline />
-            </TabsContent>
-
-            <TabsContent value="recommendations" className="space-y-6 mt-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
-                  <CourseRecommendationsAI showAllTabs />
-                </div>
-                <div className="lg:col-span-1">
-                  <PlannerStats />
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
         </motion.div>
 
         {/* Profile Setup Modal */}
@@ -294,7 +325,6 @@ export const PlannerDashboard: React.FC = () => {
             existingProfile={safeUserProfile || undefined}
           />
         )}
-      </div>
     </div>
   );
 };

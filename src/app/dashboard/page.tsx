@@ -18,6 +18,7 @@ import {
 import { useAuth } from '@/providers/AuthProvider';
 import { useUserAwarePlannerStore } from '@/hooks/useUserAwarePlannerStore';
 import { AsyncErrorBoundary } from '@/components/error/AsyncErrorBoundary';
+import { getFirstName } from '@/lib/userUtils';
 
 function DashboardContent() {
   const { user } = useAuth();
@@ -34,19 +35,19 @@ function DashboardContent() {
   const totalCompletedCredits = completedCourses.reduce((sum, course) => sum + (course.credits || 0), 0);
   const currentGPA = plannerStore.calculateGPA();
 
-  // Get user display name
-  const userName = user?.email?.split('@')[0] || 'Student';
+  // Get user display name - show first name only
+  const userName = getFirstName(userProfile, user?.email);
 
   return (
     <div className="space-y-8">
       {/* Welcome Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gt-navy flex items-center gap-3">
-            <Home className="h-8 w-8 text-gt-gold" />
-            Welcome back, {userName}!
+          <h1 className="text-2xl sm:text-3xl font-bold text-gt-navy flex items-center gap-3">
+            <Home className="h-6 w-6 sm:h-8 sm:w-8 text-gt-gold flex-shrink-0" />
+            <span className="truncate">Welcome back, {userName}!</span>
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="text-sm sm:text-base text-gray-600 mt-2">
             Here&apos;s your academic progress overview
           </p>
         </div>
@@ -56,7 +57,7 @@ function DashboardContent() {
       </div>
 
       {/* Quick Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -153,9 +154,9 @@ function DashboardContent() {
                     transition={{ delay: index * 0.1 }}
                     className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
                   >
-                    <div>
-                      <p className="font-medium text-gt-navy">{course.code}</p>
-                      <p className="text-sm text-gray-600 truncate">{course.title}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-gt-navy truncate">{course.code}</p>
+                      <p className="text-sm text-gray-600 truncate max-w-full">{course.title}</p>
                     </div>
                     <Badge className="bg-green-100 text-green-800">Completed</Badge>
                   </motion.div>

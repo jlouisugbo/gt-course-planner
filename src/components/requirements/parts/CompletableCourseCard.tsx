@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+// import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, Sparkles, Calendar } from "lucide-react";
+import { Loader2, CheckCircle2, Calendar } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabaseClient";
 import { VisualCourse, EnhancedCourse } from "@/types/requirements";
@@ -165,17 +165,12 @@ export const CompletableCourseCard: React.FC<CompletableCourseCardProps> = ({
 
     if (loading) {
         return (
-            <Card className={`py-1 ${getCardTheme()} transition-all duration-200`}>
-                <CardContent className="py-1">
-                    <div className="flex items-center space-x-2">
-                        <Loader2 className="h-3 w-3 animate-spin text-slate-500" />
-                        <div>
-                            <div className="font-medium text-xs text-slate-900">{course.code}</div>
-                            <div className="text-xs text-slate-600">Loading...</div>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+            <div className={`px-2 py-0.5 rounded border ${getCardTheme()} transition-all duration-200`}>
+                <div className="flex items-center space-x-1">
+                    <Loader2 className="h-2.5 w-2.5 animate-spin text-slate-500" />
+                    <span className="font-medium text-[11px] text-slate-900">{course.code}</span>
+                </div>
+            </div>
         );
     }
 
@@ -188,88 +183,58 @@ export const CompletableCourseCard: React.FC<CompletableCourseCardProps> = ({
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 whileHover={{ 
-                    scale: 1.02,
-                    y: -2,
-                    transition: { duration: 0.2, ease: "easeOut" }
+                    scale: 1.01,
+                    transition: { duration: 0.15, ease: "easeOut" }
                 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.2 }}
             >
-                <Card 
+                <div 
                     className={cn(
-                        `py-1 w-48 ${getCardTheme()} transition-all duration-300 cursor-pointer group relative overflow-hidden border-2 hover:shadow-xl`,
+                        `px-2 py-0.5 rounded border ${getCardTheme()} transition-all duration-200 cursor-pointer group relative overflow-hidden hover:shadow-md`,
                         isCompleted && "ring-2 ring-green-200"
                     )}
                     onClick={handleCardClick}
                 >
-                    {/* Hover overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out" />
-                    
-                    <CardContent className="py-1 relative">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2 flex-1 min-w-0">
-                                {/* Enhanced Checkbox */}
-                                {onToggleComplete && (
-                                    <div 
-                                        onClick={handleCheckboxToggle}
-                                        className="group cursor-pointer"
-                                    >
-                                        <div className={cn(
-                                            "w-4 h-4 rounded border-2 flex items-center justify-center transition-all duration-200",
-                                            isCompleted 
-                                                ? "bg-green-600 border-green-600 shadow-sm" 
-                                                : "border-slate-300 hover:border-green-400 bg-white group-hover:bg-green-50"
-                                        )}>
-                                            {isCompleted && (
-                                                <CheckCircle2 className="h-2.5 w-2.5 text-white" />
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                                
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center space-x-1 mb-0.5">
-                                        {isCompleted && <CheckCircle2 className="h-3 w-3 text-green-600 flex-shrink-0" />}
-                                        {isCourseActuallyPlanned && !isCompleted && <Calendar className="h-3 w-3 text-blue-600 flex-shrink-0" />}
-                                        {isFlexible && <Sparkles className="h-3 w-3 text-amber-600 flex-shrink-0" />}
-                                        
-                                        <span className={cn(
-                                            "font-bold text-xs cursor-pointer hover:text-blue-600 transition-colors truncate",
-                                            isCompleted ? "text-green-700 line-through" : 
-                                            isCourseActuallyPlanned ? "text-blue-700" :
-                                            isFlexible ? "text-amber-800" : "text-slate-900"
-                                        )}>
-                                            {enhancedCourse.code}
-                                        </span>
-                                        
-                                        <span className="text-xs text-slate-500">({enhancedCourse.credits || 3}cr)</span>
-                                        
-                                        {isOption && <Badge variant="outline" className="text-xs px-1 py-0 h-3 bg-orange-100 text-orange-700">Opt</Badge>}
-                                        {isFlexible && <Badge variant="outline" className="text-xs px-1 py-0 h-3 bg-amber-100 text-amber-700">Flex</Badge>}
-                                    </div>
-                                    
-                                    <h4 className={cn(
-                                        "font-medium text-xs line-clamp-1 leading-tight",
-                                        isCompleted ? "text-green-600 line-through" : 
-                                        isCourseActuallyPlanned ? "text-blue-600" :
-                                        isFlexible ? "text-amber-700" : "text-slate-700"
-                                    )}>
-                                        {enhancedCourse.title}
-                                    </h4>
+                    <div className="flex items-center space-x-2">
+                        {/* Accessible Checkbox */}
+                        {onToggleComplete && (
+                            <div
+                                onClick={handleCheckboxToggle}
+                                className="cursor-pointer p-1"
+                            >
+                                <div className={cn(
+                                    "w-4 h-4 rounded border flex items-center justify-center transition-all duration-150",
+                                    isCompleted
+                                        ? "bg-green-600 border-green-600"
+                                        : "border-slate-400 hover:border-green-500 bg-white"
+                                )}>
+                                    {isCompleted && (
+                                        <CheckCircle2 className="h-3 w-3 text-white" />
+                                    )}
                                 </div>
                             </div>
-                            
-                            <div className="ml-1 flex-shrink-0">
-                                <div className={cn(
-                                    "w-2 h-2 rounded-full",
-                                    isCompleted ? "bg-green-500" :
-                                    isCourseActuallyPlanned ? "bg-blue-500" :
-                                    isFlexible ? "bg-amber-500" :
-                                    "bg-slate-400"
-                                )} />
-                            </div>
+                        )}
+
+                        {/* Course Code and Credits */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                            {isCompleted && <CheckCircle2 className="h-3.5 w-3.5 text-green-600 flex-shrink-0" />}
+                            {isCourseActuallyPlanned && !isCompleted && <Calendar className="h-3.5 w-3.5 text-blue-600 flex-shrink-0" />}
+
+                            <span className={cn(
+                                "font-semibold text-xs",
+                                isCompleted ? "text-green-700 line-through" :
+                                isCourseActuallyPlanned ? "text-blue-700" :
+                                isFlexible ? "text-amber-700" : "text-slate-900"
+                            )}>
+                                {enhancedCourse.code}
+                            </span>
+
+                            <span className="text-xs text-slate-500">({enhancedCourse.credits || 3})</span>
+
+                            {isFlexible && <Badge className="text-[10px] px-1 h-4 bg-amber-100 text-amber-700 border-0">F</Badge>}
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
             </motion.div>
 
             {/* Course Detail Modal */}
