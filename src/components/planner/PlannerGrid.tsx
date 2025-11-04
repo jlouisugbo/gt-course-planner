@@ -44,11 +44,11 @@ const CourseInfoModal = memo<{ course: any }>(function CourseInfoModal({ course 
             {course.code} - {course.title}
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <h4 className="font-semibold mb-2">Course Details</h4>
-              <div className="space-y-2 text-sm">
+              <h4 className="font-semibold mb-1.5">Course Details</h4>
+              <div className="space-y-1.5 text-sm">
                 <p><strong>Credits:</strong> {course.credits || 3}</p>
                 <p><strong>College:</strong> {course.college || 'N/A'}</p>
                 <p><strong>Type:</strong> {course.course_type || 'N/A'}</p>
@@ -58,8 +58,8 @@ const CourseInfoModal = memo<{ course: any }>(function CourseInfoModal({ course 
               </div>
             </div>
             <div>
-              <h4 className="font-semibold mb-2">Offering Info</h4>
-              <div className="space-y-2 text-sm">
+              <h4 className="font-semibold mb-1">Offering Info</h4>
+              <div className="space-y-1 text-sm">
                 {course.semester_offered && (
                   <p><strong>Offered:</strong> {course.semester_offered}</p>
                 )}
@@ -71,7 +71,7 @@ const CourseInfoModal = memo<{ course: any }>(function CourseInfoModal({ course 
           </div>
           {course.description && (
             <div>
-              <h4 className="font-semibold mb-2">Description</h4>
+              <h4 className="font-semibold mb-1">Description</h4>
               <p className="text-sm text-gray-600">{course.description}</p>
             </div>
           )}
@@ -110,23 +110,23 @@ const DraggableCourseCard: React.FC<{
                 isDragging && "opacity-50"
             )}
         >
-            <div 
+            <div
                 className={cn(
-                    "p-2 rounded border transition-all duration-200 hover:shadow-sm",
+                    "p-1.5 rounded border transition-all duration-200 hover:shadow-sm",
                     isDragging && "opacity-50",
                     isCompleted && "bg-green-50 border-green-200",
                     isCurrent && "bg-yellow-50 border-yellow-200",
                     !isCompleted && !isCurrent && "bg-white border-gray-200 hover:border-[#B3A369]/30"
                 )}
             >
-                <div className="space-y-1">
+                <div className="space-y-0">
                     <div className="flex items-center justify-between gap-1">
                         <div className="flex items-center gap-1 flex-1 min-w-0">
                             <GripVertical className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                             <span className="font-medium text-xs text-[#003057] truncate">
                                 {course.code}
                             </span>
-                            <Badge variant="secondary" className="text-xs h-4">
+                            <Badge variant="secondary" className="text-xs h-4 px-1.5">
                                 {course.credits || 3}
                             </Badge>
                         </div>
@@ -289,7 +289,7 @@ export const PlannerGrid: React.FC<PlannerGridProps> = memo(({
                         }
                     }}
                 >
-                    <CardHeader className="pb-3">
+                    <CardHeader className="pb-1.5 pt-2.5">
                         <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1">
                                 <CardTitle
@@ -302,7 +302,7 @@ export const PlannerGrid: React.FC<PlannerGridProps> = memo(({
                                 >
                                     {semester.season} {semester.year}
                                 </CardTitle>
-                                <div className="flex flex-wrap items-center gap-2">
+                                <div className="flex flex-wrap items-center gap-1">
                                     {isCurrent && (
                                         <Badge className="bg-[#B3A369] text-white text-xs">
                                             Current
@@ -338,9 +338,9 @@ export const PlannerGrid: React.FC<PlannerGridProps> = memo(({
                         </div>
                     </CardHeader>
 
-                    <CardContent className="pt-0">
-                        <div 
-                            className="space-y-2 min-h-[180px]"
+                    <CardContent className="pt-0 pb-2.5">
+                        <div
+                            className="space-y-0.5 min-h-[160px]"
                             role="list"
                             aria-labelledby={`semester-title-${semester.id}`}
                         >
@@ -357,17 +357,17 @@ export const PlannerGrid: React.FC<PlannerGridProps> = memo(({
 
                             {/* Drop zone when empty */}
                             {courses.length === 0 && (
-                                <div 
+                                <div
                                     className={cn(
-                                        "flex flex-col items-center justify-center py-6 border-2 border-dashed rounded-lg transition-colors min-h-[100px]",
+                                        "flex flex-col items-center justify-center py-3 border-2 border-dashed rounded-lg transition-colors min-h-[80px]",
                                         isOver ? "border-[#B3A369] bg-[#B3A369]/5" : "border-gray-300"
                                     )}
                                 >
-                                    <Plus 
+                                    <Plus
                                         className={cn(
-                                            "h-6 w-6 mb-1 transition-colors",
+                                            "h-5 w-5 mb-0 transition-colors",
                                             isOver ? "text-[#B3A369]" : "text-muted-foreground"
-                                        )} 
+                                        )}
                                     />
                                     <p className={cn(
                                         "text-xs transition-colors text-center",
@@ -417,15 +417,15 @@ export const PlannerGrid: React.FC<PlannerGridProps> = memo(({
 
     return (
         <CriticalErrorBoundary>
-            <div className="space-y-6">
+            <div className="space-y-5">
                 {/* Academic Year Layout - Fall/Spring/Summer in rows */}
-                <div className="space-y-8">
+                <div className="space-y-5">
                     {academicYears.map((yearGroup) => (
-                        <div key={yearGroup.academicYear} className="space-y-4">
-                            <h3 className="text-lg font-semibold text-gt-navy border-b pb-2">
+                        <div key={yearGroup.academicYear} className="space-y-2">
+                            <h3 className="text-lg font-semibold text-gt-navy border-b pb-0.5">
                                 Academic Year {yearGroup.academicYear}-{yearGroup.academicYear + 1}
                             </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
                                 {yearGroup.semesters.map((semester) => (
                                     <ModernSemesterCard
                                         key={semester.id || `${semester.season}-${semester.year}`}

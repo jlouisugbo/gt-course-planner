@@ -39,7 +39,7 @@ function DashboardContent() {
   const userName = getFirstName(userProfile, user?.email);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       {/* Welcome Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -47,7 +47,7 @@ function DashboardContent() {
             <Home className="h-6 w-6 sm:h-8 sm:w-8 text-gt-gold flex-shrink-0" />
             <span className="truncate">Welcome back, {userName}!</span>
           </h1>
-          <p className="text-sm sm:text-base text-gray-600 mt-2">
+          <p className="text-sm sm:text-base text-gray-600 mt-1">
             Here&apos;s your academic progress overview
           </p>
         </div>
@@ -57,18 +57,18 @@ function DashboardContent() {
       </div>
 
       {/* Quick Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
           <Card className="border-l-4 border-l-gt-gold hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Current GPA</p>
-                  <p className="text-2xl font-bold text-gt-navy">
+                  <p className="text-2xl font-bold text-gt-navy mt-0">
                     {currentGPA.toFixed(2)}
                   </p>
                 </div>
@@ -84,11 +84,11 @@ function DashboardContent() {
           transition={{ delay: 0.2 }}
         >
           <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Completed Credits</p>
-                  <p className="text-2xl font-bold text-gt-navy">{totalCompletedCredits}</p>
+                  <p className="text-2xl font-bold text-gt-navy mt-0">{totalCompletedCredits}</p>
                 </div>
                 <CheckCircle className="h-8 w-8 text-green-600" />
               </div>
@@ -102,11 +102,11 @@ function DashboardContent() {
           transition={{ delay: 0.3 }}
         >
           <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Planned Credits</p>
-                  <p className="text-2xl font-bold text-gt-navy">{totalPlannedCredits}</p>
+                  <p className="text-2xl font-bold text-gt-navy mt-0">{totalPlannedCredits}</p>
                 </div>
                 <Calendar className="h-8 w-8 text-blue-600" />
               </div>
@@ -120,11 +120,11 @@ function DashboardContent() {
           transition={{ delay: 0.4 }}
         >
           <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">In Progress</p>
-                  <p className="text-2xl font-bold text-gt-navy">{inProgressCourses.length}</p>
+                  <p className="text-2xl font-bold text-gt-navy mt-0">{inProgressCourses.length}</p>
                 </div>
                 <Clock className="h-8 w-8 text-orange-600" />
               </div>
@@ -134,29 +134,29 @@ function DashboardContent() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Recent Activity */}
         <div className="lg:col-span-2">
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-2">
               <CardTitle className="text-gt-navy flex items-center gap-2">
                 <BookOpen className="h-5 w-5" />
                 Recent Activity
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
+            <CardContent className="pt-0">
+              <div className="space-y-1.5">
                 {completedCourses.slice(0, 5).map((course, index) => (
                   <motion.div
                     key={course.code}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    className="flex items-center justify-between p-2.5 bg-gray-50 rounded-lg"
                   >
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-gt-navy truncate">{course.code}</p>
-                      <p className="text-sm text-gray-600 truncate max-w-full">{course.title}</p>
+                      <p className="text-xs text-gray-600 truncate max-w-full mt-0">{course.title}</p>
                     </div>
                     <Badge className="bg-green-100 text-green-800">Completed</Badge>
                   </motion.div>
@@ -175,13 +175,13 @@ function DashboardContent() {
         {/* Quick Actions */}
         <div>
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-2">
               <CardTitle className="text-gt-navy flex items-center gap-2">
                 <Target className="h-5 w-5" />
                 Quick Actions
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-1.5 pt-0">
               <Button 
                 className="w-full bg-gt-navy hover:bg-gt-navy-700 justify-start"
                 onClick={() => window.location.href = '/planner'}
@@ -217,22 +217,22 @@ function DashboardContent() {
           </Card>
 
           {/* Upcoming Deadlines */}
-          <Card className="mt-6">
-            <CardHeader>
+          <Card className="mt-5">
+            <CardHeader className="pb-2">
               <CardTitle className="text-gt-navy flex items-center gap-2">
                 <AlertCircle className="h-5 w-5" />
                 Upcoming Deadlines
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <CardContent className="pt-0">
+              <div className="space-y-1.5">
+                <div className="p-2.5 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-sm font-medium text-yellow-800">Course Registration</p>
-                  <p className="text-xs text-yellow-600">Opens in 2 weeks</p>
+                  <p className="text-xs text-yellow-600 mt-0">Opens in 2 weeks</p>
                 </div>
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-sm font-medium text-blue-800">Academic Advisor Meeting</p>
-                  <p className="text-xs text-blue-600">Schedule soon</p>
+                  <p className="text-xs text-blue-600 mt-0">Schedule soon</p>
                 </div>
               </div>
             </CardContent>

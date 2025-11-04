@@ -131,13 +131,13 @@ export const PlannerDashboard: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <Card className="gt-card p-6">
+          <Card className="gt-card p-4 sm:p-5">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-center gap-4 mb-4 lg:mb-0">
                 <div className="w-12 h-12 bg-gt-gradient rounded-xl flex items-center justify-center">
@@ -219,8 +219,8 @@ export const PlannerDashboard: React.FC = () => {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="planner" className="space-y-6 mt-6">
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <TabsContent value="planner" className="space-y-5 mt-5">
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
                 {/* Course Recommendations Sidebar - 25% */}
                 <div className="lg:col-span-1">
                   <div className="sticky top-4">
@@ -240,12 +240,12 @@ export const PlannerDashboard: React.FC = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="timeline" className="space-y-6 mt-6">
+            <TabsContent value="timeline" className="space-y-5 mt-5">
               <AcademicTimeline />
             </TabsContent>
 
-            <TabsContent value="recommendations" className="space-y-6 mt-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <TabsContent value="recommendations" className="space-y-5 mt-5">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
                 <div className="lg:col-span-2">
                   <CourseRecommendationsAI showAllTabs userProfile={userProfile} />
                 </div>
@@ -265,7 +265,7 @@ export const PlannerDashboard: React.FC = () => {
           className="grid grid-cols-2 md:grid-cols-4 gap-4"
         >
           <Card className="gt-card border-l-4 border-l-gt-gold">
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Progress</p>
@@ -278,7 +278,7 @@ export const PlannerDashboard: React.FC = () => {
           </Card>
 
           <Card className="gt-card">
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Credits Planned</p>
@@ -291,7 +291,7 @@ export const PlannerDashboard: React.FC = () => {
           </Card>
 
           <Card className="gt-card">
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Semesters</p>
@@ -303,7 +303,7 @@ export const PlannerDashboard: React.FC = () => {
           </Card>
 
           <Card className="gt-card">
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Expected</p>

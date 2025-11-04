@@ -194,9 +194,9 @@ function CourseExplorer() {
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
-      <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#003057] mb-2">Course Explorer</h1>
           <p className="text-sm sm:text-base text-muted-foreground">
