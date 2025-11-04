@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { usePathname } from 'next/navigation';
-import { BookOpen, Bell } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
+import { NotificationCenter } from '@/components/notifications';
 
 export default function Header() {
   const pathname = usePathname();
@@ -30,15 +31,8 @@ export default function Header() {
 
       {/* Right side - Notifications and other actions */}
       <div className="flex items-center space-x-4">
-        {/* Notifications icon - placeholder for future feature */}
-        <button
-          className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
-          aria-label="Notifications"
-        >
-          <Bell className="h-5 w-5 text-gray-600" />
-          {/* Notification badge - uncomment when implementing notifications */}
-          {/* <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span> */}
-        </button>
+        {/* Smart Notification Center */}
+        <NotificationCenter />
       </div>
     </header>
   );
