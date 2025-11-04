@@ -6,13 +6,21 @@ import { createClient } from '@supabase/supabase-js'
 
 const execAsync = promisify(exec)
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-)
+// Lazy initialization to avoid build-time environment variable issues
+function getSupabaseClient() {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+    throw new Error('Missing Supabase environment variables')
+  }
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY
+  )
+}
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = getSupabaseClient()
+
     const authHeader = request.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -85,6 +93,7 @@ export async function POST(request: NextRequest) {
 async function checkIfUserIsAdmin(userId: string): Promise<boolean> {
   // Implement your admin check logic
   // For example, check user role in database
+  const supabase = getSupabaseClient()
   const { data } = await supabase
     .from('users')
     .select('role')
