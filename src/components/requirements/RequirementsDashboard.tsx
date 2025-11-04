@@ -130,13 +130,13 @@ export const RequirementsDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto space-y-3">
+      <div className="max-w-7xl mx-auto space-y-2.5">
         {/* Compact Header with Warnings Button */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <Card className="gt-card p-4">
+          <Card className="gt-card p-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gt-gradient rounded-lg flex items-center justify-center">
@@ -144,7 +144,7 @@ export const RequirementsDashboard: React.FC = () => {
                 </div>
                 <div>
                   <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gt-navy">Degree Requirements</h1>
-                  <p className="text-sm text-gray-600">Computer Science Program Requirements</p>
+                  <p className="text-sm text-gray-600 mt-0">Computer Science Program Requirements</p>
                 </div>
               </div>
               {hasWarnings && (
@@ -173,24 +173,24 @@ export const RequirementsDashboard: React.FC = () => {
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
         >
           <Card className="gt-card border-l-4 border-l-gt-gold">
-            <CardContent className="p-3">
+            <CardContent className="p-2.5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-gray-600">Progress</p>
-                  <p className="text-xl font-bold text-gt-gold">{progress.percentage}%</p>
+                  <p className="text-xl font-bold text-gt-gold mt-0">{progress.percentage}%</p>
                 </div>
                 <CheckCircle className="h-6 w-6 text-gt-gold" />
               </div>
-              <Progress value={progress.percentage} className="mt-2 h-1" />
+              <Progress value={progress.percentage} className="mt-1 h-1" />
             </CardContent>
           </Card>
 
           <Card className="gt-card">
-            <CardContent className="p-3">
+            <CardContent className="p-2.5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-gray-600">Credits</p>
-                  <p className="text-xl font-bold text-gt-navy">{progress.completedCredits}/{progress.totalCredits}</p>
+                  <p className="text-xl font-bold text-gt-navy mt-0">{progress.completedCredits}/{progress.totalCredits}</p>
                 </div>
                 <BookOpen className="h-6 w-6 text-gt-navy" />
               </div>
@@ -198,11 +198,11 @@ export const RequirementsDashboard: React.FC = () => {
           </Card>
 
           <Card className="gt-card">
-            <CardContent className="p-3">
+            <CardContent className="p-2.5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-gray-600">Courses</p>
-                  <p className="text-xl font-bold text-gt-navy">{completedCourseCodes.size}</p>
+                  <p className="text-xl font-bold text-gt-navy mt-0">{completedCourseCodes.size}</p>
                 </div>
                 <CheckCircle className="h-6 w-6 text-gt-gold" />
               </div>
@@ -210,11 +210,11 @@ export const RequirementsDashboard: React.FC = () => {
           </Card>
 
           <Card className="gt-card">
-            <CardContent className="p-3">
+            <CardContent className="p-2.5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-gray-600">Graduation</p>
-                  <p className="text-sm font-bold text-gt-navy">
+                  <p className="text-sm font-bold text-gt-navy mt-0">
                     {progressSummary?.estimatedGraduationSemester || 'TBD'}
                   </p>
                 </div>
@@ -249,14 +249,14 @@ export const RequirementsDashboard: React.FC = () => {
                 </Button>
               </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 mt-4">
+            <div className="space-y-2.5 mt-2.5">
               {progressSummary?.blockers && progressSummary.blockers.length > 0 && (
-                <div className="border-l-4 border-l-red-500 bg-red-50 p-4 rounded">
-                  <div className="flex items-center gap-2 mb-2">
+                <div className="border-l-4 border-l-red-500 bg-red-50 p-2.5 rounded">
+                  <div className="flex items-center gap-2 mb-1">
                     <AlertCircle className="h-5 w-5 text-red-600" />
                     <h3 className="font-semibold text-red-800">Critical Issues</h3>
                   </div>
-                  <ul className="space-y-1">
+                  <ul className="space-y-0">
                     {progressSummary.blockers.map((blocker, index) => (
                       <li key={index} className="text-sm text-red-700">• {blocker}</li>
                     ))}
@@ -264,12 +264,12 @@ export const RequirementsDashboard: React.FC = () => {
                 </div>
               )}
               {progressSummary?.warnings && progressSummary.warnings.length > 0 && (
-                <div className="border-l-4 border-l-yellow-500 bg-yellow-50 p-4 rounded">
-                  <div className="flex items-center gap-2 mb-2">
+                <div className="border-l-4 border-l-yellow-500 bg-yellow-50 p-2.5 rounded">
+                  <div className="flex items-center gap-2 mb-1">
                     <AlertCircle className="h-5 w-5 text-yellow-600" />
                     <h3 className="font-semibold text-yellow-800">Attention Required</h3>
                   </div>
-                  <ul className="space-y-1">
+                  <ul className="space-y-0">
                     {progressSummary.warnings.map((warning, index) => (
                       <li key={index} className="text-sm text-yellow-700">• {warning}</li>
                     ))}
@@ -277,12 +277,12 @@ export const RequirementsDashboard: React.FC = () => {
                 </div>
               )}
               {progressSummary?.recommendations && progressSummary.recommendations.length > 0 && (
-                <div className="border-l-4 border-l-blue-500 bg-blue-50 p-4 rounded">
-                  <div className="flex items-center gap-2 mb-2">
+                <div className="border-l-4 border-l-blue-500 bg-blue-50 p-2.5 rounded">
+                  <div className="flex items-center gap-2 mb-1">
                     <CheckCircle className="h-5 w-5 text-blue-600" />
                     <h3 className="font-semibold text-blue-800">Recommendations</h3>
                   </div>
-                  <ul className="space-y-1">
+                  <ul className="space-y-0">
                     {progressSummary.recommendations.map((rec, index) => (
                       <li key={index} className="text-sm text-blue-700">• {rec}</li>
                     ))}
@@ -334,7 +334,7 @@ export const RequirementsDashboard: React.FC = () => {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="requirements" className="space-y-6 mt-6">
+            <TabsContent value="requirements" className="space-y-5 mt-5">
               <RequirementsCategoryList
                 sections={allRequirements}
                 completedCourses={completedCourseCodes}
@@ -345,8 +345,8 @@ export const RequirementsDashboard: React.FC = () => {
               />
             </TabsContent>
 
-            <TabsContent value="progress" className="space-y-6 mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <TabsContent value="progress" className="space-y-5 mt-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {allRequirements.map((section, index) => {
                   const sectionCompleted = section.courses.filter(course => 
                     completedCourseCodes.has(course.code)
@@ -356,12 +356,12 @@ export const RequirementsDashboard: React.FC = () => {
                   
                   return (
                     <Card key={`${section.id}-${index}`} className="gt-card">
-                      <CardHeader>
+                      <CardHeader className="pb-2">
                         <CardTitle className="text-lg text-gt-navy">{section.name}</CardTitle>
-                        <p className="text-sm text-gray-600">{section.description}</p>
+                        <p className="text-sm text-gray-600 mt-0.5">{section.description}</p>
                       </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
+                      <CardContent className="pt-0">
+                        <div className="space-y-2.5">
                           <div className="flex justify-between items-center">
                             <span className="text-sm font-medium text-gray-700">Progress</span>
                             <Badge 
@@ -384,28 +384,28 @@ export const RequirementsDashboard: React.FC = () => {
             </TabsContent>
 
             {/* Phase 2.1.2 Enhanced Tab: Next Steps */}
-            <TabsContent value="recommendations" className="space-y-6 mt-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <TabsContent value="recommendations" className="space-y-5 mt-5">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {/* Next Recommended Courses */}
                 <Card className="gt-card">
-                  <CardHeader>
+                  <CardHeader className="pb-2">
                     <CardTitle className="text-lg text-gt-navy flex items-center gap-2">
                       <CheckCircle className="h-5 w-5 text-gt-gold" />
                       Next Recommended Courses
                     </CardTitle>
-                    <p className="text-sm text-gray-600">Courses you're ready to take now</p>
+                    <p className="text-sm text-gray-600 mt-0.5">Courses you're ready to take now</p>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
+                  <CardContent className="pt-0">
+                    <div className="space-y-1">
                       {getNextRecommendedCourses(5).map((courseCode) => (
-                        <div 
+                        <div
                           key={courseCode}
-                          className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg"
+                          className="flex items-center gap-2 p-2.5 bg-green-50 border border-green-200 rounded-lg"
                         >
                           <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
                           <div>
                             <span className="font-medium text-green-900">{courseCode}</span>
-                            <p className="text-xs text-green-700">Prerequisites satisfied</p>
+                            <p className="text-xs text-green-700 mt-0">Prerequisites satisfied</p>
                           </div>
                         </div>
                       ))}
@@ -420,23 +420,23 @@ export const RequirementsDashboard: React.FC = () => {
 
                 {/* Critical Path */}
                 <Card className="gt-card">
-                  <CardHeader>
+                  <CardHeader className="pb-2">
                     <CardTitle className="text-lg text-gt-navy flex items-center gap-2">
                       <AlertCircle className="h-5 w-5 text-orange-500" />
                       Priority Requirements
                     </CardTitle>
-                    <p className="text-sm text-gray-600">Requirements that need immediate attention</p>
+                    <p className="text-sm text-gray-600 mt-0.5">Requirements that need immediate attention</p>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
+                  <CardContent className="pt-0">
+                    <div className="space-y-1">
                       {getCriticalPath().slice(0, 5).map((requirement) => (
-                        <div 
+                        <div
                           key={requirement.id}
-                          className="flex items-center justify-between p-3 bg-orange-50 border border-orange-200 rounded-lg"
+                          className="flex items-center justify-between p-2.5 bg-orange-50 border border-orange-200 rounded-lg"
                         >
                           <div>
                             <span className="font-medium text-orange-900">{requirement.name}</span>
-                            <p className="text-xs text-orange-700">
+                            <p className="text-xs text-orange-700 mt-0">
                               {requirement.minCredits - requirement.completedCredits} credits needed
                             </p>
                           </div>
@@ -457,14 +457,14 @@ export const RequirementsDashboard: React.FC = () => {
             </TabsContent>
 
             {/* Phase 2.1.2 Enhanced Tab: Export Options */}
-            <TabsContent value="export" className="space-y-6 mt-6">
+            <TabsContent value="export" className="space-y-5 mt-5">
               <Card className="gt-card">
-                <CardHeader>
+                <CardHeader className="pb-2">
                   <CardTitle className="text-lg text-gt-navy">Export Degree Progress</CardTitle>
-                  <p className="text-sm text-gray-600">Download your progress data in various formats</p>
+                  <p className="text-sm text-gray-600 mt-0.5">Download your progress data in various formats</p>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <CardContent className="space-y-2.5 pt-0">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <button
                       onClick={() => exportProgress('json').then(blob => {
                         const url = URL.createObjectURL(blob);
@@ -507,9 +507,9 @@ export const RequirementsDashboard: React.FC = () => {
                   </div>
 
                   {progressSummary && (
-                    <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                      <h5 className="font-semibold text-gt-navy mb-2">Export Summary</h5>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div className="mt-3 p-2.5 bg-gray-50 rounded-lg">
+                      <h5 className="font-semibold text-gt-navy mb-1">Export Summary</h5>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 text-sm">
                         <div>
                           <p className="text-gray-600">Total Credits</p>
                           <p className="font-semibold">{progressSummary.totalCreditsRequired}</p>

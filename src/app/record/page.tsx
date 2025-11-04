@@ -104,7 +104,7 @@ export default function AcademicRecordPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 space-y-6">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-5 md:py-6 space-y-5">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -112,25 +112,25 @@ export default function AcademicRecordPage() {
             <GraduationCap className="h-6 w-6 sm:h-8 sm:w-8 text-gt-gold flex-shrink-0" />
             <span className="truncate">Academic Record</span>
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="text-gray-600 mt-1">
             Track your academic progress, manage semester GPAs, and view planned courses
           </p>
         </div>
       </div>
 
       {/* Overview Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
           <Card className="border-l-4 border-l-gt-gold">
-            <CardContent className="p-6">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Overall GPA</p>
-                  <p className={`text-2xl font-bold ${getGPAColor(overallGPA)}`}>
+                  <p className={`text-2xl font-bold mt-0 ${getGPAColor(overallGPA)}`}>
                     {overallGPA.toFixed(2)}
                   </p>
                 </div>
@@ -146,11 +146,11 @@ export default function AcademicRecordPage() {
           transition={{ delay: 0.2 }}
         >
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Semesters Completed</p>
-                  <p className="text-2xl font-bold text-gt-navy">{totalSemesters}</p>
+                  <p className="text-2xl font-bold text-gt-navy mt-0">{totalSemesters}</p>
                 </div>
                 <Calendar className="h-8 w-8 text-gt-navy" />
               </div>
@@ -164,11 +164,11 @@ export default function AcademicRecordPage() {
           transition={{ delay: 0.3 }}
         >
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Credits Completed</p>
-                  <p className="text-2xl font-bold text-gt-navy">{totalCreditsCompleted}</p>
+                  <p className="text-2xl font-bold text-gt-navy mt-0">{totalCreditsCompleted}</p>
                 </div>
                 <BookOpen className="h-8 w-8 text-gt-navy" />
               </div>
@@ -182,11 +182,11 @@ export default function AcademicRecordPage() {
           transition={{ delay: 0.4 }}
         >
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Planned Courses</p>
-                  <p className="text-2xl font-bold text-gt-navy">{plannedCourses.length}</p>
+                  <p className="text-2xl font-bold text-gt-navy mt-0">{plannedCourses.length}</p>
                 </div>
                 <Target className="h-8 w-8 text-gt-navy" />
               </div>
@@ -196,7 +196,7 @@ export default function AcademicRecordPage() {
       </div>
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="semesters" className="space-y-6">
+      <Tabs defaultValue="semesters" className="space-y-5">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="semesters">Semester GPAs</TabsTrigger>
           <TabsTrigger value="planned">Planned Courses</TabsTrigger>
@@ -204,17 +204,17 @@ export default function AcademicRecordPage() {
         </TabsList>
 
         {/* Semester GPAs Tab */}
-        <TabsContent value="semesters" className="space-y-6">
+        <TabsContent value="semesters" className="space-y-5">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-gt-navy">Semester GPAs</CardTitle>
               <Button onClick={addNewSemester} size="sm" className="bg-gt-navy hover:bg-gt-navy-700">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Semester
               </Button>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {semesterGPAs.map((semester, index) => {
                   const semesterKey = `${semester.semester}-${semester.year}`;
                   const isEditing = editingGPA === semesterKey;
@@ -227,8 +227,8 @@ export default function AcademicRecordPage() {
                       transition={{ delay: index * 0.1 }}
                     >
                       <Card className="hover:shadow-md transition-shadow">
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between mb-3">
+                        <CardContent className="p-3">
+                          <div className="flex items-center justify-between mb-1.5">
                             <h3 className="font-semibold text-gt-navy">
                               {semester.semester} {semester.year}
                             </h3>
@@ -259,8 +259,8 @@ export default function AcademicRecordPage() {
                               </div>
                             )}
                           </div>
-                          
-                          <div className="space-y-2">
+
+                          <div className="space-y-1">
                             <div className="flex items-center justify-between">
                               <span className="text-sm text-gray-600">GPA:</span>
                               {isEditing ? (
@@ -299,14 +299,14 @@ export default function AcademicRecordPage() {
         </TabsContent>
 
         {/* Planned Courses Tab */}
-        <TabsContent value="planned" className="space-y-6">
+        <TabsContent value="planned" className="space-y-5">
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-2">
               <CardTitle className="text-gt-navy">Planned Courses ({plannedCourses.length})</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               {plannedCourses.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {plannedCourses.map((course, index) => (
                     <motion.div
                       key={course.code}
@@ -315,12 +315,12 @@ export default function AcademicRecordPage() {
                       transition={{ delay: index * 0.1 }}
                     >
                       <Card className="hover:shadow-md transition-shadow">
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between mb-2">
+                        <CardContent className="p-3">
+                          <div className="flex items-start justify-between mb-1">
                             <h4 className="font-semibold text-gt-navy">{course.code}</h4>
                             <Badge variant="outline">{course.credits} cr</Badge>
                           </div>
-                          <p className="text-sm text-gray-600 mb-2">{course.title}</p>
+                          <p className="text-sm text-gray-600 mb-1">{course.title}</p>
                           {course.college && typeof course.college === 'string' && (
                             <Badge variant="secondary" className="text-xs">
                               {course.college.replace('College of ', '')}
@@ -345,14 +345,14 @@ export default function AcademicRecordPage() {
         </TabsContent>
 
         {/* Completed Courses Tab */}
-        <TabsContent value="completed" className="space-y-6">
+        <TabsContent value="completed" className="space-y-5">
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-2">
               <CardTitle className="text-gt-navy">Completed Courses ({completedCourses.length})</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               {completedCourses.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {completedCourses.map((course, index) => (
                     <motion.div
                       key={course.code}
@@ -361,15 +361,15 @@ export default function AcademicRecordPage() {
                       transition={{ delay: index * 0.1 }}
                     >
                       <Card className="hover:shadow-md transition-shadow border-l-4 border-l-green-500">
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between mb-2">
+                        <CardContent className="p-3">
+                          <div className="flex items-start justify-between mb-1">
                             <h4 className="font-semibold text-gt-navy">{course.code}</h4>
                             <div className="flex gap-2">
                               <Badge variant="outline">{course.credits} cr</Badge>
                               <Badge className="bg-green-100 text-green-800">Complete</Badge>
                             </div>
                           </div>
-                          <p className="text-sm text-gray-600 mb-2">{course.title}</p>
+                          <p className="text-sm text-gray-600 mb-1">{course.title}</p>
                           {course.college && typeof course.college === 'string' && (
                             <Badge variant="secondary" className="text-xs">
                               {course.college.replace('College of ', '')}

@@ -15,9 +15,9 @@ export default function AdvisorsPage() {
   );
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 max-w-7xl">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-5 md:py-6 max-w-7xl">
       {/* Page Header */}
-      <div className="mb-8">
+      <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-12 h-12 bg-[#003057] rounded-lg flex items-center justify-center">
             <Users className="h-6 w-6 text-white" />
@@ -32,7 +32,7 @@ export default function AdvisorsPage() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="directory" className="space-y-6">
+      <Tabs defaultValue="directory" className="space-y-5">
         <TabsList className="grid w-full max-w-2xl grid-cols-1 sm:grid-cols-3">
           <TabsTrigger value="directory" className="flex items-center gap-2">
             <Users className="h-4 w-4" />

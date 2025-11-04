@@ -68,20 +68,20 @@ export function MyAdvisors({ onBookAppointment }: MyAdvisorsProps) {
 
   return (
     <>
-      <div className="space-y-4">
+      <div className="space-y-2.5">
         <p className="text-sm text-gray-600">
           You have {connections.length} advisor connection{connections.length !== 1 ? 's' : ''}
         </p>
 
-        <div className="grid gap-4">
+        <div className="grid gap-2.5">
           {connections.map((connection) => {
             const advisor = connection.advisor;
             if (!advisor) return null;
 
             return (
               <Card key={connection.id}>
-                <CardHeader className="p-4 sm:p-6">
-                  <div className="flex items-start justify-between gap-3 sm:gap-4">
+                <CardHeader className="p-3 sm:p-4">
+                  <div className="flex items-start justify-between gap-2 sm:gap-2.5">
                     <div className="flex-1 min-w-0">
                       <CardTitle className="text-base sm:text-lg truncate">{advisor.full_name}</CardTitle>
                       {advisor.title && (
@@ -97,15 +97,15 @@ export function MyAdvisors({ onBookAppointment }: MyAdvisorsProps) {
                   </div>
                 </CardHeader>
 
-                <CardContent className="p-4 sm:p-6">
-                  <div className="space-y-3">
+                <CardContent className="p-3 sm:p-4 pt-0">
+                  <div className="space-y-2.5">
                     {/* Specializations */}
                     {advisor.specializations.length > 0 && (
                       <div>
-                        <p className="text-xs font-medium text-gray-600 mb-1">
+                        <p className="text-xs font-medium text-gray-600 mb-0.5">
                           Specializations:
                         </p>
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="flex flex-wrap gap-1">
                           {advisor.specializations.map((spec, index) => (
                             <Badge key={index} variant="secondary" className="text-xs">
                               {spec}
@@ -137,14 +137,14 @@ export function MyAdvisors({ onBookAppointment }: MyAdvisorsProps) {
 
                     {/* Connection Notes */}
                     {connection.notes && (
-                      <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                        <p className="text-xs font-medium text-gray-600 mb-1">Notes:</p>
+                      <div className="mt-2.5 p-2.5 bg-gray-50 rounded-lg">
+                        <p className="text-xs font-medium text-gray-600 mb-0.5">Notes:</p>
                         <p className="text-sm text-gray-700 break-words">{connection.notes}</p>
                       </div>
                     )}
 
                     {/* Actions */}
-                    <div className="flex flex-wrap gap-2 mt-4">
+                    <div className="flex flex-wrap gap-2 mt-3">
                       <Button
                         variant="outline"
                         size="sm"

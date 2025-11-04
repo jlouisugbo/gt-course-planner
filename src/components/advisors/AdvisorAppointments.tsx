@@ -94,15 +94,15 @@ export function AdvisorAppointments() {
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       {/* Upcoming Appointments */}
       {upcoming.length > 0 && (
-        <div className="space-y-4">
+        <div className="space-y-2.5">
           <h3 className="text-lg font-semibold text-gray-900">
             Upcoming Appointments ({upcoming.length})
           </h3>
 
-          <div className="grid gap-4">
+          <div className="grid gap-2.5">
             {upcoming.map((appointment) => {
               const advisor = appointment.advisor;
               if (!advisor) return null;
@@ -112,8 +112,8 @@ export function AdvisorAppointments() {
 
               return (
                 <Card key={appointment.id}>
-                  <CardHeader className="p-4 sm:p-6">
-                    <div className="flex items-start justify-between gap-3 sm:gap-4">
+                  <CardHeader className="p-3 sm:p-4">
+                    <div className="flex items-start justify-between gap-2 sm:gap-2.5">
                       <div className="flex-1 min-w-0">
                         <CardTitle className="text-base sm:text-lg truncate">{advisor.full_name}</CardTitle>
                         <CardDescription className="mt-1 truncate">
@@ -129,8 +129,8 @@ export function AdvisorAppointments() {
                     </div>
                   </CardHeader>
 
-                  <CardContent className="p-4 sm:p-6">
-                    <div className="space-y-3">
+                  <CardContent className="p-3 sm:p-4 pt-0">
+                    <div className="space-y-2.5">
                       {/* Date and Time */}
                       <div className="flex items-center gap-2 text-sm">
                         <CalendarIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
@@ -182,22 +182,22 @@ export function AdvisorAppointments() {
 
                       {/* Topic */}
                       {appointment.topic && (
-                        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                          <p className="text-xs font-medium text-gray-600 mb-1">Topic:</p>
+                        <div className="mt-2.5 p-2.5 bg-gray-50 rounded-lg">
+                          <p className="text-xs font-medium text-gray-600 mb-0.5">Topic:</p>
                           <p className="text-sm text-gray-700 break-words">{appointment.topic}</p>
                         </div>
                       )}
 
                       {/* Notes */}
                       {appointment.notes && (
-                        <div className="p-3 bg-gray-50 rounded-lg">
-                          <p className="text-xs font-medium text-gray-600 mb-1">Notes:</p>
+                        <div className="p-2.5 bg-gray-50 rounded-lg">
+                          <p className="text-xs font-medium text-gray-600 mb-0.5">Notes:</p>
                           <p className="text-sm text-gray-700 break-words">{appointment.notes}</p>
                         </div>
                       )}
 
                       {/* Actions */}
-                      <div className="flex gap-2 mt-4">
+                      <div className="flex gap-2 mt-3">
                         <Button
                           variant="destructive"
                           size="sm"
@@ -226,12 +226,12 @@ export function AdvisorAppointments() {
 
       {/* Past Appointments */}
       {past.length > 0 && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <h3 className="text-lg font-semibold text-gray-900">
             Past Appointments ({past.length})
           </h3>
 
-          <div className="grid gap-4">
+          <div className="grid gap-3">
             {past.map((appointment) => {
               const advisor = appointment.advisor;
               if (!advisor) return null;
@@ -241,8 +241,8 @@ export function AdvisorAppointments() {
 
               return (
                 <Card key={appointment.id} className="opacity-75">
-                  <CardHeader className="p-4 sm:p-6">
-                    <div className="flex items-start justify-between gap-3 sm:gap-4">
+                  <CardHeader className="p-3 sm:p-4">
+                    <div className="flex items-start justify-between gap-2 sm:gap-2.5">
                       <div className="flex-1 min-w-0">
                         <CardTitle className="text-base sm:text-lg truncate">{advisor.full_name}</CardTitle>
                         <CardDescription className="mt-1 truncate">
@@ -258,8 +258,8 @@ export function AdvisorAppointments() {
                     </div>
                   </CardHeader>
 
-                  <CardContent className="p-4 sm:p-6">
-                    <div className="space-y-2">
+                  <CardContent className="p-3 sm:p-4 pt-0">
+                    <div className="space-y-1.5">
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <CalendarIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
                         <span>

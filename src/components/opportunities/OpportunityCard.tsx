@@ -36,11 +36,11 @@ export function OpportunityCard({ opportunity, onApply }: OpportunityCardProps) 
 
   return (
     <Card className="h-full flex flex-col">
-      <CardHeader className="p-4 sm:p-6">
-        <div className="flex items-start justify-between gap-2 sm:gap-3">
+      <CardHeader className="p-2.5 sm:p-4">
+        <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <CardTitle className="text-base sm:text-lg mb-2 truncate">{opportunity.title}</CardTitle>
-            <CardDescription className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
+            <CardTitle className="text-base sm:text-lg mb-1 truncate">{opportunity.title}</CardTitle>
+            <CardDescription className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mt-0.5">
               <Briefcase className="h-4 w-4 flex-shrink-0" />
               <span className="truncate">{opportunity.company}</span>
             </CardDescription>
@@ -54,12 +54,12 @@ export function OpportunityCard({ opportunity, onApply }: OpportunityCardProps) 
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 p-4 sm:p-6">
+      <CardContent className="flex-1 p-2.5 sm:p-4 pt-0">
         <p className="text-sm text-gray-600 line-clamp-3 break-words">
           {opportunity.description || 'No description available.'}
         </p>
 
-        <div className="mt-4 space-y-2">
+        <div className="mt-2.5 space-y-1">
           {opportunity.location && (
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0" />
@@ -82,7 +82,7 @@ export function OpportunityCard({ opportunity, onApply }: OpportunityCardProps) 
         </div>
       </CardContent>
 
-      <CardFooter className="p-4 sm:p-6">
+      <CardFooter className="p-2.5 sm:p-4 pt-2">
         <Button
           onClick={() => onApply(opportunity)}
           className="w-full bg-[#003057] hover:bg-[#003057]/90 text-white"

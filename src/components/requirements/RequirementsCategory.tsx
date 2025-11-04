@@ -42,10 +42,10 @@ export const RequirementsCategory: React.FC<RequirementsCategoryProps> = ({
 
   return (
     <Card className="overflow-hidden border-l-4 border-l-[#B3A369] py-1">
-      <CardHeader className="py-3 pb-2">
+      <CardHeader className="py-2 pb-1.5">
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-3 mb-1">
               <BookOpen className="h-5 w-5 text-[#B3A369]" />
               <CardTitle className="text-xl text-[#003057]">{section.name}</CardTitle>
               <Badge variant={progress === 100 ? "default" : "secondary"} className="ml-auto">
@@ -53,18 +53,18 @@ export const RequirementsCategory: React.FC<RequirementsCategoryProps> = ({
               </Badge>
             </div>
             {section.description && (
-              <p className="text-sm text-muted-foreground mb-3">{section.description}</p>
+              <p className="text-sm text-muted-foreground mb-2">{section.description}</p>
             )}
-            
+
             {/* Progress Section */}
-            <div className="space-y-2">
+            <div className="space-y-1">
               <div className="flex justify-between items-center text-sm">
                 <span className="font-medium">Section Progress</span>
                 <span className="text-muted-foreground">
                   {completedCredits}/{minimumCredits} credits
                 </span>
               </div>
-              <Progress value={Math.min(100, (completedCredits / minimumCredits) * 100)} className="h-2" />
+              <Progress value={Math.min(100, (completedCredits / minimumCredits) * 100)} className="h-1" />
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>{progress}% complete</span>
                 <span>{Math.max(0, minimumCredits - completedCredits)} credits remaining</span>
@@ -91,8 +91,8 @@ export const RequirementsCategory: React.FC<RequirementsCategoryProps> = ({
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <CardContent className="pt-0 py-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <CardContent className="pt-0 py-1.5">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
                 {section.courses.map((course, index) => (
                   <motion.div
                     key={`${section.id}-${course.code}-${index}`}
@@ -116,7 +116,7 @@ export const RequirementsCategory: React.FC<RequirementsCategoryProps> = ({
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center justify-center mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800"
+                  className="flex items-center justify-center mt-3 p-2.5 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800"
                 >
                   <Award className="h-5 w-5 text-green-600 mr-2" />
                   <span className="text-green-700 dark:text-green-300 font-medium">

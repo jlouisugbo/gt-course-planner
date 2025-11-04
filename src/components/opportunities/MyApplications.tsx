@@ -73,20 +73,20 @@ export function MyApplications() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2.5">
       <p className="text-sm text-gray-600">
         You have {applications.length} application{applications.length !== 1 ? 's' : ''}
       </p>
 
-      <div className="grid gap-4">
+      <div className="grid gap-2.5">
         {applications.map((application) => {
           const opportunity = application.opportunity;
           if (!opportunity) return null;
 
           return (
             <Card key={application.id}>
-              <CardHeader className="p-4 sm:p-6">
-                <div className="flex items-start justify-between gap-3 sm:gap-4">
+              <CardHeader className="p-3 sm:p-4">
+                <div className="flex items-start justify-between gap-2 sm:gap-2.5">
                   <div className="flex-1 min-w-0">
                     <CardTitle className="text-base sm:text-lg truncate">{opportunity.title}</CardTitle>
                     <CardDescription className="mt-1 truncate">
@@ -102,8 +102,8 @@ export function MyApplications() {
                 </div>
               </CardHeader>
 
-              <CardContent className="p-4 sm:p-6">
-                <div className="space-y-3">
+              <CardContent className="p-3 sm:p-4 pt-0">
+                <div className="space-y-2.5">
                   {application.submitted_at && (
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
@@ -120,14 +120,14 @@ export function MyApplications() {
 
                   {application.cover_letter && (
                     <div className="mt-2">
-                      <p className="text-sm font-medium text-gray-700 mb-1">Cover Letter:</p>
+                      <p className="text-sm font-medium text-gray-700 mb-0.5">Cover Letter:</p>
                       <p className="text-sm text-gray-600 line-clamp-2 break-words">
                         {application.cover_letter}
                       </p>
                     </div>
                   )}
 
-                  <div className="flex flex-wrap gap-2 mt-4">
+                  <div className="flex flex-wrap gap-2 mt-3">
                     {application.status === 'draft' && (
                       <Button variant="outline" size="sm">
                         Edit Draft

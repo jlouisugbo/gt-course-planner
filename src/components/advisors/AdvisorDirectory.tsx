@@ -59,9 +59,9 @@ export function AdvisorDirectory({ onBookAppointment }: AdvisorDirectoryProps) {
   }, [advisors]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Search and Filters */}
-      <div className="flex flex-col md:flex-row gap-4">
+      <div className="flex flex-col md:flex-row gap-2.5">
         <div className="flex-1">
           <Label htmlFor="search" className="sr-only">
             Search advisors
@@ -128,7 +128,7 @@ export function AdvisorDirectory({ onBookAppointment }: AdvisorDirectoryProps) {
             Showing {filteredAdvisors.length} advisor{filteredAdvisors.length !== 1 ? 's' : ''}
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredAdvisors.map((advisor) => (
               <AdvisorCard
                 key={advisor.id}

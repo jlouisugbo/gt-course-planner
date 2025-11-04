@@ -41,9 +41,9 @@ export function OpportunitiesExplorer() {
   }, [opportunities, searchQuery]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-2.5">
         <div className="flex-1">
           <Label htmlFor="search" className="sr-only">
             Search opportunities
@@ -113,7 +113,7 @@ export function OpportunitiesExplorer() {
             {filteredOpportunities.length !== 1 ? 'ies' : 'y'}
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredOpportunities.map((opportunity) => (
               <OpportunityCard
                 key={opportunity.id}
