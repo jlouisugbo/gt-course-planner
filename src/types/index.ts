@@ -122,6 +122,34 @@ export type {
 } from './advisors';
 
 // =====================================================
+// NOTIFICATIONS-RELATED EXPORTS
+// =====================================================
+
+export type {
+    Notification,
+    NotificationType,
+    NotificationPriority,
+    NotificationPreferences,
+    CreateNotificationRequest,
+    UpdateNotificationRequest,
+    UpdatePreferencesRequest,
+    NotificationsResponse,
+    DeadlineNotificationData,
+    RequirementNotificationData,
+    CourseNotificationData,
+    GpaNotificationData,
+    AdvisorNotificationData,
+    UseNotificationsReturn,
+    UseNotificationPreferencesReturn,
+    NotificationCenterProps,
+    NotificationItemProps,
+    NotificationBadgeProps,
+    NotificationIconProps,
+    NotificationTriggerConfig,
+    NotificationFilter
+} from './notifications';
+
+// =====================================================
 // COMPONENT PROPS EXPORTS
 // =====================================================
 
