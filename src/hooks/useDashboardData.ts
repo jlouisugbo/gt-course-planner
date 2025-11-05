@@ -136,6 +136,72 @@ export const useDashboardData = (): DashboardData => {
 
   // Memoized data loading function to prevent unnecessary re-calls
   const loadDashboardData = useCallback(async () => {
+    // DEMO MODE: Return mock data immediately, NO API CALLS
+    if (typeof window !== 'undefined') {
+      const { isDemoMode } = await import('@/lib/demo-mode');
+      if (isDemoMode()) {
+        const {
+          DEMO_USER,
+          DEMO_COMPLETED_COURSES,
+          DEMO_IN_PROGRESS_COURSES,
+          DEMO_PLANNED_COURSES,
+          DEMO_GPA_HISTORY,
+          DEMO_ACTIVITY,
+          DEMO_DEADLINES
+        } = await import('@/lib/demo-data');
+
+        console.log('[Demo Mode] useDashboardData: Using mock data, NO API calls');
+
+        // Build mock dashboard data structure
+        const mockData = {
+          userProfile: DEMO_USER,
+          courseCompletions: DEMO_COMPLETED_COURSES.map((course: any) => ({
+            id: course.id,
+            user_id: -1,
+            course_id: course.id,
+            status: 'completed',
+            grade: course.grade,
+            semester: `${course.season} ${course.year}`,
+            credits: course.credits,
+            completed_at: new Date().toISOString(),
+          })),
+          semesterPlans: [
+            ...DEMO_IN_PROGRESS_COURSES.map((course: any) => ({
+              id: course.id,
+              user_id: -1,
+              semester_id: course.semesterId,
+              course_id: course.id,
+              status: 'in_progress',
+              credits: course.credits,
+            })),
+            ...DEMO_PLANNED_COURSES.map((course: any) => ({
+              id: course.id,
+              user_id: -1,
+              semester_id: course.semesterId,
+              course_id: course.id,
+              status: 'planned',
+              credits: course.credits,
+            }))
+          ]
+        };
+
+        const mockGpaData = {
+          currentGPA: DEMO_USER.current_gpa,
+          semesterGPAs: DEMO_GPA_HISTORY,
+          trendAnalysis: {
+            projectedNextSemester: 3.75,
+          }
+        };
+
+        setDashboardData(mockData);
+        setGpaData(mockGpaData);
+        setIsLoading(false);
+        setError(null);
+        loadingRef.current = false;
+        return;
+      }
+    }
+
     if (!authUser || loadingRef.current) {
       if (!authUser) setIsLoading(false);
       return;
@@ -151,7 +217,7 @@ export const useDashboardData = (): DashboardData => {
         userDataService.getDashboardData(),
         gpaCalculationService.calculateComprehensiveGPA()
       ]);
-        
+
         if (!data) {
           setError('Failed to load dashboard data');
           return;

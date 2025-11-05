@@ -62,6 +62,54 @@ export const useRequirements = (
   // Load data when user changes
   useEffect(() => {
     const loadRequirementsData = async () => {
+      // DEMO MODE: Return mock data immediately, NO API CALLS
+      if (typeof window !== 'undefined') {
+        const { isDemoMode } = await import('@/lib/demo-mode');
+        if (isDemoMode()) {
+          const { DEMO_COMPLETED_COURSES, DEMO_REQUIREMENTS } = await import('@/lib/demo-data');
+
+          console.log('[Demo Mode] useRequirements: Using mock data, NO API calls');
+
+          // Convert demo requirements to proper format
+          const mockCompletions: UserCourseCompletion[] = DEMO_COMPLETED_COURSES.map((course: any) => ({
+            id: course.id,
+            user_id: -1,
+            course_id: course.id,
+            status: 'completed' as const,
+            grade: course.grade || 'A',
+            semester: course.semesterId?.toString() || 'Fall 2024',
+            credits: course.credits,
+            completed_at: new Date().toISOString(),
+          }));
+
+          // Mock degree program with requirements
+          const mockDegreeProgram = {
+            id: 1,
+            name: 'Computer Science',
+            code: 'CS',
+            requirements: DEMO_REQUIREMENTS.map((req: any) => ({
+              id: req.id,
+              name: req.name,
+              description: req.category,
+              minCredits: req.credits_required,
+              courses: req.courses.map((c: any) => ({
+                id: c.code,
+                code: c.code,
+                title: c.title,
+                credits: c.credits,
+              }))
+            }))
+          };
+
+          setCompletions(mockCompletions);
+          setDegreeProgram(mockDegreeProgram);
+          setMinorPrograms([]);
+          setIsLoading(false);
+          setError(null);
+          return;
+        }
+      }
+
       if (!authUser) {
         setIsLoading(false);
         return;

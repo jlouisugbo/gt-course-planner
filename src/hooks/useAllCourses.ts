@@ -57,8 +57,41 @@ export const useAllCourses = (filters: CourseFilters = {}): UseAllCoursesResult 
 
     // Fetch courses function with batching
     const fetchCourses = useCallback(async (offset = 0, append = false) => {
+        // DEMO MODE: Return mock data immediately, NO API CALLS
+        if (typeof window !== 'undefined') {
+            const { isDemoMode } = await import('@/lib/demo-mode');
+            if (isDemoMode()) {
+                const { getAllDemoCourses, DEMO_AVAILABLE_COURSES } = await import('@/lib/demo-data');
+
+                console.log('[Demo Mode] useAllCourses: Using mock data, NO API calls');
+
+                const allDemoCourses = [...getAllDemoCourses(), ...DEMO_AVAILABLE_COURSES];
+
+                // Apply filters
+                let filtered = allDemoCourses;
+                if (filters.search) {
+                    const searchUpper = filters.search.toUpperCase();
+                    filtered = filtered.filter((course: any) =>
+                        course.code.toUpperCase().includes(searchUpper)
+                    );
+                }
+                if (filters.subject) {
+                    filtered = filtered.filter((course: any) =>
+                        course.code.startsWith(filters.subject.toUpperCase())
+                    );
+                }
+
+                setAllCourses(filtered);
+                setTotalCount(filtered.length);
+                setIsLoading(false);
+                setHasMore(false);
+                setError(null);
+                return;
+            }
+        }
+
         if (loadingRef.current) return;
-        
+
         // Check cache first for initial load
         if (offset === 0 && !append) {
             const cached = getCachedData();

@@ -14,6 +14,35 @@ export const useAdvisors = (filters?: AdvisorFilters) => {
   return useQuery({
     queryKey: ['advisors', filters],
     queryFn: async () => {
+      // DEMO MODE: Return mock data immediately, NO API CALLS
+      if (typeof window !== 'undefined') {
+        const { isDemoMode } = await import('@/lib/demo-mode');
+        if (isDemoMode()) {
+          const { DEMO_ADVISORS } = await import('@/lib/demo-data');
+
+          console.log('[Demo Mode] useAdvisors: Using mock data, NO API calls');
+
+          let filtered = DEMO_ADVISORS;
+          if (filters?.specialization) {
+            filtered = DEMO_ADVISORS.filter((adv: any) =>
+              adv.specializations.includes(filters.specialization)
+            );
+          }
+          if (filters?.department) {
+            filtered = filtered.filter((adv: any) =>
+              adv.departments.includes(filters.department)
+            );
+          }
+          if (filters?.acceptingStudents !== undefined) {
+            filtered = filtered.filter((adv: any) =>
+              adv.is_accepting_students === filters.acceptingStudents
+            );
+          }
+
+          return filtered as Advisor[];
+        }
+      }
+
       const params = new URLSearchParams();
       if (filters?.specialization) params.set('specialization', filters.specialization);
       if (filters?.department) params.set('department', filters.department);
@@ -38,6 +67,23 @@ export const useAdvisor = (id: number) => {
   return useQuery({
     queryKey: ['advisor', id],
     queryFn: async () => {
+      // DEMO MODE: Return mock data immediately, NO API CALLS
+      if (typeof window !== 'undefined') {
+        const { isDemoMode } = await import('@/lib/demo-mode');
+        if (isDemoMode()) {
+          const { DEMO_ADVISORS } = await import('@/lib/demo-data');
+
+          console.log('[Demo Mode] useAdvisor: Using mock data, NO API calls');
+
+          const advisor = DEMO_ADVISORS.find((a: any) => a.id === id);
+          if (!advisor) {
+            throw new Error('Advisor not found');
+          }
+
+          return advisor as Advisor;
+        }
+      }
+
       const response = await fetch(`/api/advisors/${id}`);
       if (!response.ok) {
         throw new Error('Failed to fetch advisor');
@@ -55,6 +101,18 @@ export const useMyAdvisors = () => {
   return useQuery({
     queryKey: ['my-advisors'],
     queryFn: async () => {
+      // DEMO MODE: Return mock data immediately, NO API CALLS
+      if (typeof window !== 'undefined') {
+        const { isDemoMode } = await import('@/lib/demo-mode');
+        if (isDemoMode()) {
+          const { DEMO_ADVISOR_CONNECTIONS } = await import('@/lib/demo-data');
+
+          console.log('[Demo Mode] useMyAdvisors: Using mock data, NO API calls');
+
+          return DEMO_ADVISOR_CONNECTIONS as AdvisorConnection[];
+        }
+      }
+
       const response = await fetch('/api/advisors/connections');
       if (!response.ok) {
         throw new Error('Failed to fetch advisor connections');
@@ -73,6 +131,15 @@ export const useCreateConnection = () => {
 
   return useMutation({
     mutationFn: async (data: CreateConnectionData) => {
+      // DEMO MODE: No-op, NO API CALLS
+      if (typeof window !== 'undefined') {
+        const { isDemoMode } = await import('@/lib/demo-mode');
+        if (isDemoMode()) {
+          console.log('[Demo Mode] useCreateConnection: No-op, NO API calls');
+          return {} as AdvisorConnection;
+        }
+      }
+
       const response = await fetch('/api/advisors/connections', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -99,6 +166,18 @@ export const useAppointments = () => {
   return useQuery({
     queryKey: ['appointments'],
     queryFn: async () => {
+      // DEMO MODE: Return mock data immediately, NO API CALLS
+      if (typeof window !== 'undefined') {
+        const { isDemoMode } = await import('@/lib/demo-mode');
+        if (isDemoMode()) {
+          const { DEMO_APPOINTMENTS } = await import('@/lib/demo-data');
+
+          console.log('[Demo Mode] useAppointments: Using mock data, NO API calls');
+
+          return DEMO_APPOINTMENTS as AdvisorAppointment[];
+        }
+      }
+
       const response = await fetch('/api/advisors/appointments');
       if (!response.ok) {
         throw new Error('Failed to fetch appointments');
@@ -116,6 +195,23 @@ export const useAppointment = (id: number) => {
   return useQuery({
     queryKey: ['appointment', id],
     queryFn: async () => {
+      // DEMO MODE: Return mock data immediately, NO API CALLS
+      if (typeof window !== 'undefined') {
+        const { isDemoMode } = await import('@/lib/demo-mode');
+        if (isDemoMode()) {
+          const { DEMO_APPOINTMENTS } = await import('@/lib/demo-data');
+
+          console.log('[Demo Mode] useAppointment: Using mock data, NO API calls');
+
+          const appointment = DEMO_APPOINTMENTS.find((a: any) => a.id === id);
+          if (!appointment) {
+            throw new Error('Appointment not found');
+          }
+
+          return appointment as AdvisorAppointment;
+        }
+      }
+
       const response = await fetch(`/api/advisors/appointments/${id}`);
       if (!response.ok) {
         throw new Error('Failed to fetch appointment');
@@ -134,6 +230,15 @@ export const useCreateAppointment = () => {
 
   return useMutation({
     mutationFn: async (data: CreateAppointmentData) => {
+      // DEMO MODE: No-op, NO API CALLS
+      if (typeof window !== 'undefined') {
+        const { isDemoMode } = await import('@/lib/demo-mode');
+        if (isDemoMode()) {
+          console.log('[Demo Mode] useCreateAppointment: No-op, NO API calls');
+          return {} as AdvisorAppointment;
+        }
+      }
+
       const response = await fetch('/api/advisors/appointments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -161,6 +266,15 @@ export const useUpdateAppointment = () => {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: UpdateAppointmentData }) => {
+      // DEMO MODE: No-op, NO API CALLS
+      if (typeof window !== 'undefined') {
+        const { isDemoMode } = await import('@/lib/demo-mode');
+        if (isDemoMode()) {
+          console.log('[Demo Mode] useUpdateAppointment: No-op, NO API calls');
+          return {} as AdvisorAppointment;
+        }
+      }
+
       const response = await fetch(`/api/advisors/appointments/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -189,6 +303,15 @@ export const useDeleteAppointment = () => {
 
   return useMutation({
     mutationFn: async (id: number) => {
+      // DEMO MODE: No-op, NO API CALLS
+      if (typeof window !== 'undefined') {
+        const { isDemoMode } = await import('@/lib/demo-mode');
+        if (isDemoMode()) {
+          console.log('[Demo Mode] useDeleteAppointment: No-op, NO API calls');
+          return { success: true };
+        }
+      }
+
       const response = await fetch(`/api/advisors/appointments/${id}`, {
         method: 'DELETE',
       });

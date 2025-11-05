@@ -32,10 +32,55 @@ export function LandingPage() {
         }
     };
 
-    const handleTryDemo = () => {
+    const handleTryDemo = async () => {
         setIsDemoLoading(true);
         try {
+            // Enable demo mode
             enableDemoMode();
+
+            // Import and initialize planner store with demo data
+            const { usePlannerStore } = await import('@/hooks/usePlannerStore');
+            const { DEMO_USER, DEMO_COMPLETED_COURSES } = await import('@/lib/demo-data');
+
+            const store = usePlannerStore.getState();
+
+            // Initialize student info with demo user
+            store.updateStudentInfo({
+                id: DEMO_USER.id || -1,
+                name: DEMO_USER.full_name,
+                email: DEMO_USER.email,
+                major: DEMO_USER.major,
+                threads: DEMO_USER.selected_threads || [],
+                minors: DEMO_USER.minors || [],
+                startYear: 2022,
+                expectedGraduation: `Spring ${DEMO_USER.graduation_year}`,
+                currentGPA: DEMO_USER.current_gpa || 3.75,
+                majorRequirements: [],
+                minorRequirements: [],
+                threadRequirements: [],
+                full_name: DEMO_USER.full_name,
+                auth_id: DEMO_USER.auth_id,
+                gtId: Math.abs(DEMO_USER.id || -1),
+                graduation_year: DEMO_USER.graduation_year,
+                plan_settings: DEMO_USER.plan_settings
+            } as any);
+
+            // Generate semesters
+            store.generateSemesters('Fall 2022', 'Spring 2026');
+
+            // Add demo courses to semesters
+            DEMO_COMPLETED_COURSES.forEach(course => {
+                if (course.semesterId && course.semesterId > 0) {
+                    store.addCourseToSemester({
+                        ...course,
+                        id: course.id || Math.floor(Math.random() * 100000),
+                    });
+                }
+            });
+
+            console.log('✅ Demo mode initialized with data');
+
+            // Navigate to dashboard
             router.push('/dashboard');
         } catch (error) {
             console.error("Demo mode error:", error);

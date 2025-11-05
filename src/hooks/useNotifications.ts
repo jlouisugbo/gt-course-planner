@@ -19,6 +19,22 @@ const REFETCH_INTERVAL = 30000; // 30 seconds
  * Fetch notifications from API
  */
 async function fetchNotifications(): Promise<NotificationsResponse> {
+  // DEMO MODE: Return mock data immediately, NO API CALLS
+  if (typeof window !== 'undefined') {
+    const { isDemoMode } = await import('@/lib/demo-mode');
+    if (isDemoMode()) {
+      const { DEMO_NOTIFICATIONS } = await import('@/lib/demo-data');
+
+      console.log('[Demo Mode] fetchNotifications: Using mock data, NO API calls');
+
+      return {
+        notifications: DEMO_NOTIFICATIONS as any[],
+        unreadCount: DEMO_NOTIFICATIONS.filter((n: any) => !n.read).length,
+        total: DEMO_NOTIFICATIONS.length,
+      };
+    }
+  }
+
   const response = await fetch('/api/notifications?limit=50', {
     method: 'GET',
     headers: {
@@ -39,6 +55,15 @@ async function fetchNotifications(): Promise<NotificationsResponse> {
  * Mark a single notification as read
  */
 async function markNotificationAsRead(notificationId: string): Promise<void> {
+  // DEMO MODE: No-op, NO API CALLS
+  if (typeof window !== 'undefined') {
+    const { isDemoMode } = await import('@/lib/demo-mode');
+    if (isDemoMode()) {
+      console.log('[Demo Mode] markNotificationAsRead: No-op, NO API calls');
+      return;
+    }
+  }
+
   const response = await fetch('/api/notifications', {
     method: 'PATCH',
     headers: {
@@ -58,6 +83,15 @@ async function markNotificationAsRead(notificationId: string): Promise<void> {
  * Mark all notifications as read
  */
 async function markAllNotificationsAsRead(): Promise<void> {
+  // DEMO MODE: No-op, NO API CALLS
+  if (typeof window !== 'undefined') {
+    const { isDemoMode } = await import('@/lib/demo-mode');
+    if (isDemoMode()) {
+      console.log('[Demo Mode] markAllNotificationsAsRead: No-op, NO API calls');
+      return;
+    }
+  }
+
   const response = await fetch('/api/notifications/mark-all-read', {
     method: 'POST',
     headers: {
@@ -76,6 +110,15 @@ async function markAllNotificationsAsRead(): Promise<void> {
  * Delete a notification
  */
 async function deleteNotificationApi(notificationId: string): Promise<void> {
+  // DEMO MODE: No-op, NO API CALLS
+  if (typeof window !== 'undefined') {
+    const { isDemoMode } = await import('@/lib/demo-mode');
+    if (isDemoMode()) {
+      console.log('[Demo Mode] deleteNotificationApi: No-op, NO API calls');
+      return;
+    }
+  }
+
   const response = await fetch(`/api/notifications?id=${notificationId}`, {
     method: 'DELETE',
     headers: {
