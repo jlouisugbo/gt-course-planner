@@ -84,17 +84,17 @@ export function MyApplications() {
           if (!opportunity) return null;
 
           return (
-            <Card key={application.id}>
-              <CardHeader className="p-3 sm:p-4">
-                <div className="flex items-start justify-between gap-2 sm:gap-2.5">
+            <Card key={application.id} className="overflow-hidden">
+              <CardHeader className="p-2.5 sm:p-3">
+                <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <CardTitle className="text-base sm:text-lg truncate">{opportunity.title}</CardTitle>
-                    <CardDescription className="mt-1 truncate">
+                    <CardTitle className="text-sm sm:text-base truncate">{opportunity.title}</CardTitle>
+                    <CardDescription className="mt-0.5 text-xs truncate">
                       {opportunity.company} - {opportunity.location}
                     </CardDescription>
                   </div>
                   <Badge
-                    className={statusColors[application.status]}
+                    className={`${statusColors[application.status]} text-xs px-2 py-0.5 flex-shrink-0`}
                     variant="outline"
                   >
                     {statusLabels[application.status]}
@@ -102,11 +102,11 @@ export function MyApplications() {
                 </div>
               </CardHeader>
 
-              <CardContent className="p-3 sm:p-4 pt-0">
-                <div className="space-y-2.5">
+              <CardContent className="p-2.5 sm:p-3 pt-0">
+                <div className="space-y-2">
                   {application.submitted_at && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                    <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                      <Calendar className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
                       <span>
                         Submitted:{' '}
                         {new Date(application.submitted_at).toLocaleDateString('en-US', {
@@ -119,17 +119,17 @@ export function MyApplications() {
                   )}
 
                   {application.cover_letter && (
-                    <div className="mt-2">
-                      <p className="text-sm font-medium text-gray-700 mb-0.5">Cover Letter:</p>
-                      <p className="text-sm text-gray-600 line-clamp-2 break-words">
+                    <div>
+                      <p className="text-xs font-medium text-gray-700 mb-0.5">Cover Letter:</p>
+                      <p className="text-xs text-gray-600 line-clamp-2 break-words">
                         {application.cover_letter}
                       </p>
                     </div>
                   )}
 
-                  <div className="flex flex-wrap gap-2 mt-3">
+                  <div className="flex flex-wrap gap-1.5 mt-2">
                     {application.status === 'draft' && (
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" className="h-7 text-xs px-2">
                         Edit Draft
                       </Button>
                     )}
@@ -138,13 +138,13 @@ export function MyApplications() {
                       size="sm"
                       onClick={() => handleDelete(application.id)}
                       disabled={deleteApplication.isPending}
-                      className="flex items-center gap-1.5"
+                      className="flex items-center gap-1 h-7 text-xs px-2"
                     >
                       {deleteApplication.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Loader2 className="h-3 w-3 animate-spin" />
                       ) : (
                         <>
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3 w-3" />
                           Delete
                         </>
                       )}

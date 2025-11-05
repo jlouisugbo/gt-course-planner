@@ -23,6 +23,7 @@ import { useDrag, useDrop } from 'react-dnd';
 import { DragTypes } from '@/types';
 import { cn } from '@/lib/utils';
 import { CriticalErrorBoundary } from "@/components/error/GlobalErrorBoundary";
+import { isDemoMode } from '@/lib/demo-mode';
 
 // Course Info Modal Component
 const CourseInfoModal = memo<{ course: any }>(function CourseInfoModal({ course }) {
@@ -386,8 +387,9 @@ export const PlannerGrid: React.FC<PlannerGridProps> = memo(({
 
     ModernSemesterCard.displayName = 'ModernSemesterCard';
 
-    // Show loading state
-    if (isLoading || !isInitialized) {
+    // Show loading state (SKIP IN DEMO MODE)
+    const inDemoMode = isDemoMode();
+    if (!inDemoMode && (isLoading || !isInitialized)) {
         return (
             <Card className="h-full">
                 <CardContent className="flex flex-col items-center justify-center py-16">

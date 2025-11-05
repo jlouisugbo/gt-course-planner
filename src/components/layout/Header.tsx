@@ -24,9 +24,16 @@ export default function Header() {
   return (
     <header className="h-16 border-b bg-white flex items-center justify-between px-6 flex-shrink-0">
       {/* Left side - Page Title */}
-      <div className="flex items-center space-x-3">
-        <BookOpen className="h-5 w-5 text-gt-gold hidden sm:block" />
-        <h1 className="text-xl font-semibold text-gray-900">{getPageTitle()}</h1>
+      <div className="flex items-center gap-3 sm:gap-6">
+        <div className="flex items-center space-x-3">
+          <BookOpen className="h-5 w-5 text-gt-gold hidden sm:block" />
+          <h1 className="text-xl font-semibold text-gray-900">{getPageTitle()}</h1>
+        </div>
+
+        {/* GT Office of Student Achievement */}
+        <div className="hidden lg:flex items-center space-x-2 text-sm text-gray-600 border-l pl-6">
+          <span className="font-medium text-gt-navy">GT Office of Student Achievement</span>
+        </div>
       </div>
 
       {/* Right side - Notifications and other actions */}

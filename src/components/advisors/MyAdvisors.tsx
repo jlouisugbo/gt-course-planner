@@ -79,17 +79,17 @@ export function MyAdvisors({ onBookAppointment }: MyAdvisorsProps) {
             if (!advisor) return null;
 
             return (
-              <Card key={connection.id}>
-                <CardHeader className="p-3 sm:p-4">
-                  <div className="flex items-start justify-between gap-2 sm:gap-2.5">
+              <Card key={connection.id} className="overflow-hidden">
+                <CardHeader className="p-2.5 sm:p-3">
+                  <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <CardTitle className="text-base sm:text-lg truncate">{advisor.full_name}</CardTitle>
+                      <CardTitle className="text-sm sm:text-base truncate">{advisor.full_name}</CardTitle>
                       {advisor.title && (
-                        <CardDescription className="mt-1 truncate">{advisor.title}</CardDescription>
+                        <CardDescription className="mt-0.5 text-xs truncate">{advisor.title}</CardDescription>
                       )}
                     </div>
                     <Badge
-                      className={statusColors[connection.status]}
+                      className={`${statusColors[connection.status]} text-xs px-2 py-0.5 flex-shrink-0`}
                       variant="outline"
                     >
                       {statusLabels[connection.status]}
@@ -97,8 +97,8 @@ export function MyAdvisors({ onBookAppointment }: MyAdvisorsProps) {
                   </div>
                 </CardHeader>
 
-                <CardContent className="p-3 sm:p-4 pt-0">
-                  <div className="space-y-2.5">
+                <CardContent className="p-2.5 sm:p-3 pt-0">
+                  <div className="space-y-2">
                     {/* Specializations */}
                     {advisor.specializations.length > 0 && (
                       <div>
@@ -106,19 +106,24 @@ export function MyAdvisors({ onBookAppointment }: MyAdvisorsProps) {
                           Specializations:
                         </p>
                         <div className="flex flex-wrap gap-1">
-                          {advisor.specializations.map((spec, index) => (
-                            <Badge key={index} variant="secondary" className="text-xs">
+                          {advisor.specializations.slice(0, 2).map((spec, index) => (
+                            <Badge key={index} variant="secondary" className="text-xs px-1.5 py-0">
                               {spec}
                             </Badge>
                           ))}
+                          {advisor.specializations.length > 2 && (
+                            <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                              +{advisor.specializations.length - 2}
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     )}
 
                     {/* Contact Info */}
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Mail className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                        <Mail className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
                         <a
                           href={`mailto:${advisor.email}`}
                           className="text-blue-600 hover:underline truncate"
@@ -128,8 +133,8 @@ export function MyAdvisors({ onBookAppointment }: MyAdvisorsProps) {
                       </div>
 
                       {advisor.office_location && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                        <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                          <MapPin className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
                           <span className="truncate">{advisor.office_location}</span>
                         </div>
                       )}
@@ -137,18 +142,18 @@ export function MyAdvisors({ onBookAppointment }: MyAdvisorsProps) {
 
                     {/* Connection Notes */}
                     {connection.notes && (
-                      <div className="mt-2.5 p-2.5 bg-gray-50 rounded-lg">
-                        <p className="text-xs font-medium text-gray-600 mb-0.5">Notes:</p>
-                        <p className="text-sm text-gray-700 break-words">{connection.notes}</p>
+                      <div className="p-2 bg-gray-50 rounded-lg">
+                        <p className="text-xs text-gray-700 line-clamp-2 break-words">{connection.notes}</p>
                       </div>
                     )}
 
                     {/* Actions */}
-                    <div className="flex flex-wrap gap-2 mt-3">
+                    <div className="flex flex-wrap gap-1.5 mt-2">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setSelectedAdvisor(advisor)}
+                        className="h-7 text-xs px-2"
                       >
                         View Profile
                       </Button>
@@ -157,10 +162,10 @@ export function MyAdvisors({ onBookAppointment }: MyAdvisorsProps) {
                         <Button
                           size="sm"
                           onClick={() => onBookAppointment(advisor)}
-                          className="bg-[#003057] hover:bg-[#003057]/90 flex items-center gap-1.5"
+                          className="bg-[#003057] hover:bg-[#003057]/90 flex items-center gap-1 h-7 text-xs px-2"
                         >
-                          <Calendar className="h-4 w-4" />
-                          <span>Book Appointment</span>
+                          <Calendar className="h-3 w-3" />
+                          <span>Book</span>
                         </Button>
                       )}
                     </div>

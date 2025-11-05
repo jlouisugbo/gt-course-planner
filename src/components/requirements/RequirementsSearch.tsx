@@ -29,6 +29,37 @@ export const RequirementsSearch: React.FC<RequirementsSearchProps> = ({
     onFiltersChange({ ...filters, [key]: value });
   };
 
+  const handleCompletionFilter = (filterType: 'completed' | 'incomplete') => {
+    const currentCompleted = filters.showCompleted;
+    const currentIncomplete = filters.showIncomplete;
+
+    if (filterType === 'completed') {
+      // If both are currently on, show only completed
+      if (currentCompleted && currentIncomplete) {
+        onFiltersChange({ ...filters, showCompleted: true, showIncomplete: false });
+      }
+      // If only completed is on, show both
+      else if (currentCompleted && !currentIncomplete) {
+        onFiltersChange({ ...filters, showCompleted: true, showIncomplete: true });
+      }
+      // If completed is off, turn it on and turn incomplete off
+      else {
+        onFiltersChange({ ...filters, showCompleted: true, showIncomplete: false });
+      }
+    } else {
+      // Similar logic for incomplete
+      if (currentCompleted && currentIncomplete) {
+        onFiltersChange({ ...filters, showCompleted: false, showIncomplete: true });
+      }
+      else if (!currentCompleted && currentIncomplete) {
+        onFiltersChange({ ...filters, showCompleted: true, showIncomplete: true });
+      }
+      else {
+        onFiltersChange({ ...filters, showCompleted: false, showIncomplete: true });
+      }
+    }
+  };
+
   const clearFilters = () => {
     onFiltersChange({
       searchQuery: '',
@@ -69,15 +100,15 @@ export const RequirementsSearch: React.FC<RequirementsSearchProps> = ({
         <Button
           variant={filters.showCompleted ? "default" : "outline"}
           size="sm"
-          onClick={() => toggleFilter('showCompleted', !filters.showCompleted)}
+          onClick={() => handleCompletionFilter('completed')}
         >
           Completed
         </Button>
-        
+
         <Button
           variant={filters.showIncomplete ? "default" : "outline"}
           size="sm"
-          onClick={() => toggleFilter('showIncomplete', !filters.showIncomplete)}
+          onClick={() => handleCompletionFilter('incomplete')}
         >
           Incomplete
         </Button>

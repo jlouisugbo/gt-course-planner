@@ -53,11 +53,17 @@ export const useMyApplications = () => {
       if (typeof window !== 'undefined') {
         const { isDemoMode } = await import('@/lib/demo-mode');
         if (isDemoMode()) {
-          const { DEMO_APPLICATIONS } = await import('@/lib/demo-data');
+          const { DEMO_APPLICATIONS, DEMO_OPPORTUNITIES } = await import('@/lib/demo-data');
 
           console.log('[Demo Mode] useMyApplications: Using mock data, NO API calls');
 
-          return DEMO_APPLICATIONS as OpportunityApplication[];
+          // Populate the opportunity field by joining with DEMO_OPPORTUNITIES
+          const applicationsWithOpportunity = DEMO_APPLICATIONS.map((app: any) => ({
+            ...app,
+            opportunity: DEMO_OPPORTUNITIES.find((opp: any) => opp.id === app.opportunity_id)
+          }));
+
+          return applicationsWithOpportunity as OpportunityApplication[];
         }
       }
 

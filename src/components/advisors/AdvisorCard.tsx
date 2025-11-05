@@ -14,7 +14,7 @@ interface AdvisorCardProps {
 
 export function AdvisorCard({ advisor, onViewProfile }: AdvisorCardProps) {
   return (
-    <Card className="h-full flex flex-col">
+    <Card className="h-full flex flex-col transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-l-4 border-l-gt-navy/30 hover:border-l-gt-navy backdrop-blur-sm bg-white/95">
       <CardHeader className="p-2.5 sm:p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">

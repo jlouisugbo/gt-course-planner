@@ -35,8 +35,8 @@ export function OpportunityCard({ opportunity, onApply }: OpportunityCardProps) 
     deadline && (deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24) < 7;
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="p-2.5 sm:p-4">
+    <Card className="h-full flex flex-col transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-l-4 border-l-gt-gold/30 hover:border-l-gt-gold backdrop-blur-sm bg-white/95">
+      <CardHeader className="p-2.5 sm:p-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <CardTitle className="text-base sm:text-lg mb-1 truncate">{opportunity.title}</CardTitle>

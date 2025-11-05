@@ -41,6 +41,10 @@ function CourseExplorer() {
     sortOrder: 'asc'
   });
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const coursesPerPage = 24;
+
   // Load all courses on mount
   useEffect(() => {
     const loadCourses = async () => {
@@ -193,6 +197,19 @@ function CourseExplorer() {
     setSelectedCourse(null);
   }, []);
 
+  // Paginate filtered courses
+  const totalPages = Math.ceil(filteredCourses.length / coursesPerPage);
+  const paginatedCourses = useMemo(() => {
+    const startIndex = (currentPage - 1) * coursesPerPage;
+    const endIndex = startIndex + coursesPerPage;
+    return filteredCourses.slice(startIndex, endIndex);
+  }, [filteredCourses, currentPage, coursesPerPage]);
+
+  // Reset to page 1 when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [filters, searchQuery]);
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -246,11 +263,11 @@ function CourseExplorer() {
 
       {/* Search Bar */}
       <CourseSearchBar
-        value={searchQuery}
-        onChange={handleQueryChange}
+        query={searchQuery}
+        onQueryChange={handleQueryChange}
         onSearch={handleSearch}
         placeholder="Search courses by code, title, or keywords..."
-        loading={loading}
+        isLoading={loading}
       />
 
       {/* Filters */}
@@ -307,23 +324,74 @@ function CourseExplorer() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.2 }}
+              className="space-y-4"
             >
               <div role="status" aria-live="polite" className="sr-only">
                 {`Found ${filteredCourses.length} course${filteredCourses.length === 1 ? '' : 's'}`}
               </div>
-              
+
               {viewMode.type === 'grid' ? (
                 <CourseGrid
-                  courses={filteredCourses}
+                  courses={paginatedCourses}
                   onCourseClick={handleCourseClick}
                   loading={loading}
                 />
               ) : (
                 <CourseList
-                  courses={filteredCourses}
+                  courses={paginatedCourses}
                   onCourseClick={handleCourseClick}
                   loading={loading}
                 />
+              )}
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 pt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 7) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 4) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 3) {
+                        pageNum = totalPages - 6 + i;
+                      } else {
+                        pageNum = currentPage - 3 + i;
+                      }
+
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={currentPage === pageNum ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setCurrentPage(pageNum)}
+                          className="w-8 h-8 p-0"
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    })}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
               )}
             </motion.div>
           )}

@@ -64,11 +64,11 @@ export const CourseCard: React.FC<CourseCardProps> = ({
   }
 
   return (
-    <Card className={`h-full transition-all duration-300 cursor-pointer group border-l-4 
-      ${isSelected 
-        ? 'border-l-gt-gold shadow-lg ring-2 ring-gt-gold/20' 
+    <Card className={`h-full transition-all duration-300 cursor-pointer group border-l-4 backdrop-blur-sm bg-white/95
+      ${isSelected
+        ? 'border-l-gt-gold shadow-lg ring-2 ring-gt-gold/20'
         : 'border-l-gt-gold/20 hover:border-l-gt-gold hover:shadow-lg'
-      } 
+      }
       hover:shadow-xl hover:-translate-y-1 focus-within:ring-2 focus-within:ring-gt-navy focus-within:ring-offset-2
       transform-gpu will-change-transform`}
     >

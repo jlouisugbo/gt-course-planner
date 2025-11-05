@@ -105,11 +105,17 @@ export const useMyAdvisors = () => {
       if (typeof window !== 'undefined') {
         const { isDemoMode } = await import('@/lib/demo-mode');
         if (isDemoMode()) {
-          const { DEMO_ADVISOR_CONNECTIONS } = await import('@/lib/demo-data');
+          const { DEMO_ADVISOR_CONNECTIONS, DEMO_ADVISORS } = await import('@/lib/demo-data');
 
           console.log('[Demo Mode] useMyAdvisors: Using mock data, NO API calls');
 
-          return DEMO_ADVISOR_CONNECTIONS as AdvisorConnection[];
+          // Populate the advisor field by joining with DEMO_ADVISORS
+          const connectionsWithAdvisor = DEMO_ADVISOR_CONNECTIONS.map((conn: any) => ({
+            ...conn,
+            advisor: DEMO_ADVISORS.find((adv: any) => adv.id === conn.advisor_id)
+          }));
+
+          return connectionsWithAdvisor as AdvisorConnection[];
         }
       }
 
@@ -170,11 +176,17 @@ export const useAppointments = () => {
       if (typeof window !== 'undefined') {
         const { isDemoMode } = await import('@/lib/demo-mode');
         if (isDemoMode()) {
-          const { DEMO_APPOINTMENTS } = await import('@/lib/demo-data');
+          const { DEMO_APPOINTMENTS, DEMO_ADVISORS } = await import('@/lib/demo-data');
 
           console.log('[Demo Mode] useAppointments: Using mock data, NO API calls');
 
-          return DEMO_APPOINTMENTS as AdvisorAppointment[];
+          // Populate the advisor field by joining with DEMO_ADVISORS
+          const appointmentsWithAdvisor = DEMO_APPOINTMENTS.map((apt: any) => ({
+            ...apt,
+            advisor: DEMO_ADVISORS.find((adv: any) => adv.id === apt.advisor_id)
+          }));
+
+          return appointmentsWithAdvisor as AdvisorAppointment[];
         }
       }
 

@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Course } from '@/types';
-import { 
-  Calendar, 
-  AlertCircle, 
-  FileText, 
+import { SemesterSelector } from '../SemesterSelector';
+import {
+  Calendar,
+  AlertCircle,
+  FileText,
   Network,
   Plus
 } from 'lucide-react';
@@ -25,6 +26,7 @@ export const CourseModal: React.FC<CourseModalProps> = ({
   onClose
 }) => {
   const [activeTab, setActiveTab] = useState('overview');
+  const [showSemesterSelector, setShowSemesterSelector] = useState(false);
   // Focus management - hooks must be called before any conditional returns
   const addButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -43,6 +45,7 @@ export const CourseModal: React.FC<CourseModalProps> = ({
   };
 
   return (
+    <>
     <StandardizedModal
       isOpen={isOpen}
       onClose={onClose}
@@ -53,7 +56,12 @@ export const CourseModal: React.FC<CourseModalProps> = ({
 
         <div className="p-6">
           <div className="flex justify-end mb-4">
-            <Button ref={addButtonRef} variant="outline" size="sm">
+            <Button
+              ref={addButtonRef}
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSemesterSelector(true)}
+            >
               <Plus className="h-4 w-4 mr-1" />
               Add to Plan
             </Button>
@@ -225,5 +233,12 @@ export const CourseModal: React.FC<CourseModalProps> = ({
           </Tabs>
         </div>
     </StandardizedModal>
+
+    <SemesterSelector
+      course={course}
+      isOpen={showSemesterSelector}
+      onClose={() => setShowSemesterSelector(false)}
+    />
+    </>
   );
 };
