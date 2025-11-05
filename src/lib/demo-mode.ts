@@ -96,11 +96,14 @@ export function enableDemoMode(): void {
   try {
     localStorage.setItem(DEMO_MODE_KEY, 'true');
 
+    // Set cookie so middleware can detect demo mode
+    document.cookie = `${DEMO_MODE_KEY}=true; path=/; max-age=86400; SameSite=Lax`;
+
     // Generate a unique demo session ID
     const sessionId = `demo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     sessionStorage.setItem(DEMO_SESSION_KEY, sessionId);
 
-    console.log('[Demo Mode] Enabled');
+    console.log('[Demo Mode] Enabled (localStorage + cookie)');
   } catch (error) {
     console.error('[Demo Mode] Failed to enable:', error);
   }
@@ -115,6 +118,9 @@ export function disableDemoMode(): void {
   try {
     localStorage.removeItem(DEMO_MODE_KEY);
     sessionStorage.removeItem(DEMO_SESSION_KEY);
+
+    // Remove cookie
+    document.cookie = `${DEMO_MODE_KEY}=; path=/; max-age=0`;
 
     // Clear demo-related localStorage items
     const keysToRemove: string[] = [];

@@ -3,7 +3,14 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-  
+
+  // Check for demo mode - bypass all auth checks
+  const demoMode = request.cookies.get('gt-planner-demo-mode')?.value === 'true'
+  if (demoMode) {
+    console.log('[Middleware] Demo mode detected, bypassing auth checks')
+    return NextResponse.next()
+  }
+
   // Allow debug page during development
   if (pathname.startsWith('/debug-auth')) {
     return NextResponse.next()
