@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Grid3X3, List, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,13 +10,11 @@ import { CourseFilters } from './parts/CourseFilters';
 import { CourseGrid } from './parts/CourseGrid';
 import { CourseList } from './parts/CourseList';
 import { CourseModal } from './parts/CourseModal';
-import { authService } from '@/lib/auth';
-import { useEffect } from 'react';
-import { fetchAllCourses } from '@/data/courses';
+import { useInfiniteCourses } from '@/hooks/useInfiniteCourses';
 
 function CourseExplorer() {
   const [courses, setCourses] = useState<Course[]>([]);
-  const [allCourses, setAllCourses] = useState<Course[]>([]); // Store all courses
+  // accumulated courses are stored in `courses` state; no separate allCourses needed
   const [loading, setLoading] = useState(true); // Start with loading true
   const [error, setError] = useState<string | null>(null);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -41,75 +39,51 @@ function CourseExplorer() {
     sortOrder: 'asc'
   });
 
-  // Load all courses on mount
+  // Use infinite query to load courses in pages (server-side search & filters wired)
+  const {
+    data: pagesData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: isQueryLoading,
+    isError: isQueryError,
+    error: queryError
+  } = useInfiniteCourses({
+    initialLimit: 200,
+    search: searchQuery,
+    types: filters.courseTypes,
+    credits: filters.creditHours
+  });
+
+  // derive accumulated courses from pages
+  const accumulatedCourses = useMemo(() => {
+    if (!pagesData || !pagesData.pages) return [] as Course[];
+    return pagesData.pages.flatMap((p: any) => p.courses || []);
+  }, [pagesData]);
+
+  // update available lists when accumulated courses change
   useEffect(() => {
-    const loadCourses = async () => {
-      setLoading(true);
-      setError(null);
-      
-      try {
-        // First try to load from database
-        const coursesData = await fetchAllCourses();
-        setAllCourses(coursesData);
-        setCourses(coursesData);
-        
-        // Extract unique colleges for filters
-        const colleges = [...new Set(coursesData?.map((c: Course) => c.college).filter(Boolean))];
-        setAvailableColleges(colleges.filter((college): college is string => typeof college === 'string'));
-      } catch (err) {
-        console.error('Error loading courses:', err);
-        
-        // Fallback to API if database fails
-        try {
-          const response = await fetch('/api/courses/all?limit=2000');
-          if (!response.ok) {
-            throw new Error('Failed to load courses from API');
-          }
-          
-          const data = await response.json();
-          const coursesData = data.data || [];
-          setAllCourses(coursesData);
-          setCourses(coursesData);
-          
-          // Extract unique colleges for filters
-          const colleges = [...new Set(coursesData?.map((c: Course) => c.college).filter(Boolean))];
-          setAvailableColleges(colleges.filter((college): college is string => typeof college === 'string'));
-        } catch (apiErr) {
-          setError(apiErr instanceof Error ? apiErr.message : 'Failed to load courses');
-          setCourses([]);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    loadCourses();
-  }, []);
+    setCourses(accumulatedCourses);
+    const colleges = [...new Set(accumulatedCourses?.map((c: Course) => c.college).filter(Boolean))];
+    setAvailableColleges(colleges.filter((college): college is string => typeof college === 'string'));
+  }, [accumulatedCourses]);
 
-  // Search courses from pre-loaded data
-  const searchCourses = useCallback((query: string) => {
-    if (!query.trim()) {
-      // Show all courses when search is empty
-      setCourses(allCourses);
-      return;
+  // loading / error from query
+  useEffect(() => {
+    setLoading(isQueryLoading || false);
+  }, [isQueryLoading]);
+
+  useEffect(() => {
+    if (isQueryError) {
+      setError((queryError as Error)?.message || 'Failed to load courses');
     }
+  }, [isQueryError, queryError]);
 
-    // Filter courses locally from pre-loaded data
-    const searchLower = query.toLowerCase();
-    const filtered = allCourses.filter(course => 
-      course.code?.toLowerCase().includes(searchLower) ||
-      course.title?.toLowerCase().includes(searchLower) ||
-      course.description?.toLowerCase().includes(searchLower)
-    );
-    
-    setCourses(filtered);
-  }, [allCourses]);
-
-  // Handle search bar events
+  // Handle search bar events — server-side search: update query, hook will refetch
   const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
     setFilters(prev => ({ ...prev, query }));
-    searchCourses(query);
-  }, [searchCourses]);
+  }, []);
 
   const handleQueryChange = useCallback((query: string) => {
     setSearchQuery(query);
@@ -246,11 +220,11 @@ function CourseExplorer() {
 
       {/* Search Bar */}
       <CourseSearchBar
-        value={searchQuery}
-        onChange={handleQueryChange}
+        query={searchQuery}
+        onQueryChange={handleQueryChange}
         onSearch={handleSearch}
         placeholder="Search courses by code, title, or keywords..."
-        loading={loading}
+        isLoading={loading}
       />
 
       {/* Filters */}
@@ -316,13 +290,13 @@ function CourseExplorer() {
                 <CourseGrid
                   courses={filteredCourses}
                   onCourseClick={handleCourseClick}
-                  loading={loading}
+                  isLoading={loading}
                 />
               ) : (
                 <CourseList
                   courses={filteredCourses}
                   onCourseClick={handleCourseClick}
-                  loading={loading}
+                  isLoading={loading}
                 />
               )}
             </motion.div>
@@ -336,6 +310,20 @@ function CourseExplorer() {
         isOpen={!!selectedCourse}
         onClose={handleCloseModal}
       />
+      {/* Infinite scroll sentinel */}
+      <div ref={(node) => {
+        // simple intersection observer for infinite loading
+        if (!node) return;
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+              fetchNextPage();
+            }
+          });
+        });
+        observer.observe(node);
+        return () => observer.disconnect();
+      }} style={{ height: 1 }} />
     </div>
   );
 }

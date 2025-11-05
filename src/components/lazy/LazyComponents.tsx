@@ -3,7 +3,7 @@
  * Implements code splitting for large components to improve initial bundle size
  */
 
-import { lazy, Suspense, ComponentType } from 'react';
+import React, { lazy, Suspense, ComponentType } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
@@ -55,7 +55,7 @@ export const LazyCourseExplorer = lazy(() =>
 
 export const LazyRequirementsDashboard = lazy(() => 
     import('@/components/requirements/RequirementsDashboard').then(module => ({ 
-        default: module.default 
+        default: (module as any).RequirementsDashboard 
     }))
 );
 
@@ -81,13 +81,13 @@ export const LazyCreditDistributionChart = lazy(() =>
 // Advanced planner components
 export const LazyAcademicTimeline = lazy(() => 
     import('@/components/planner/AcademicTimeline').then(module => ({ 
-        default: module.default 
+        default: (module as any).AcademicTimeline 
     }))
 );
 
 export const LazyCourseRecommendationsAI = lazy(() => 
     import('@/components/planner/CourseRecommendationsAI').then(module => ({ 
-        default: module.default 
+        default: (module as any).default 
     }))
 );
 

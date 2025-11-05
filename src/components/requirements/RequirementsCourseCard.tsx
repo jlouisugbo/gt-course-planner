@@ -61,7 +61,7 @@ export const RequirementsCourseCard: React.FC<RequirementsCourseCardProps> = ({
                     {groupCourse.credits}cr
                   </Badge>
                   <Checkbox
-                    checked={completedCourses?.has(groupCourse.code)}
+                    checked={false}
                     onCheckedChange={() => onToggleComplete(groupCourse.code)}
                     className="h-3.5 w-3.5"
                   />
@@ -123,8 +123,8 @@ export const RequirementsCourseCard: React.FC<RequirementsCourseCardProps> = ({
                 <PrerequisiteBadges prerequisites={course.prerequisites} maxShow={1} />
               </>
             )}
-            {course.footnoteRefs && course.footnoteRefs.length > 0 && (
-              <Badge variant="outline" className="text-xs h-4 px-1" title={footnotes.find(f => f.id === course.footnoteRefs[0])?.text}>
+            {Array.isArray(course.footnoteRefs) && course.footnoteRefs.length > 0 && (
+              <Badge variant="outline" className="text-xs h-4 px-1" title={footnotes.find(f => f.id === course.footnoteRefs![0])?.text}>
                 Note {course.footnoteRefs[0]}
               </Badge>
             )}

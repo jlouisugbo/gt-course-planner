@@ -1,18 +1,18 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+// import { Card, CardContent } from '@/components/ui/card';
 import { 
   Search,
   ChevronDown,
   CheckCircle,
   AlertTriangle,
   Clock,
-  BookOpen,
+  // BookOpen,
   Star,
   Filter
 } from 'lucide-react';
@@ -20,13 +20,12 @@ import { Course } from '@/types/courses';
 import { usePrerequisiteValidation, PrerequisiteValidation } from '@/hooks/usePrereqValidation';
 import { useCourseFiltering } from '@/hooks/useCourseFiltering';
 
-interface CourseSuggestion extends Course {
+type CourseSuggestion = Course & {
   relevanceScore: number;
   reason: string;
   validation: PrerequisiteValidation;
-  difficulty?: number;
   popularity?: number;
-}
+};
 
 interface SmartCourseSuggestionDropdownProps {
   isOpen: boolean;
@@ -52,16 +51,18 @@ export default function SmartCourseSuggestionDropdown({
   maxSuggestions = 20
 }: SmartCourseSuggestionDropdownProps) {
   const [searchValue, setSearchValue] = useState("");
-  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+  const [selectedFilters, _setSelectedFilters] = useState<string[]>([]);
   
   const { validatePrerequisites } = usePrerequisiteValidation();
   const { 
-    courses, 
-    filteredCourses, 
-    filters, 
-    updateFilters,
-    isLoading 
-  } = useCourseFiltering();
+    courses,
+    isLoading,
+  } = useCourseFiltering({
+    searchQuery: searchValue,
+    selectedFilters,
+    sortBy: 'code',
+    sortOrder: 'asc',
+  });
 
   // Generate smart course suggestions
   const suggestions = useMemo(() => {
@@ -112,7 +113,7 @@ export default function SmartCourseSuggestionDropdown({
       }
 
       // Penalize high-difficulty courses early in program
-      if (course.difficulty && course.difficulty > 3 && semesterId && semesterId <= 2) {
+      if (course.difficulty > 3 && semesterId && semesterId <= 2) {
         relevanceScore -= 10;
       }
 

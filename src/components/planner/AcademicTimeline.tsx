@@ -18,7 +18,8 @@ import { cn } from '@/lib/utils';
 
 export const AcademicTimeline: React.FC = () => {
   const plannerStore = useUserAwarePlannerStore();
-  const { semesters, userProfile } = plannerStore;
+  const { semesters } = plannerStore as any;
+  const userProfile = (plannerStore as any).userProfile;
 
   const safeSemesters = useMemo(() => {
     return semesters && typeof semesters === 'object' ? semesters : {};
@@ -30,12 +31,22 @@ export const AcademicTimeline: React.FC = () => {
 
   // Process semesters into timeline format
   const timelineData = useMemo(() => {
-    const semesterArray = Object.values(safeSemesters)
-      .filter(semester => 
-        semester && 
+    type TimelineSemester = {
+      id?: number;
+      year: number;
+      season: 'Fall' | 'Spring' | 'Summer' | string;
+      isCompleted?: boolean;
+      isActive?: boolean;
+      totalCredits?: number;
+      courses?: any[];
+    };
+    const values = Object.values(safeSemesters as Record<string, TimelineSemester>);
+    const semesterArray = values
+      .filter((semester): semester is TimelineSemester =>
+        !!semester &&
         typeof semester === 'object' &&
-        typeof semester.year === 'number' &&
-        typeof semester.season === 'string'
+        typeof (semester as any).year === 'number' &&
+        typeof (semester as any).season === 'string'
       )
       .sort((a, b) => {
         if (a.year !== b.year) return a.year - b.year;

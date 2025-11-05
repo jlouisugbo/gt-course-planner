@@ -28,9 +28,9 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ user, stats })
         );
     }
 
-    const firstName = user.name.split(" ")[0];
+    const firstName = (user.name || '').split(" ")[0];
     const currentYear = new Date().getFullYear();
-    const yearLevel = Math.min(4, Math.max(1, currentYear - user.startYear + 1));
+    const yearLevel = user.startYear ? Math.min(4, Math.max(1, currentYear - user.startYear + 1)) : 1;
     const yearLevels = ["Freshman", "Sophomore", "Junior", "Senior"];
     const yearLabel = yearLevels[yearLevel - 1] || "Graduate";
 
@@ -48,7 +48,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ user, stats })
                                 {user.avatar && (
                                     <Image 
                                         src={user.avatar} 
-                                        alt={user.name}
+                                        alt={user.name || 'User'}
                                         width={48}
                                         height={48}
                                         className="w-12 h-12 rounded-full border-2 border-white/30"
@@ -59,7 +59,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ user, stats })
                                         Welcome back, {firstName}! 👋
                                     </h1>
                                     <p className="text-xl opacity-90">
-                                        {user.major} • {yearLabel} • Class of {user.graduationYear}
+                                        {user.major} • {yearLabel} • Class of {user.graduationYear ?? ''}
                                     </p>
                                 </div>
                             </div>

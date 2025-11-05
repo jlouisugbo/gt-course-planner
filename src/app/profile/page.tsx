@@ -22,13 +22,12 @@ import {
   GraduationCap
 } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
-import { useUserAwarePlannerStore } from '@/hooks/useUserAwarePlannerStore';
 import { useProfileSetup } from '@/hooks/useProfileSetup';
+import { useUserProfile } from '@/hooks/useUserProfile';
 
 export default function ProfilePage() {
   const { user } = useAuth();
-  const plannerStore = useUserAwarePlannerStore();
-  const { userProfile } = plannerStore;
+  const { profile: userProfile } = useUserProfile();
   const profileSetup = useProfileSetup();
   
   const [isEditing, setIsEditing] = useState(false);
@@ -51,18 +50,18 @@ export default function ProfilePage() {
   useEffect(() => {
     if (userProfile) {
       setFormData({
-        fullName: userProfile.full_name || '',
-        email: user?.email || '',
-        phone: userProfile.phone || '',
-        address: userProfile.address || '',
+        fullName: userProfile.fullName || '',
+        email: user?.email || userProfile.email || '',
+        phone: '',
+        address: '',
         major: userProfile.major || '',
         minor: userProfile.minors || [],
-        selectedThreads: userProfile.selected_threads || userProfile.threads || [],
-        expectedGraduation: userProfile.expected_graduation || '',
-        gpa: userProfile.gpa?.toString() || '',
-        admissionYear: userProfile.admission_year?.toString() || '',
-        studentId: userProfile.student_id || '',
-        bio: userProfile.bio || '',
+        selectedThreads: userProfile.selectedThreads || [],
+        expectedGraduation: (userProfile.planSettings?.expected_graduation as string) || '',
+        gpa: userProfile.overallGPA?.toString() || '',
+        admissionYear: userProfile.graduationYear?.toString() || '',
+        studentId: '',
+        bio: '',
       });
     }
   }, [userProfile, user]);
@@ -72,14 +71,11 @@ export default function ProfilePage() {
       // Update the profile data first
       profileSetup.setProfile({
         full_name: formData.fullName,
-        phone: formData.phone,
-        address: formData.address,
         major: formData.major,
         minors: formData.minor,
-        selected_threads: formData.selectedThreads,
-        expected_graduation: formData.expectedGraduation,
-        gpa: formData.gpa ? parseFloat(formData.gpa) : undefined,
-        admission_year: formData.admissionYear ? parseInt(formData.admissionYear) : undefined,
+        threads: formData.selectedThreads,
+        expectedGraduation: formData.expectedGraduation,
+        currentGPA: formData.gpa ? parseFloat(formData.gpa) : undefined,
         student_id: formData.studentId,
         bio: formData.bio,
       });
@@ -95,18 +91,18 @@ export default function ProfilePage() {
     // Reset form data to original values
     if (userProfile) {
       setFormData({
-        fullName: userProfile.full_name || '',
-        email: user?.email || '',
-        phone: userProfile.phone || '',
-        address: userProfile.address || '',
+        fullName: userProfile.fullName || '',
+        email: user?.email || userProfile.email || '',
+        phone: '',
+        address: '',
         major: userProfile.major || '',
         minor: userProfile.minors || [],
-        selectedThreads: userProfile.selected_threads || userProfile.threads || [],
-        expectedGraduation: userProfile.expected_graduation || '',
-        gpa: userProfile.gpa?.toString() || '',
-        admissionYear: userProfile.admission_year?.toString() || '',
-        studentId: userProfile.student_id || '',
-        bio: userProfile.bio || '',
+        selectedThreads: userProfile.selectedThreads || [],
+        expectedGraduation: (userProfile.planSettings?.expected_graduation as string) || '',
+        gpa: userProfile.overallGPA?.toString() || '',
+        admissionYear: userProfile.graduationYear?.toString() || '',
+        studentId: '',
+        bio: '',
       });
     }
     setIsEditing(false);

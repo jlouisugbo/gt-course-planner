@@ -61,8 +61,8 @@ export default function Sidebar({
   }, []);
 
   const handleSignOut = async () => {
-    const { signOut } = await import('@/lib/supabaseClient');
-    await signOut();
+    const { supabase } = await import('@/lib/supabaseClient');
+    await supabase.auth.signOut();
     window.location.href = '/';
   };
 

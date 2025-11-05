@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
 import { usePlannerStore } from './usePlannerStore';
 import { createComponentLogger } from '@/lib/security/logger';
-import { supabase } from '@/lib/supabaseClient';
 
 export const useCompletionTracking = () => {
   const { user } = useAuth();
@@ -57,17 +56,11 @@ export const useCompletionTracking = () => {
     if (!user) return;
 
     try {
-      // Get the current session for authentication
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData?.session) {
-        throw new Error('No active session');
-      }
-
+      // POST to server API route. Server authenticates via cookies; no explicit token needed.
       const response = await fetch('/api/course-completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionData.session.access_token}`,
         },
         body: JSON.stringify({
           courseCode,
@@ -118,6 +111,7 @@ export const useCompletionTracking = () => {
       }
 
       // Create a placeholder course object for the requirement course
+      const dept = (courseCode.match(/^[A-Za-z]+/)?.[0] || 'GEN').toUpperCase();
       const newCourse = {
         id: Date.now(), // Temporary ID
         code: courseCode,
@@ -128,6 +122,8 @@ export const useCompletionTracking = () => {
         college: 'Unknown',
         offerings: { fall: true, spring: true, summer: false },
         difficulty: 3,
+        course_type: 'core',
+        department: dept,
         type: 'requirement',
         semesterId: earliestSemester.id,
         status: 'completed' as const,
@@ -231,12 +227,7 @@ export const useCompletionTracking = () => {
     const logger = createComponentLogger('COMPLETION_TRACKING');
     
     try {
-      // Get the current session for authentication
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData?.session) {
-        throw new Error('No active session');
-      }
-
+      // Server authenticates via cookies; no explicit token needed.
       const { getAllCourses } = usePlannerStore.getState();
       const completedCoursesData = getAllCourses().filter(c => c.status === 'completed');
       
@@ -246,7 +237,6 @@ export const useCompletionTracking = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${sessionData.session.access_token}`,
           },
           body: JSON.stringify({
             courseCode: course.code,

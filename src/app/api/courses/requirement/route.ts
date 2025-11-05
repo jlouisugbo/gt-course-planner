@@ -211,13 +211,10 @@ function transformCourses(courses: any[]): Course[] {
         credits: course.credits || 3,
         description: course.description || `${course.code} - Course description not available`,
         prerequisites: course.prerequisites || [],
-        postrequisites: course.postrequisites || [],
-        type: course.course_type || 'elective',
+        course_type: course.course_type || 'elective',
         college: course.college_id || 'Unknown',
         department: course.code?.split(' ')[0] || 'Unknown',
         difficulty: 3, // Default difficulty
-        offerings: { fall: true, spring: true, summer: false }, // Default offerings
-        threads: [], // Default threads
-        instructors: [] // Default instructors
+        offerings: { fall: true, spring: true, summer: false } // Default offerings
     }));
 }

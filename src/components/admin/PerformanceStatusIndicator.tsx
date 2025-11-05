@@ -64,6 +64,62 @@ export default function PerformanceStatusIndicator({
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const determineOverallStatus = useCallback((data: any): 'healthy' | 'warning' | 'critical' => {
+    if (!data.summary || data.summary.length === 0) return 'healthy';
+    
+    const metrics = data.summary;
+    const criticalCount = metrics.filter((m: any) => {
+      const value = parseFloat(m.average);
+      return value > getCriticalThreshold(m.metric);
+    }).length;
+    
+    const warningCount = metrics.filter((m: any) => {
+      const value = parseFloat(m.average);
+      return value > getWarningThreshold(m.metric) && value <= getCriticalThreshold(m.metric);
+    }).length;
+
+    if (criticalCount > 0) return 'critical';
+    if (warningCount > 1) return 'warning';
+    return 'healthy';
+  }, []);
+
+  const processMetrics = useCallback((summaryData: any[]): PerformanceMetric[] => {
+    const metricConfigs: Record<string, { unit: string; warning: number; critical: number }> = {
+      'api_response': { unit: 'ms', warning: 200, critical: 500 },
+      'db_query': { unit: 'ms', warning: 100, critical: 300 },
+      'page_load': { unit: 'ms', warning: 1000, critical: 3000 },
+      'memory_usage': { unit: '%', warning: 80, critical: 95 },
+      'cpu_usage': { unit: '%', warning: 70, critical: 90 }
+    };
+
+    return summaryData.map(metric => {
+      const config = metricConfigs[metric.metric] || { unit: 'ms', warning: 100, critical: 500 };
+      const value = parseFloat(metric.average);
+      
+      let status: 'healthy' | 'warning' | 'critical' = 'healthy';
+      if (value > config.critical) status = 'critical';
+      else if (value > config.warning) status = 'warning';
+
+      return {
+        name: formatMetricName(metric.metric),
+        value: Math.round(value),
+        unit: config.unit,
+        status,
+        threshold: {
+          warning: config.warning,
+          critical: config.critical
+        },
+        trend: 'stable' // We'll enhance this with historical data later
+      };
+    });
+  }, []);
+
+  const calculateUptime = useCallback((_data: any): number => {
+    // Calculate uptime based on recent performance data
+    // For now, using a simulated calculation
+    return 99.5;
+  }, []);
+
   const fetchPerformanceData = useCallback(async (isManualRefresh = false) => {
     try {
       if (isManualRefresh) {
@@ -138,56 +194,6 @@ export default function PerformanceStatusIndicator({
     }
   }, [determineOverallStatus, processMetrics, calculateUptime]);
 
-  const determineOverallStatus = useCallback((data: any): 'healthy' | 'warning' | 'critical' => {
-    if (!data.summary || data.summary.length === 0) return 'healthy';
-    
-    const metrics = data.summary;
-    const criticalCount = metrics.filter((m: any) => {
-      const value = parseFloat(m.average);
-      return value > getCriticalThreshold(m.metric);
-    }).length;
-    
-    const warningCount = metrics.filter((m: any) => {
-      const value = parseFloat(m.average);
-      return value > getWarningThreshold(m.metric) && value <= getCriticalThreshold(m.metric);
-    }).length;
-
-    if (criticalCount > 0) return 'critical';
-    if (warningCount > 1) return 'warning';
-    return 'healthy';
-  }, []);
-
-  const processMetrics = useCallback((summaryData: any[]): PerformanceMetric[] => {
-    const metricConfigs: Record<string, { unit: string; warning: number; critical: number }> = {
-      'api_response': { unit: 'ms', warning: 200, critical: 500 },
-      'db_query': { unit: 'ms', warning: 100, critical: 300 },
-      'page_load': { unit: 'ms', warning: 1000, critical: 3000 },
-      'memory_usage': { unit: '%', warning: 80, critical: 95 },
-      'cpu_usage': { unit: '%', warning: 70, critical: 90 }
-    };
-
-    return summaryData.map(metric => {
-      const config = metricConfigs[metric.metric] || { unit: 'ms', warning: 100, critical: 500 };
-      const value = parseFloat(metric.average);
-      
-      let status: 'healthy' | 'warning' | 'critical' = 'healthy';
-      if (value > config.critical) status = 'critical';
-      else if (value > config.warning) status = 'warning';
-
-      return {
-        name: formatMetricName(metric.metric),
-        value: Math.round(value),
-        unit: config.unit,
-        status,
-        threshold: {
-          warning: config.warning,
-          critical: config.critical
-        },
-        trend: 'stable' // We'll enhance this with historical data later
-      };
-    });
-  }, []);
-
   const processRecommendations = (data: any) => {
     const recommendations = [];
     
@@ -220,11 +226,7 @@ export default function PerformanceStatusIndicator({
     return recommendations;
   };
 
-  const calculateUptime = useCallback((_data: any): number => {
-    // Calculate uptime based on recent performance data
-    // For now, using a simulated calculation
-    return 99.5;
-  }, []);
+  
 
   const getCriticalThreshold = (metricName: string): number => {
     const thresholds: Record<string, number> = {

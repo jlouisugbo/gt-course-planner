@@ -70,16 +70,34 @@ function categorizeError(error: any): {
 // Global error handler for queries
 function handleQueryError(error: unknown, query?: any) {
   const errorInfo = categorizeError(error);
-  
-  console.error('Query Error:', {
-    error,
-    query: query?.queryKey,
-    type: errorInfo.type,
-    severity: errorInfo.severity
-  });
+
+  // Check if this is an expected error (PGRST116 or profile incomplete)
+  const code = (error as any)?.code || '';
+  const message = (error as any)?.message || '';
+  const isExpectedError = code === 'PGRST116' ||
+                          message.includes('PGRST116') ||
+                          message.includes('profile setup') ||
+                          message.includes('profile not found');
+
+  if (isExpectedError) {
+    // Log expected errors at debug level to reduce noise
+    console.log('[queryClient] Expected error (user setup incomplete):', {
+      query: query?.queryKey,
+      code,
+      type: errorInfo.type
+    });
+  } else {
+    // Log unexpected errors normally
+    console.error('[queryClient] Query Error:', {
+      error,
+      query: query?.queryKey,
+      type: errorInfo.type,
+      severity: errorInfo.severity
+    });
+  }
 
   // In production, report to monitoring service
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === 'production' && !isExpectedError) {
     // reportToMonitoringService(error, {
     //   type: 'query-error',
     //   queryKey: query?.queryKey,
@@ -152,14 +170,34 @@ export const queryClient = new QueryClient({
       gcTime: 10 * 60 * 1000,   // 10 minutes
       retry: (failureCount, error) => {
         const errorInfo = categorizeError(error);
-        
+
         // Don't retry auth errors or validation errors
         if (!errorInfo.shouldRetry) {
           return false;
         }
-        
-        // Retry network and server errors up to 3 times
-        return failureCount < 3;
+
+        // Special handling for PGRST116 (no rows) - don't retry
+        const message = (error as any)?.message || '';
+        const code = (error as any)?.code || '';
+        if (code === 'PGRST116' || message.includes('PGRST116')) {
+          console.log('[queryClient] PGRST116 error - user data not found, not retrying');
+          return false;
+        }
+
+        // Special handling for 4xx errors (client errors) - retry only once
+        const status = (error as any)?.status || (error as any)?.response?.status || 0;
+        if (status >= 400 && status < 500) {
+          console.log(`[queryClient] Client error ${status} - limiting retries`);
+          return failureCount < 1; // Only retry once for client errors
+        }
+
+        // Retry network and server errors (5xx) up to 3 times
+        if (errorInfo.type === 'network' || errorInfo.type === 'api') {
+          return failureCount < 3;
+        }
+
+        // Default: don't retry unknown errors
+        return false;
       },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     },

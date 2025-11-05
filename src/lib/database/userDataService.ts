@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '@/lib/supabaseClient';
+import { api } from '@/lib/api/client';
 import { UserData as MainUserData } from '@/types/user';
 import { createComponentLogger } from '@/lib/security/logger';
 
@@ -60,24 +61,10 @@ class UserDataService {
    */
   async getCurrentUserId(): Promise<number | null> {
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) {
-        console.error('Auth error:', authError);
-        return null;
-      }
-
-      const { data: userRecord, error: userError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('auth_id', user.id)
-        .single();
-
-      if (userError) {
-        console.error('User lookup error:', userError);
-        return null;
-      }
-
-      return userRecord?.id || null;
+      // Use server API to obtain the authenticated user's profile (includes internal DB id)
+      const resp = await api.users.getProfile();
+      if (!resp) return null;
+      return resp.id ?? null;
     } catch (error) {
       console.error('Error getting user ID:', error);
       return null;
@@ -89,29 +76,35 @@ class UserDataService {
    */
   async getUserProfile(): Promise<UserData | null> {
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) return null;
+      // Query server API for normalized user profile
+      try {
+        const resp = await api.users.getProfile();
+        if (!resp) return null;
 
-      const { data: userRecord, error: userError } = await supabase
-        .from('users')
-        .select(`
-          id, auth_id, full_name, email, gt_username, major, 
-          selected_threads, minors, graduation_year, degree_program_id,
-          completed_courses, completed_groups, has_detailed_gpa,
-          plan_settings, semester_gpas
-        `)
-        .eq('auth_id', user.id)
-        .single();
+        // Map API response to local UserData shape
+        const mapped: any = {
+          id: resp.id,
+          auth_id: resp.auth_id,
+          full_name: resp.fullName || '',
+          email: resp.email,
+          gt_username: resp.gtUsername || '',
+          major: resp.major,
+          selected_threads: resp.selectedThreads || [],
+          minors: resp.minors || [],
+          graduation_year: resp.graduationYear || null,
+          degree_program_id: resp.degreeProgramId || null,
+          completed_courses: resp.completedCourses || [],
+          completed_groups: resp.completedGroups || [],
+          has_detailed_gpa: resp.hasDetailedGPA ?? false,
+          plan_settings: resp.planSettings || {},
+          semester_gpas: resp.semesterGPAs || [],
+        };
 
-      if (userError) {
-        // Don't log PGRST116 errors (no rows returned) - these are normal when user profile doesn't exist yet
-        if (userError.code !== 'PGRST116') {
-          console.error('Error fetching user profile:', userError);
-        }
+        return mapped as UserData;
+      } catch (err) {
+        console.warn('[userDataService] api.users.getProfile returned error or no data', err);
         return null;
       }
-
-      return userRecord;
     } catch (error) {
       console.error('Error in getUserProfile:', error);
       return null;
@@ -348,6 +341,33 @@ class UserDataService {
       return true;
     } catch (error) {
       console.error('Error in saveFlexibleMapping:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Delete a flexible mapping for the current user
+   */
+  async deleteFlexibleMapping(requirement_path: string, selected_course_id: number): Promise<boolean> {
+    try {
+      const userId = await this.getCurrentUserId();
+      if (!userId) return false;
+
+      const { error } = await supabase
+        .from('user_flexible_mappings')
+        .delete()
+        .eq('user_id', userId)
+        .eq('requirement_path', requirement_path)
+        .eq('selected_course_id', selected_course_id);
+
+      if (error) {
+        console.error('Error deleting flexible mapping:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error in deleteFlexibleMapping:', error);
       return false;
     }
   }

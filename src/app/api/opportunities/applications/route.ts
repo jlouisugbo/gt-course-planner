@@ -1,8 +1,9 @@
+ 
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabaseServer';
 
 // GET /api/opportunities/applications - Get user's applications
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
   try {
     const supabase = await createClient();
 

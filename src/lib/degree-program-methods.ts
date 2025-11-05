@@ -2,101 +2,54 @@
  * New degree program methods using major text column instead of degree_program_id
  */
 
-import { supabase } from './supabaseClient';
-import { VisualDegreeProgram, VisualMinorProgram } from '@/types/requirements';
+// Using broad types to avoid tight coupling with UI-specific shapes
+type VisualDegreeProgram = {
+    id: number;
+    name: string;
+    degreeType?: string;
+    college?: string;
+    totalCredits?: number;
+    requirements: any[];
+    footnotes?: any[];
+};
+
+type VisualMinorProgram = {
+    id: number;
+    name: string;
+    requirements: any[];
+    footnotes?: any[];
+};
+import { userDataService } from './database/userDataService';
 
 export async function fetchDegreeProgramRequirementsByMajor(): Promise<VisualDegreeProgram | null> {
     try {
-        // Get the current user
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            console.error('No authenticated user found');
+        // Use userDataService to get current user's profile and major
+        const userProfile = await userDataService.getUserProfile();
+        if (!userProfile || !userProfile.major) {
+            console.error('User has no major assigned or profile missing.');
             return null;
         }
 
-        // Get user's major from users table (new approach using major text column)
-        const { data: userRecord, error: userError } = await supabase
-            .from('users')
-            .select('major')
-            .eq('auth_id', user.id)
-            .single();
-
-        if (userError) {
-            console.error('Error fetching user record:', userError);
-            return null;
-        }
-
-        if (!userRecord?.major) {
-            console.error('User has no major assigned. User needs to complete profile setup.');
-            return null;
-        }
-
-        const majorName = userRecord.major;
-        console.log('Fetching degree program requirements for major:', majorName);
-
-        // First, check what degree programs exist in the database (more robust check)
-        const { data: allPrograms, error: listError } = await supabase
-            .from('degree_programs')
-            .select('id, name, degree_type, is_active')
-            .limit(50);
-
-        if (listError) {
-            console.error('Error checking available programs:', listError);
-            return null;
-        }
-
-        console.log('All degree programs in database:');
-        allPrograms?.forEach(p => {
-            console.log(`- ${p.name} (${p.degree_type}) - Active: ${p.is_active}`);
-        });
-
-        // Filter active programs
-        const activePrograms = allPrograms?.filter(p => p.is_active === true) || [];
-        
-        if (activePrograms.length === 0) {
-            console.warn('No active degree programs found. Attempting to activate existing programs...');
-            
-            // Try to activate programs that might have null is_active
-            const { error: activateError } = await supabase
-                .from('degree_programs')
-                .update({ is_active: true })
-                .is('is_active', null);
-                
-            if (activateError) {
-                console.error('Failed to activate programs:', activateError);
-            } else {
-                console.log('Activated programs with null is_active status');
-            }
-            
-            return null;
-        }
-
-        console.log('Available active degree programs:', activePrograms.map(p => `${p.name} (${p.degree_type})`));
-
-        // Query degree program by major name via API route to avoid RLS issues
+        const majorName = userProfile.major;
         try {
             const response = await fetch(`/api/degree-programs?major=${encodeURIComponent(majorName)}`);
-            
             if (!response.ok) {
                 console.error('API request failed for major:', majorName);
                 return null;
             }
-            
             const program = await response.json();
-            
-            console.log('Found program via API:', program?.name);
-            
-            // Convert API response to visual format
+            if (!program) return null;
+
             const visualProgram: VisualDegreeProgram = {
                 id: program.id,
                 name: program.name,
                 degreeType: program.degree_type,
-                college: undefined, // Skip college name for now
+                college: undefined,
                 totalCredits: program.total_credits || undefined,
                 requirements: Array.isArray(program.requirements) ? program.requirements : [],
                 footnotes: Array.isArray(program.footnotes) ? program.footnotes : []
             };
-            
+
             return visualProgram;
         } catch (fetchError) {
             console.error('Error fetching degree program via API:', fetchError);
@@ -111,48 +64,32 @@ export async function fetchDegreeProgramRequirementsByMajor(): Promise<VisualDeg
 
 export async function fetchMinorRequirementsByMinorsColumn(): Promise<VisualMinorProgram[]> {
     try {
-        // Get the current user
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            console.error('No authenticated user found');
-            return [];
-        }
-
-        // Get user's minors from users table (new approach using minors JSON column)
-        const { data: userRecord, error: userError } = await supabase
-            .from('users')
-            .select('minors')
-            .eq('auth_id', user.id)
-            .single();
-
-        if (userError) {
-            console.error('Error fetching user record:', userError);
-            return [];
-        }
-
-        if (!userRecord?.minors || !Array.isArray(userRecord.minors) || userRecord.minors.length === 0) {
+        // Use userDataService to get current user's minors
+        const userProfile = await userDataService.getUserProfile();
+        if (!userProfile || !Array.isArray(userProfile.minors) || userProfile.minors.length === 0) {
             console.log('User has no minors selected');
             return [];
         }
 
-        const minorNames = userRecord.minors;
+        const minorNames = userProfile.minors;
         console.log('Fetching minor program requirements for minors:', minorNames);
 
-        // Query minor programs by names
-        const { data: programs, error: programError } = await supabase
-            .from('degree_programs')
-            .select('id, name, requirements')
-            .eq('degree_type', 'Minor')
-            .in('name', minorNames)
-            .eq('is_active', true);
+        // Fetch each minor program via the public API route and aggregate
+        const fetchPromises = minorNames.map(async (minorName: string) => {
+            try {
+                const resp = await fetch(`/api/degree-programs?major=${encodeURIComponent(minorName)}&degree_type=Minor`);
+                if (!resp.ok) return null;
+                const program = await resp.json();
+                return program;
+            } catch (err) {
+                console.error('Error fetching minor program for', minorName, err);
+                return null;
+            }
+        });
 
-        if (programError) {
-            console.error('Error fetching minor programs:', programError);
-            return [];
-        }
+        const programs = (await Promise.all(fetchPromises)).filter(Boolean);
 
-        // Convert to visual minor format
-        const visualMinors: VisualMinorProgram[] = (programs || []).map(program => ({
+        const visualMinors: VisualMinorProgram[] = (programs || []).map((program: any) => ({
             id: program.id,
             name: program.name,
             requirements: Array.isArray(program.requirements) ? program.requirements : [],

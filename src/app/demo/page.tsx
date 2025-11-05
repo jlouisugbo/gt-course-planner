@@ -180,15 +180,15 @@ export default function DemoPage() {
                 </div>
                 <div>
                   <div className="text-sm text-gray-300">Threads</div>
-                  <div className="font-semibold">{DEMO_USER.selected_threads.join(', ')}</div>
+                  <div className="font-semibold">{(DEMO_USER.selected_threads || []).join(', ')}</div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-300">Minor</div>
-                  <div className="font-semibold">{DEMO_USER.minors.join(', ')}</div>
+                  <div className="font-semibold">{(DEMO_USER.minors || []).join(', ')}</div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-300">GPA</div>
-                  <div className="font-semibold">{DEMO_USER.current_gpa.toFixed(2)}</div>
+                  <div className="font-semibold">{(DEMO_USER.current_gpa ?? 0).toFixed(2)}</div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-300">Credits Earned</div>

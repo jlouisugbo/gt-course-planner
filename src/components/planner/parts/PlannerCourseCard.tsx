@@ -193,14 +193,14 @@ const CourseCard: React.FC<CourseCardProps> = ({
         
         <div className="flex items-center justify-between">
           <AnimatePresence>
-            {(courseGrade || pendingStatusUpdate?.grade) && (
+            {(courseGrade || _pendingStatusUpdate?.grade) && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
               >
                 <Badge variant="outline" className="text-xs">
-                  {pendingStatusUpdate?.grade || courseGrade}
+                  {_pendingStatusUpdate?.grade || courseGrade}
                 </Badge>
               </motion.div>
             )}

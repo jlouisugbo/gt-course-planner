@@ -9,19 +9,27 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
 import { userDataService, UserCourseCompletion } from '@/lib/database/userDataService';
-import { usePlannerStore } from '@/hooks/usePlannerStore';
+import { useUserPlannerData } from '@/hooks/useUserPlannerData';
 import { 
-  VisualRequirementCategory,
-  DegreeProgram,
-  DegreeRequirement,
-  RequirementProgress,
   DegreeProgressSummary,
-  CategoryProgress,
-  ThreadProgress,
-  RequirementCalculationResponse,
   RequirementDisplaySettings,
-  FlexibleOption
 } from '@/types/requirements';
+
+// Local visual requirement category shape used by this hook
+type VisualRequirementCategory = {
+  id: string;
+  name: string;
+  description?: string;
+  courses: Array<{ id: string; code: string; credits: number } & Record<string, any>>;
+  minCredits: number;
+  completedCredits: number;
+  isCompleted: boolean;
+  progressPercentage: number;
+  completedCourses: string[];
+  plannedCourses: string[];
+  sortOrder: number;
+  color: string;
+};
 
 export interface EnhancedRequirementProgress {
   categoryId: string;
@@ -51,11 +59,10 @@ export const useRequirements = (
   }
 ) => {
   const { user: authUser } = useAuth();
-  const { fetchDegreeProgramRequirements, fetchMinorProgramsRequirements, getAllCourses, semesters } = usePlannerStore();
+  const { programs, semesters } = useUserPlannerData();
   
   const [completions, setCompletions] = useState<UserCourseCompletion[]>([]);
-  const [degreeProgram, setDegreeProgram] = useState<any>(null);
-  const [minorPrograms, setMinorPrograms] = useState<any[]>([]);
+  // Derived below from programs
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,19 +78,11 @@ export const useRequirements = (
         setIsLoading(true);
         setError(null);
 
-        const [
-          courseCompletions,
-          degree,
-          minors
-        ] = await Promise.all([
-          userDataService.getCourseCompletions(),
-          fetchDegreeProgramRequirements(),
-          fetchMinorProgramsRequirements()
-        ]);
-
-        setCompletions(courseCompletions);
-        setDegreeProgram(degree);
-        setMinorPrograms(minors);
+        const courseCompletions = await userDataService.getCourseCompletions().catch(err => {
+          console.warn('[useRequirements] Failed to fetch course completions:', err.message);
+          return [] as UserCourseCompletion[];
+        });
+        setCompletions(courseCompletions || []);
 
       } catch (err) {
         console.error('Error loading requirements data:', err);
@@ -94,7 +93,7 @@ export const useRequirements = (
     };
 
     loadRequirementsData();
-  }, [authUser, fetchDegreeProgramRequirements, fetchMinorProgramsRequirements]);
+  }, [authUser]);
 
   // Convert course completions to course codes for easy lookup
   const completedCourseCodes = useMemo(() => {
@@ -107,15 +106,27 @@ export const useRequirements = (
 
   // Get planned courses from Zustand store
   const plannedCourseCodes = useMemo(() => {
-    const plannedCourses = getAllCourses().filter(c => c.status === 'planned');
-    return new Set(plannedCourses.map(c => c.code));
-  }, [getAllCourses]);
+    const allFromSemesters = Object.values(semesters || {}).flatMap((s: any) => Array.isArray(s?.courses) ? s.courses : []);
+    const planned = allFromSemesters.filter((c: any) => c?.status === 'planned');
+    return new Set(planned.map((c: any) => c.code));
+  }, [semesters]);
+
+  // Derive degree/minor programs from aggregated programs
+  const degreeProgram = useMemo(() => {
+    const list = (programs || []).filter(Boolean) as any[];
+    return list.find(p => p?.degree_type !== 'Minor' && p?.degree_type !== 'Thread') || null;
+  }, [programs]);
+
+  const minorPrograms = useMemo(() => {
+    const list = (programs || []).filter(Boolean) as any[];
+    return list.filter(p => p?.degree_type === 'Minor');
+  }, [programs]);
 
   // Process degree requirements with actual completion data
   const processedDegreeRequirements = useMemo((): VisualRequirementCategory[] => {
     if (!degreeProgram?.requirements) return [];
 
-    return degreeProgram.requirements.map((section: any, index: number) => {
+  return degreeProgram.requirements.map((section: any, index: number) => {
       const sectionId = section.id || `section-${index}`;
       
       // Calculate completion for this section
@@ -149,6 +160,8 @@ export const useRequirements = (
         progressPercentage: minCredits > 0 ? Math.min((completedCredits / minCredits) * 100, 100) : 0,
         completedCourses: completedInSection.map((c: any) => c.code),
         plannedCourses: plannedInSection.map((c: any) => c.code),
+        sortOrder: typeof section.sortOrder === 'number' ? section.sortOrder : index,
+        color: section.color || '#003057',
       };
     });
   }, [degreeProgram, completedCourseCodes, plannedCourseCodes]);
@@ -193,6 +206,8 @@ export const useRequirements = (
           progressPercentage: minCredits > 0 ? Math.min((completedCredits / minCredits) * 100, 100) : 0,
           completedCourses: completedInSection.map((c: any) => c.code),
           plannedCourses: plannedInSection.map((c: any) => c.code),
+          sortOrder: typeof section.sortOrder === 'number' ? section.sortOrder : sectionIndex,
+          color: section.color || '#8a8a8a',
         };
       });
     });
@@ -336,7 +351,7 @@ export const useRequirements = (
       totalCreditsPlanned: plannedCredits,
       overallCompletionPercentage: overallProgress.progressPercentage,
       estimatedGraduationSemester: calculateGraduationSemester(totalCreditsRequired - totalCreditsCompleted),
-      requirementProgress: allRequirements.map(req => ({
+      requirementProgress: allRequirements.map((req: VisualRequirementCategory) => ({
         requirement: {
           id: parseInt(req.id.replace(/\D/g, '')) || 1,
           degreeProgramId: 1,
@@ -344,14 +359,14 @@ export const useRequirements = (
           requirementName: req.name,
           description: req.description,
           requiredCredits: req.minCredits || 0,
-          requiredCourses: req.courses.map(c => c.code),
+          requiredCourses: req.courses.map((c: any) => c.code),
           flexibleOptions: [],
           sortOrder: 0,
           isRequired: true
         },
         progress: {
           id: 1,
-          userId: authUser?.id || 1,
+          userId: typeof authUser?.id === 'number' ? authUser.id : 1,
           requirementId: parseInt(req.id.replace(/\D/g, '')) || 1,
           completedCredits: req.completedCredits || 0,
           completedCourses: req.completedCourses || [],
@@ -364,13 +379,13 @@ export const useRequirements = (
                req.progressPercentage > 0 ? 'in-progress' as const : 'not-started' as const,
         remainingCredits: Math.max(0, (req.minCredits || 0) - (req.completedCredits || 0)),
         remainingCourses: req.courses
-          .filter(c => !req.completedCourses.includes(c.code))
-          .map(c => c.code),
+          .filter((c: any) => !req.completedCourses.includes(c.code))
+          .map((c: any) => c.code),
         availableOptions: [],
         nextCourses: req.courses
-          .filter(c => !req.completedCourses.includes(c.code))
+          .filter((c: any) => !req.completedCourses.includes(c.code))
           .slice(0, 3)
-          .map(c => c.code)
+          .map((c: any) => c.code)
       })),
       categoryProgress: [],
       threadProgress: [],
@@ -384,22 +399,18 @@ export const useRequirements = (
   const refreshRequirements = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [courseCompletions, degree, minors] = await Promise.all([
-        userDataService.getCourseCompletions(),
-        fetchDegreeProgramRequirements(),
-        fetchMinorProgramsRequirements()
-      ]);
-
-      setCompletions(courseCompletions);
-      setDegreeProgram(degree);
-      setMinorPrograms(minors);
+      const courseCompletions = await userDataService.getCourseCompletions().catch(err => {
+        console.warn('[useRequirements] Failed to refresh course completions:', err.message);
+        return [] as UserCourseCompletion[];
+      });
+      setCompletions(courseCompletions || []);
     } catch (err) {
-      console.error('Error refreshing requirements:', err);
+      console.error('[useRequirements] Error refreshing requirements:', err);
       setError('Failed to refresh requirements data');
     } finally {
       setIsLoading(false);
     }
-  }, [fetchDegreeProgramRequirements, fetchMinorProgramsRequirements]);
+  }, []);
 
   const exportProgress = useCallback(async (format: 'json' | 'csv'): Promise<Blob> => {
     if (!enhancedProgressSummary) throw new Error('No progress data available');

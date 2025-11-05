@@ -20,6 +20,7 @@ import {
 import { useUserAwarePlannerStore } from "@/hooks/useUserAwarePlannerStore";
 // Removed framer-motion to prevent re-renders during drag
 import { useDrag, useDrop } from 'react-dnd';
+import { attachConnectorRef } from '@/components/dnd/dnd-compat';
 import { DragTypes } from '@/types';
 import { cn } from '@/lib/utils';
 import { CriticalErrorBoundary } from "@/components/error/GlobalErrorBoundary";
@@ -87,7 +88,7 @@ const DraggableCourseCard: React.FC<{
     semesterId: number;
     isCompleted: boolean;
     isCurrent: boolean;
-    onRemove: (semesterId: number, courseId: number | string) => void;
+    onRemove: (semesterId: number, courseId: number) => void;
 }> = memo(({ course, semesterId, isCompleted, isCurrent, onRemove }) => {
     const [{ isDragging }, dragRef] = useDrag(() => ({
         type: DragTypes.PLANNED_COURSE,
@@ -104,7 +105,7 @@ const DraggableCourseCard: React.FC<{
 
     return (
         <div
-            ref={dragRef}
+            ref={attachConnectorRef<HTMLDivElement>(dragRef as any)}
             className={cn(
                 "group cursor-move transition-opacity duration-150",
                 isDragging && "opacity-50"
@@ -138,7 +139,9 @@ const DraggableCourseCard: React.FC<{
                                 className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700"
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    onRemove(semesterId, course.id || course.code);
+                                    if (typeof course.id === 'number') {
+                                      onRemove(semesterId, course.id);
+                                    }
                                 }}
                             >
                                 <Trash2 className="h-3 w-3" />
@@ -219,9 +222,9 @@ export const PlannerGrid: React.FC<PlannerGridProps> = memo(({
 
     // Memoized remove course handler
     const handleRemoveCourse = useCallback(
-        (semesterId: number, courseId: number | string) => {
+        (semesterId: number, courseId: number) => {
             if (removeCourseFromSemester) {
-                removeCourseFromSemester(semesterId, courseId);
+                removeCourseFromSemester(courseId, semesterId);
             }
         },
         [removeCourseFromSemester]
@@ -270,7 +273,7 @@ export const PlannerGrid: React.FC<PlannerGridProps> = memo(({
         return (
             <div className="h-full">
                 <Card 
-                    ref={dropRef}
+                    ref={attachConnectorRef<HTMLDivElement>(dropRef as any)}
                     className={cn(
                         "h-full transition-all duration-200 relative focus-within:ring-2 focus-within:ring-blue-500/20",
                         isOver && "ring-2 ring-[#B3A369] ring-opacity-50",

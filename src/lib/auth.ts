@@ -96,7 +96,7 @@ export const authService = {
         callback: (event: AuthChangeEvent, session: Session | null) => void,
     ) {
         console.log('authService: Setting up auth state change listener');
-        return supabase.auth.onAuthStateChange((event, session) => {
+        return supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
             console.log('authService: Auth state change detected:', event, session?.user?.id);
             
             // Add basic validation to prevent invalid state changes

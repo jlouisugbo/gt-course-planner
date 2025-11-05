@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabaseServer';
 
 // GET /api/advisors/appointments - Get user's appointments
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
   try {
     const supabase = await createClient();
 

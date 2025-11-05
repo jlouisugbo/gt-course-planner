@@ -5,7 +5,6 @@
  */
 
 import { userDataService } from '@/lib/database/userDataService';
-import { supabase } from '@/lib/supabaseClient';
 
 export interface FlexibleRequirement {
   id: string;
@@ -45,34 +44,22 @@ class FlexibleCourseService {
     try {
       // Get user's flexible mappings
       const mappings = await userDataService.getFlexibleMappings();
-      
-      // Get user's degree program requirements
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) return [];
+      // Get user's degree program (use userDataService)
+      const userProfile = await userDataService.getUserProfile();
+      const majorName = userProfile?.major;
+      if (!majorName) return [];
 
-      const { data: userRecord, error: userError } = await supabase
-        .from('users')
-        .select('major')
-        .eq('auth_id', user.id)
-        .single();
-
-      if (userError || !userRecord?.major) return [];
-
-      // Get degree program with requirements
-      const { data: program, error: programError } = await supabase
-        .from('degree_programs')
-        .select('id, requirements')
-        .eq('name', userRecord.major)
-        .eq('is_active', true)
-        .single();
-
-      if (programError || !program) return [];
+      // Query degree program via API route to avoid client-side RLS issues
+      const resp = await fetch(`/api/degree-programs?major=${encodeURIComponent(majorName)}`);
+      if (!resp.ok) return [];
+      const program = await resp.json();
+      if (!program) return [];
 
       // Parse requirements to find flexible sections
-      const requirements = Array.isArray(program.requirements) ? program.requirements : [];
+  const requirements = Array.isArray(program.requirements) ? program.requirements : [];
       const flexibleRequirements: FlexibleRequirement[] = [];
 
-      requirements.forEach((section: any, sectionIndex: number) => {
+  requirements.forEach((section: any, sectionIndex: number) => {
         if (section.type === 'flexible' || section.selectFrom) {
           const requirementPath = `requirements[${sectionIndex}]`;
           const userSelectionsForSection = mappings.filter(m => m.requirement_path === requirementPath);
@@ -137,26 +124,19 @@ class FlexibleCourseService {
       // Get degree program ID if not provided
       let programId = degreeProgramId;
       if (!programId) {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) return false;
+        const userProfile = await userDataService.getUserProfile();
+        const major = userProfile?.major;
+        if (!major) return false;
 
-        const { data: userRecord, error: userError } = await supabase
-          .from('users')
-          .select('major')
-          .eq('auth_id', user.id)
-          .single();
-
-        if (userError || !userRecord?.major) return false;
-
-        const { data: program, error: programError } = await supabase
-          .from('degree_programs')
-          .select('id')
-          .eq('name', userRecord.major)
-          .eq('is_active', true)
-          .single();
-
-        if (programError || !program) return false;
-        programId = program.id;
+        try {
+          const response = await fetch(`/api/degree-programs?major=${encodeURIComponent(major)}`);
+          if (!response.ok) return false;
+          const program = await response.json();
+          programId = program?.id;
+        } catch (err) {
+          console.error('Error fetching degree program for major:', err);
+          return false;
+        }
       }
 
       // Save the selection
@@ -182,21 +162,9 @@ class FlexibleCourseService {
    */
   async deselectCourse(requirementPath: string, courseId: number): Promise<boolean> {
     try {
-      const userId = await userDataService.getCurrentUserId();
-      if (!userId) return false;
-
-      // Find and delete the mapping
-      const { error } = await supabase
-        .from('user_flexible_mappings')
-        .delete()
-        .eq('user_id', userId)
-        .eq('requirement_path', requirementPath)
-        .eq('selected_course_id', courseId);
-
-      if (error) {
-        console.error('Error deselecting course:', error);
-        return false;
-      }
+      // Use userDataService to delete the mapping
+      const success = await userDataService.deleteFlexibleMapping(requirementPath, courseId);
+      if (!success) return false;
 
       console.log(`✅ Deselected course ${courseId} from requirement ${requirementPath}`);
       return true;

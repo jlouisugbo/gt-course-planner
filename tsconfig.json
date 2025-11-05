@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     // Gradually enable strict mode features for better error catching
@@ -23,10 +27,15 @@
     "jsx": "preserve",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": [
+        "src/*"
+      ]
     },
     "forceConsistentCasingInFileNames": true,
-    "typeRoots": ["./node_modules/@types", "./types"],
+    "typeRoots": [
+      "./node_modules/@types",
+      "./types"
+    ],
     "plugins": [
       {
         "name": "next"
@@ -34,12 +43,16 @@
     ]
   },
   "include": [
-    "next-env.d.ts",
-    ".next/types/**/*.ts",
     "**/*.ts",
     "**/*.tsx",
     "crawler/transform-course.js",
-    "populateDatabase.mjs"
-, "src/lib/supabaseAdmin.js"  ],
-  "exclude": ["node_modules"],
+    "next-env.d.ts",
+    "populateDatabase.mjs",
+    "src/lib/supabaseAdmin.js",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    ".next/**"
+  ]
 }

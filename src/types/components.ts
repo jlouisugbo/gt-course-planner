@@ -7,7 +7,10 @@ export interface AppLayoutProps {
 
 // Import proper types
 import { Course, SemesterData, PlannedCourse } from './courses';
-import { VisualRequirementCategory, VisualCourse } from './requirements';
+import { RequirementCategory } from './requirements';
+// Backward-compatibility aliases for UI prop types
+export type VisualCourse = Course;
+export type VisualRequirementCategory = RequirementCategory;
 import { ThreadProgress, Deadline as DashboardDeadline, ActivityItem, DashboardData } from './dashboard';
 
 // Planner Components

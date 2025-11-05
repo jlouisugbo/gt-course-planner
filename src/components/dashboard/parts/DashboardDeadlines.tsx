@@ -13,6 +13,7 @@ interface DashboardDeadlinesProps {
 }
 
 export const DashboardDeadlines: React.FC<DashboardDeadlinesProps> = ({ deadlines }) => {
+    type LocalDeadline = Deadline & { daysLeft: number; dateObject: Date };
     // Helper function to compute days left from date
     const getDaysLeft = (dateString: string): number => {
         try {
@@ -56,7 +57,7 @@ export const DashboardDeadlines: React.FC<DashboardDeadlinesProps> = ({ deadline
     const sourceDeadlines = deadlines.length > 0 ? deadlines : sampleDeadlines;
     
     // Add computed properties and filter recent deadlines
-    const displayDeadlines = sourceDeadlines
+    const displayDeadlines: LocalDeadline[] = sourceDeadlines
         .map(deadline => ({
             ...deadline,
             daysLeft: getDaysLeft(deadline.date),
@@ -101,9 +102,9 @@ export const DashboardDeadlines: React.FC<DashboardDeadlinesProps> = ({ deadline
                     <CardTitle className="flex items-center space-x-2">
                         <AlertTriangle className="h-5 w-5 text-yellow-600" />
                         <span>Upcoming Deadlines</span>
-                        {deadlines.filter(d => d.daysLeft <= 7 && d.daysLeft >= 0).length > 0 && (
+                        {displayDeadlines.filter(d => d.daysLeft <= 7 && d.daysLeft >= 0).length > 0 && (
                             <Badge variant="destructive" className="ml-auto">
-                                {deadlines.filter(d => d.daysLeft <= 7 && d.daysLeft >= 0).length} urgent
+                                {displayDeadlines.filter(d => d.daysLeft <= 7 && d.daysLeft >= 0).length} urgent
                             </Badge>
                         )}
                     </CardTitle>
@@ -160,10 +161,10 @@ export const DashboardDeadlines: React.FC<DashboardDeadlinesProps> = ({ deadline
                                 );
                             })}
                             
-                            {deadlines.length > 5 && (
+                            {displayDeadlines.length > 5 && (
                                 <div className="text-center pt-4 border-t">
                                     <Button variant="outline" size="sm">
-                                        View All Deadlines ({deadlines.length})
+                                        View All Deadlines ({displayDeadlines.length})
                                     </Button>
                                 </div>
                             )}

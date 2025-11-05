@@ -249,7 +249,7 @@ export const useDebounceValidation = (
   fieldName: string,
   delay: number = 300
 ) => {
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const errorRef = useRef<string | null>(null);
 
   const debouncedValidate = useCallback((currentValue: any) => {

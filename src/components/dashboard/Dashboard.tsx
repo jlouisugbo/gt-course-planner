@@ -23,8 +23,6 @@ import TimelineOverview from "./parts/TimelineOverview";
 
 const Dashboard = memo(() => {
     const { 
-        studentInfo, 
-        recentActivity, 
         semesters,
     } = useUserAwarePlannerStore();
 
@@ -45,17 +43,22 @@ const Dashboard = memo(() => {
         const hasValidDashboardData = dashboardData && dashboardData.user;
         
         return {
-            studentInfo: hasValidDashboardData ? dashboardData.user : studentInfo,
+            studentInfo: hasValidDashboardData ? dashboardData.user : null,
             academicProgress: dashboardData?.academicProgress || {
                 creditsCompleted: 0,
                 creditsInProgress: 0,
                 creditsPlanned: 0,
                 totalCreditsRequired: 126,
+                totalCredits: 126,
                 currentGPA: 0,
+                targetGPA: 3.5,
                 progressPercentage: 0,
-                onTrack: false
+                onTrack: false,
+                onTrackForGraduation: false,
+                coursesRemaining: 0,
+                coursesCompleted: 0,
             },
-            recentActivity: (dashboardData?.recentActivity?.length > 0) ? dashboardData.recentActivity : recentActivity,
+            recentActivity: (dashboardData?.recentActivity?.length > 0) ? dashboardData.recentActivity : [],
             semesters,
             allCourses,
             completedCourses: dashboardData?.courses?.completed || [],
@@ -68,8 +71,6 @@ const Dashboard = memo(() => {
         };
     }, [
         dashboardData,
-        studentInfo,
-        recentActivity,
         semesters,
         allCourses
     ]);

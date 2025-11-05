@@ -19,7 +19,7 @@ export type NotificationPriority = 'low' | 'medium' | 'high';
 
 export interface Notification {
   id: string;
-  user_id: number;
+  user_id: string;
   type: NotificationType;
   title: string;
   message: string;
@@ -37,7 +37,7 @@ export interface Notification {
 
 export interface NotificationPreferences {
   id: string;
-  user_id: number;
+  user_id: string;
 
   // Notification type toggles
   deadline_reminders: boolean;
@@ -67,7 +67,7 @@ export interface NotificationPreferences {
 // =====================================================
 
 export interface CreateNotificationRequest {
-  user_id: number;
+  user_id: string;
   type: NotificationType;
   title: string;
   message: string;

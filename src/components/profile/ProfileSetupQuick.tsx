@@ -62,7 +62,7 @@ export default function ProfileSetupQuick({ onClose }: ProfileSetupQuickProps) {
             profileSetup.updateProfileBulk({
                 full_name: `${formData.firstName} ${formData.lastName}`.trim(),
                 major: formData.major,
-                expected_graduation: formData.expectedGraduation,
+                expectedGraduation: formData.expectedGraduation,
             });
             
             await profileSetup.saveProfile();

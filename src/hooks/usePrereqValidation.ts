@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { usePlannerStore } from '@/hooks/usePlannerStore';
 import { Course } from '@/types';
 import { PrerequisiteValidator, ValidationContext, PrerequisiteCheck } from '@/lib/validation/prerequisites';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/providers/AuthProvider';
 
 export interface PrerequisiteValidation {
   canAdd: boolean;
@@ -16,7 +16,7 @@ export interface PrerequisiteValidation {
 
 export const usePrerequisiteValidation = () => {
   const { semesters } = usePlannerStore();
-  const { user } = useAuth();
+  const { userRecord } = useAuth();
 
   const getValidationForCourse = useMemo(() => {
     const validatePrerequisites = (course: Course, targetSemester?: number): PrerequisiteValidation => {
@@ -60,9 +60,9 @@ export const usePrerequisiteValidation = () => {
         inProgressCourses,
         plannedCourses,
         currentSemester: targetSemester || Object.keys(semesters).length + 1,
-        userGPA: user?.gpa || user?.currentGPA,
-        totalCredits: user?.totalCreditsEarned,
-        academicYear: user?.year ? parseInt(user.year) : undefined
+        userGPA: (userRecord as any)?.current_gpa ?? (userRecord as any)?.currentGPA,
+        totalCredits: (userRecord as any)?.total_credits_earned ?? (userRecord as any)?.totalCreditsEarned,
+        academicYear: (userRecord as any)?.year ? parseInt((userRecord as any).year) : undefined
       };
 
       // Use the new comprehensive validator
@@ -84,7 +84,7 @@ export const usePrerequisiteValidation = () => {
     };
 
     return validatePrerequisites;
-  }, [semesters, user]);
+  }, [semesters, userRecord]);
 
   // Enhanced validation methods
   const validateSemesterPlan = (semesterCourses: Course[], semesterId: number) => {
@@ -101,9 +101,9 @@ export const usePrerequisiteValidation = () => {
         ])
       ),
       currentSemester: semesterId,
-      userGPA: user?.gpa || user?.currentGPA,
-      totalCredits: user?.totalCreditsEarned,
-      academicYear: user?.year ? parseInt(user.year) : undefined
+      userGPA: (userRecord as any)?.current_gpa ?? (userRecord as any)?.currentGPA,
+      totalCredits: (userRecord as any)?.total_credits_earned ?? (userRecord as any)?.totalCreditsEarned,
+      academicYear: (userRecord as any)?.year ? parseInt((userRecord as any).year) : undefined
     };
 
     return PrerequisiteValidator.validateCourses(semesterCourses, context);

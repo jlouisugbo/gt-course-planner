@@ -210,7 +210,8 @@ const CourseManager: React.FC<CourseManagerProps> = ({
     }, [courses, programCourses, activeTab]);
 
     const handleAddCourse = (course: Course) => {
-        const plannedCourse: PlannedCourse = {
+    const dept = typeof course.code === 'string' ? (course.code.split(' ')[0] || 'GEN') : 'GEN';
+    const plannedCourse: PlannedCourse = {
             // Course properties
             id: course.id,
             code: course.code,
@@ -221,7 +222,8 @@ const CourseManager: React.FC<CourseManagerProps> = ({
             offerings: course.offerings,
             difficulty: course.difficulty,
             college: course.college,
-            type: course.type || "elective", // Default to "elective" if type is missing
+            course_type: (course as any).course_type || (course as any).type || "elective",
+        department: (course as any).department || dept,
             // Planning properties
             semesterId: semesterId,
             status: "planned",
@@ -240,7 +242,8 @@ const CourseManager: React.FC<CourseManagerProps> = ({
         // Generate a numeric ID for custom courses (timestamp-based)
         const customId = Date.now();
 
-        const plannedCourse: PlannedCourse = {
+    const dept = typeof customCourse.code === 'string' ? (customCourse.code.split(' ')[0] || 'GEN') : 'GEN';
+    const plannedCourse: PlannedCourse = {
             // Course properties
             id: customId,
             code: customCourse.code,
@@ -250,8 +253,9 @@ const CourseManager: React.FC<CourseManagerProps> = ({
             prerequisites: { type: "AND", courses: [] },
             offerings: { fall: true, spring: true, summer: true },
             difficulty: 3,
-            type: customCourse.type || "elective", // Default to "elective" if type is missing
+            course_type: customCourse.type || "elective",
             college: "Custom",
+        department: dept,
             // Planning properties
             semesterId: semesterId,
             status: customCourse.status,

@@ -85,7 +85,7 @@ export class SecureErrorBoundary extends Component<Props, State> {
 
     // Report critical errors to monitoring
     if (errorBoundaryLevel === 'critical') {
-      this.logger.critical('Critical error boundary triggered', error, {
+      this.logger.error('Critical error boundary triggered', error, {
         errorId,
         context,
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'

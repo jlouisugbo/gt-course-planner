@@ -195,7 +195,8 @@ export class PrerequisiteValidator {
       }
 
     } catch (error) {
-      result.errors.push(`Error validating prerequisites for ${parentCourse}: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      result.errors.push(`Error validating prerequisites for ${parentCourse}: ${message}`);
       result.satisfied = false;
     }
 

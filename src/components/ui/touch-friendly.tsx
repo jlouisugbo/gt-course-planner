@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { motion, PanInfo } from 'framer-motion';
+import { motion, PanInfo, type HTMLMotionProps } from 'framer-motion';
 
 // Touch-friendly button wrapper
 export function TouchButton({
@@ -18,7 +18,7 @@ export function TouchButton({
   onTap?: () => void;
   disabled?: boolean;
   size?: 'sm' | 'default' | 'lg';
-} & React.ComponentProps<"button">) {
+} & HTMLMotionProps<"button">) {
   const sizeClasses = {
     sm: 'min-h-[40px] min-w-[40px] px-3 py-2',
     default: 'min-h-[44px] min-w-[44px] px-4 py-2',
@@ -60,7 +60,7 @@ export function SwipeableCard({
   onSwipeRight?: () => void;
   swipeThreshold?: number;
   className?: string;
-} & React.ComponentProps<"div">) {
+} & HTMLMotionProps<"div">) {
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 

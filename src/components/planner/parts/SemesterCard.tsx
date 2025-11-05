@@ -128,7 +128,8 @@ const SemesterCard: React.FC<SemesterCardProps> = ({ semester }) => {
               college: selectedCourse.college || "Unknown College",
               prerequisites: Array.isArray(selectedCourse.prerequisites) ? selectedCourse.prerequisites : [],
               offerings: selectedCourse.offerings || { fall: true, spring: true, summer: false },
-              type: 'planned', // Default type for planned courses
+              course_type: (selectedCourse as any).course_type || (selectedCourse as any).type || 'elective',
+              department: typeof selectedCourse.code === 'string' ? (selectedCourse.code.split(' ')[0] || 'GEN') : 'GEN',
           } as Course)
         : null;
 

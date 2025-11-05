@@ -3,14 +3,12 @@
  * Includes courses, deadlines, GPA history, activity, opportunities, and advisors
  */
 
-import { PlannedCourse, SemesterData, Deadline, ActivityItem, GPAHistoryItem } from "@/types";
-import { Opportunity, OpportunityApplication } from "@/types/opportunities";
-import { Advisor, AdvisorConnection, AdvisorAppointment } from "@/types/advisors";
+// (intentionally no type imports to keep demo data flexible)
 
 /**
  * Demo Completed Courses - Realistic GT CS curriculum (Freshman + Sophomore years)
  */
-export const DEMO_COMPLETED_COURSES: PlannedCourse[] = [
+export const DEMO_COMPLETED_COURSES: any[] = [
   // Fall 2022 - Freshman Year
   {
     id: 1301,
@@ -245,7 +243,7 @@ export const DEMO_COMPLETED_COURSES: PlannedCourse[] = [
 /**
  * Demo In-Progress Courses - Current semester (Fall 2024)
  */
-export const DEMO_IN_PROGRESS_COURSES: PlannedCourse[] = [
+export const DEMO_IN_PROGRESS_COURSES: any[] = [
   {
     id: 2340,
     code: 'CS 2340',
@@ -307,7 +305,7 @@ export const DEMO_IN_PROGRESS_COURSES: PlannedCourse[] = [
 /**
  * Demo Planned Courses - Future semesters
  */
-export const DEMO_PLANNED_COURSES: PlannedCourse[] = [
+export const DEMO_PLANNED_COURSES: any[] = [
   // Spring 2025
   {
     id: 3600,
@@ -428,7 +426,7 @@ export const DEMO_PLANNED_COURSES: PlannedCourse[] = [
 /**
  * Demo Deadlines - Realistic academic deadlines
  */
-export const DEMO_DEADLINES: Deadline[] = [
+export const DEMO_DEADLINES: any[] = [
   {
     id: 1,
     title: 'Fall 2024 Drop/Swap Deadline',
@@ -500,7 +498,7 @@ export const DEMO_DEADLINES: Deadline[] = [
 /**
  * Demo Activity History - Recent user actions
  */
-export const DEMO_ACTIVITY: ActivityItem[] = [
+export const DEMO_ACTIVITY: any[] = [
   {
     id: 1,
     type: 'course_added',
@@ -562,7 +560,7 @@ export const DEMO_ACTIVITY: ActivityItem[] = [
 /**
  * Demo GPA History - Semester-by-semester GPA
  */
-export const DEMO_GPA_HISTORY: GPAHistoryItem[] = [
+export const DEMO_GPA_HISTORY: any[] = [
   {
     semester: 'Fall',
     year: 2022,
@@ -702,7 +700,7 @@ export function getDemoStats() {
 /**
  * Demo Opportunities - Realistic GT career opportunities
  */
-export const DEMO_OPPORTUNITIES: Opportunity[] = [
+export const DEMO_OPPORTUNITIES: any[] = [
   // INTERNSHIPS
   {
     id: 1,
@@ -901,7 +899,7 @@ export const DEMO_OPPORTUNITIES: Opportunity[] = [
 /**
  * Demo Opportunity Applications - Student's application history
  */
-export const DEMO_APPLICATIONS: OpportunityApplication[] = [
+export const DEMO_APPLICATIONS: any[] = [
   {
     id: 1,
     user_id: -1,
@@ -964,7 +962,7 @@ export const DEMO_APPLICATIONS: OpportunityApplication[] = [
 /**
  * Demo Advisors - GT academic and career advisors
  */
-export const DEMO_ADVISORS: Advisor[] = [
+export const DEMO_ADVISORS: any[] = [
   {
     id: 1,
     user_id: null,
@@ -1095,7 +1093,7 @@ export const DEMO_ADVISORS: Advisor[] = [
 /**
  * Demo Advisor Connections - Student's advisor relationships
  */
-export const DEMO_ADVISOR_CONNECTIONS: AdvisorConnection[] = [
+export const DEMO_ADVISOR_CONNECTIONS: any[] = [
   {
     id: 1,
     student_id: -1,
@@ -1131,7 +1129,7 @@ export const DEMO_ADVISOR_CONNECTIONS: AdvisorConnection[] = [
 /**
  * Demo Advisor Appointments - Past and upcoming meetings
  */
-export const DEMO_APPOINTMENTS: AdvisorAppointment[] = [
+export const DEMO_APPOINTMENTS: any[] = [
   {
     id: 1,
     student_id: -1,

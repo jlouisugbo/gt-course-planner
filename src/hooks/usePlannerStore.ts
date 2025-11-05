@@ -1,134 +1,48 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { supabase } from "@/lib/supabaseClient";
+import { api } from '@/lib/api/client';
 
-import {
-    StudentInfo,
-    AcademicProgress,
-    ActivityItem,
-    SemesterData,
-    PlannedCourse,
-    RequirementCategory,
-    UserProfile,
-    DegreeProgramDisplay,
-    Deadline,
-    ProgressItem,
-} from "@/types";
-import { VisualDegreeProgram, VisualMinorProgram } from "@/types/requirements";
-
+import { StudentInfo, SemesterData, PlannedCourse, UserProfile } from "@/types";
+// Requirements fetching moved to dedicated hooks; no direct import of visual types here
+import { convertToSeasonYear, isValidSeasonYear} from "@/lib/utils/dateUtils";
 interface PlannerState {
-    // User data
-    studentInfo: StudentInfo;
-    userProfile: UserProfile | null;
-
-    // Planning data
+    // Planning data only
     semesters: Record<number, SemesterData>;
 
-    // Database data
-    degreePrograms: DegreeProgramDisplay[];
-    minorPrograms: DegreeProgramDisplay[];
-    deadlines: Deadline[];
-    selectedThreads: number[];
-    selectedMinors: number[];
-
-    // UI state
+    // Local planner UI refs
     selectedSemester: number | null;
     draggedCourse: PlannedCourse | null;
-    sidebarOpen: boolean;
-    isLoadingPrograms: boolean;
-    isLoadingDeadlines: boolean;
 
-    // Computed values
-    academicProgress: AcademicProgress;
-    recentActivity: ActivityItem[];
-    requirementProgress: RequirementCategory[];
+    // Lifecycle/init
+    initializeStore: () => Promise<void>;
+    // Compatibility shim to trigger semester generation from profile info
+    updateStudentInfo: (info: Partial<StudentInfo> | UserProfile) => void;
+    generateSemesters: (startDate: string, graduationDate: string) => void;
 
-    // Actions
-    updateStudentInfo: (info: Partial<StudentInfo>) => void;
+    // Course/semester CRUD
     addCourseToSemester: (course: PlannedCourse) => void;
     removeCourseFromSemester: (courseId: number, semesterId: number) => void;
-    moveCourse: (
-        courseId: number,
-        fromSemester: number,
-        toSemester: number,
-    ) => void;
+    moveCourse: (courseId: number, fromSemester: number, toSemester: number) => void;
     moveCourseToSemester: (courseId: string, targetSemesterId: number) => void;
-    updateCourseGrade: (
-        courseId: number,
-        semesterId: number,
-        grade: string,
-    ) => void;
-    updateCourseStatus: (
-        courseId: number,
-        semesterId: number,
-        status: PlannedCourse["status"],
-        grade?: string,
-    ) => void;
+    updateCourseGrade: (courseId: number, semesterId: number, grade: string) => void;
+    updateCourseStatus: (courseId: number, semesterId: number, status: PlannedCourse["status"], grade?: string) => void;
     setSelectedSemester: (semesterId: number | null) => void;
-    setSidebarOpen: (open: boolean) => void;
-    updateAcademicProgress: () => void;
-    addActivity: (activity: Omit<ActivityItem, "id" | "timestamp">) => void;
-    generateSemesters: (startDate: string, graduationDate: string) => void;
-    calculateGPA: () => number;
-    getTotalCredits: () => number;
-    updateStudentThreads: (threads: number[]) => Promise<void>;
-    updateStudentMinors: (minors: number[]) => Promise<void>;
-    updateStudentMajor: (major: string) => Promise<void>;
-    fetchAndUpdateRequirements: () => Promise<void>;
-    calculateThreadProgress: () => void;
-    calculateMinorProgress: () => void;
+
+    // Derived (semester scope)
     updateSemesterGPA: (semesterId: number) => void;
     calculateSemesterGPA: (semesterId: number) => number;
-    getGPAHistory: () => Array<{
-        semester: string;
-        year: number;
-        gpa: number;
-        credits: number;
-    }>;
 
-    fetchDeadlines: () => Promise<void>;
-    
-    // New methods for visual requirements system
-    fetchDegreeProgramRequirements: () => Promise<VisualDegreeProgram | null>;
-    fetchMinorProgramsRequirements: () => Promise<VisualMinorProgram[]>;
-    getThreadProgress: () => ProgressItem[];
-    getThreadMinorProgress: () => ProgressItem[];
-    getUpcomingDeadlines: () => (Deadline & {
-        daysLeft: number;
-        formattedDate: string;
-    })[];
-    getAvailableThreads: () => DegreeProgramDisplay[];
-    getAvailableMinors: () => DegreeProgramDisplay[];
-    setSelectedThreads: (threadIds: number[]) => void;
-    setSelectedMinors: (minorIds: number[]) => void;
-    initializeStore: () => Promise<void>;
-    
-    // Helper methods for safe data access
+    // Helpers
     getAllCourses: () => PlannedCourse[];
     getCoursesByStatus: (status: PlannedCourse["status"]) => PlannedCourse[];
     getSafeSemesters: () => SemesterData[];
-    
-    // Enhanced planning state management
+
+    // Utilities
     exportPlanningData: () => string;
     importPlanningData: (data: string) => Promise<boolean>;
     clearAllPlannedCourses: () => void;
-    getCompletionStats: () => {
-        totalCourses: number;
-        completedCourses: number;
-        inProgressCourses: number;
-        plannedCourses: number;
-        completionRate: number;
-    };
-    validateSemesterPlan: (semesterId: number) => {
-        isValid: boolean;
-        warnings: string[];
-        errors: string[];
-    };
-
-    // Supabase sync for persistence
-    syncToSupabase: () => Promise<void>;
-
-    // User data management
+    getCompletionStats: () => { totalCourses: number; completedCourses: number; inProgressCourses: number; plannedCourses: number; completionRate: number };
+    validateSemesterPlan: (semesterId: number) => { isValid: boolean; warnings: string[]; errors: string[] };
     clearUserData: () => void;
 }
 
@@ -194,51 +108,9 @@ const getAnonymousSessionId = (): string => {
 export const usePlannerStore = create<PlannerState>()(
     persist(
         (set, get) => ({
-            studentInfo: {
-                id: 0,
-                name: "",
-                email: "",
-                major: "",
-                threads: [], // Keep as string[] for thread names
-                minors: [], // Keep as string[] for minor names
-                startYear: new Date().getFullYear(),
-                expectedGraduation: "",
-                currentGPA: 0,
-                majorRequirements: [],
-                minorRequirements: [],
-                threadRequirements: [],
-            },
-
-            userProfile: null,
             semesters: createInitialSemesters(),
             selectedSemester: null,
             draggedCourse: null,
-            sidebarOpen: true,
-
-            // Database data
-            degreePrograms: [],
-            minorPrograms: [],
-            deadlines: [],
-            selectedThreads: [],
-            selectedMinors: [],
-            isLoadingPrograms: false,
-            isLoadingDeadlines: false,
-
-            academicProgress: {
-                totalCreditsRequired: 126,
-                creditsCompleted: 0,
-                creditsInProgress: 0,
-                creditsPlanned: 0,
-                currentGPA: 0,
-                projectedGPA: 0,
-                graduationDate: "",
-                onTrack: false,
-                threadProgress: 0,
-                minorProgress: 0,
-            },
-
-            recentActivity: [],
-            requirementProgress: [],
 
             // Helper methods for safe data access
             getAllCourses: () => {
@@ -268,212 +140,10 @@ export const usePlannerStore = create<PlannerState>()(
                 return Object.values(state.semesters || {}).filter(ensureSemesterIntegrity);
             },
 
-            // Fetch deadlines
-            fetchDeadlines: async () => {
-                set({ isLoadingDeadlines: true });
-                try {
-                    const { data: deadlines, error } = await supabase
-                        .from("deadlines")
-                        .select("*")
-                        .eq("is_active", true)
-                        .order("date", { ascending: true });
-
-                    if (error) throw error;
-
-                    set({
-                        deadlines: deadlines || [],
-                        isLoadingDeadlines: false,
-                    });
-                } catch (error: any) {
-                    const errorInfo = {
-                        message: error?.message || 'Unknown error',
-                        details: error?.details || 'No details available',
-                        stack: error?.stack || 'No stack trace',
-                        full_error: JSON.stringify(error, Object.getOwnPropertyNames(error))
-                    };
-                    console.error("Failed to fetch deadlines:", errorInfo);
-                    set({ isLoadingDeadlines: false });
-                }
-            },
-
-            // Set selected threads/minors
-            setSelectedThreads: (threadIds: number[]) => {
-                set({ selectedThreads: threadIds });
-            },
-
-            setSelectedMinors: (minorIds: number[]) => {
-                set({ selectedMinors: minorIds });
-            },
-
-            // Get thread progress (legacy method for compatibility)
-            getThreadProgress: () => {
-                const state = get();
-                return state
-                    .getThreadMinorProgress()
-                    .filter((p) => p.type === "thread");
-            },
-
-            // Get thread/minor progress from database data
-            getThreadMinorProgress: (): ProgressItem[] => {
-                const state = get();
-                const allCourses = state.getAllCourses(); // Use safe method
-
-                const calculateProgress = (
-                    program: DegreeProgramDisplay,
-                ): ProgressItem => {
-                    let completedCredits = 0;
-                    const completedCourses: number[] = [];
-                    const inProgressCourses: number[] = [];
-                    const plannedCourses: number[] = [];
-                    const remainingCourses: number[] = [];
-
-                    if (program.requirements?.categories) {
-                        program.requirements.categories.forEach((category) => {
-                            const categoryCompleted = allCourses.filter(
-                                (course) =>
-                                    category.eligible_courses?.includes(course.id) && 
-                                    course.status === "completed",
-                            );
-                            const categoryInProgress = allCourses.filter(
-                                (course) =>
-                                    category.eligible_courses?.includes(course.id) && 
-                                    course.status === "in-progress",
-                            );
-                            const categoryPlanned = allCourses.filter(
-                                (course) =>
-                                    category.eligible_courses?.includes(course.id) && 
-                                    course.status === "planned",
-                            );
-
-                            categoryCompleted.forEach((course) => {
-                                completedCredits += course.credits || 0;
-                                completedCourses.push(course.id);
-                            });
-
-                            categoryInProgress.forEach((course) => {
-                                inProgressCourses.push(course.id);
-                            });
-
-                            categoryPlanned.forEach((course) => {
-                                plannedCourses.push(course.id);
-                            });
-
-                            // Find remaining eligible courses
-                            (category.eligible_courses || []).forEach((courseId) => {
-                                if (!allCourses.find((c) => c.id === courseId)) {
-                                    remainingCourses.push(courseId);
-                                }
-                            });
-                        });
-                    } else if (program.requirements?.core_courses) {
-                        // Handle simple requirements (typically minors)
-                        program.requirements.core_courses.forEach(
-                            (courseId) => {
-                                const course = allCourses.find(
-                                    (c) => c.id === courseId,
-                                );
-                                if (course) {
-                                    if (course.status === "completed") {
-                                        completedCredits += course.credits || 0;
-                                        completedCourses.push(course.id);
-                                    } else if (course.status === "in-progress") {
-                                        inProgressCourses.push(course.id);
-                                    } else if (course.status === "planned") {
-                                        plannedCourses.push(course.id);
-                                    }
-                                } else {
-                                    remainingCourses.push(courseId);
-                                }
-                            },
-                        );
-                    }
-
-                    const requiredCredits = program.required_credits || 0;
-                    return {
-                        id: program.id,
-                        name: program.name || "",
-                        type: (program.degree_type?.toLowerCase() || "thread") as "thread" | "minor",
-                        completed: completedCredits,
-                        required: requiredCredits,
-                        percentage: requiredCredits > 0 
-                            ? Math.min((completedCredits / requiredCredits) * 100, 100)
-                            : 0,
-                        color: program.degree_type === "Thread" ? "#8B5CF6" : "#F97316",
-                        courses: {
-                            completed: completedCourses,
-                            inProgress: inProgressCourses,
-                            planned: plannedCourses,
-                            remaining: remainingCourses,
-                        },
-                    };
-                };
-
-                const progress: ProgressItem[] = [];
-
-                // Calculate progress for selected threads
-                state.selectedThreads.forEach((threadId) => {
-                    const program = state.degreePrograms.find(
-                        (p) => p.id === threadId && p.degree_type === "Thread",
-                    );
-                    if (program) {
-                        progress.push(calculateProgress(program));
-                    }
-                });
-
-                // Calculate progress for selected minors
-                state.selectedMinors.forEach((minorId) => {
-                    const program = state.degreePrograms.find(
-                        (p) => p.id === minorId && p.degree_type === "Minor",
-                    );
-                    if (program) {
-                        progress.push(calculateProgress(program));
-                    }
-                });
-
-                return progress;
-            },
-
-            getUpcomingDeadlines: () => {
-                const state = get();
-                const now = new Date();
-
-                return (state.deadlines || [])
-                    .filter((deadline) => deadline?.is_active)
-                    .map((deadline) => {
-                        const dueDate = new Date(deadline.date);
-                        const timeDiff = dueDate.getTime() - now.getTime();
-                        const daysLeft = Math.ceil(
-                            timeDiff / (1000 * 3600 * 24),
-                        );
-
-                        return {
-                            ...deadline,
-                            daysLeft,
-                            formattedDate: dueDate.toLocaleDateString(),
-                        };
-                    })
-                    .sort((a, b) => a.daysLeft - b.daysLeft);
-            },
-
-            // Get available threads from database
-            getAvailableThreads: () => {
-                const state = get();
-                return (state.degreePrograms || []).filter(
-                    (p) => p?.degree_type === "Thread",
-                );
-            },
-
-            // Get available minors from database
-            getAvailableMinors: () => {
-                const state = get();
-                return (state.degreePrograms || []).filter(
-                    (p) => p?.degree_type === "Minor",
-                );
-            },
+            // Deadlines are handled by useDeadlines hook; removed from store
 
             // Initialize store with database data (or demo data in demo mode)
             initializeStore: async () => {
-                const state = get();
 
                 // Check for demo mode
                 if (typeof window !== 'undefined') {
@@ -483,253 +153,64 @@ export const usePlannerStore = create<PlannerState>()(
                         console.log('[Demo Mode] Initializing store with demo data');
 
                         // Import demo data
-                        const {
-                            generateDemoSemesters,
-                            DEMO_DEADLINES,
-                            DEMO_ACTIVITY
-                        } = await import('@/lib/demo-data');
+                        const { generateDemoSemesters } = await import('@/lib/demo-data');
 
                         // Set demo semesters
                         const demoSemesters = generateDemoSemesters();
                         set({ semesters: demoSemesters });
 
-                        // Set demo deadlines
-                        set({ deadlines: DEMO_DEADLINES });
+                        // Demo activity exists but is no longer stored in planner store
 
-                        // Set demo activity
-                        set({ recentActivity: DEMO_ACTIVITY });
-
-                        // Calculate academic progress
-                        state.updateAcademicProgress();
+                        // Academic progress moved to derived hooks/services
 
                         console.log('[Demo Mode] Store initialized with demo data');
                         return;
                     }
                 }
 
-                // Normal mode - fetch from database
-                await Promise.all([
-                    state.fetchDeadlines(),
-                ]);
+                // Normal mode - no-op; data comes from dedicated hooks
+                return;
             },
 
-            // Fetch degree program requirements for visual system (using API route)
-            fetchDegreeProgramRequirements: async (): Promise<VisualDegreeProgram | null> => {
-                try {
-                    // Get the current user
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (!user) {
-                        console.log('No authenticated user - skipping degree program fetch');
-                        return null;
-                    }
-
-                    // Get user's profile data to check if they're validated
-                    const { data: userRecord, error: userError } = await supabase
-                        .from('users')
-                        .select('major, full_name, graduation_year')
-                        .eq('auth_id', user.id)
-                        .single();
-
-                    if (userError) {
-                        if (userError.code === 'PGRST116') {
-                            console.log('User record not found - user needs to complete profile setup');
-                        } else {
-                            console.log('Error fetching user record:', userError);
-                        }
-                        return null;
-                    }
-
-                    // Check if user has completed profile setup
-                    if (!userRecord?.major || !userRecord?.full_name || !userRecord?.graduation_year) {
-                        console.log('User profile incomplete - skipping degree program fetch');
-                        return null;
-                    }
-
-                    const majorName = userRecord.major;
-                    console.log(`Fetching degree program for validated user with major: ${majorName}`);
-
-                    // Use API route instead of direct Supabase call
-                    const response = await fetch(`/api/degree-programs?major=${encodeURIComponent(majorName)}&degree_type=BS`);
-                    
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        console.error('API error fetching degree program:', errorData);
-                        return null;
-                    }
-
-                    const program = await response.json();
-                    console.log('✅ Successfully fetched degree program via API:', program.name);
-
-                    // Convert API response to visual program format
-                    const visualProgram: VisualDegreeProgram = {
-                        id: program.id,
-                        name: program.name,
-                        degreeType: program.degree_type,
-                        college: undefined, // API doesn't include college info yet
-                        totalCredits: program.total_credits || undefined,
-                        requirements: Array.isArray(program.requirements) ? program.requirements : [],
-                        footnotes: Array.isArray(program.footnotes) ? program.footnotes : []
-                    };
-
-                    return visualProgram;
-
-                } catch (error: any) {
-                    console.error('Error in fetchDegreeProgramRequirements:', {
-                        message: error?.message || 'Unknown error',
-                        stack: error?.stack,
-                        error: error
-                    });
-                    return null;
-                }
-            },
-
-            // Fetch minor program requirements for visual system (NEW: using minors JSON column)
-            fetchMinorProgramsRequirements: async (): Promise<VisualMinorProgram[]> => {
-                try {
-                    // Get the current user
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (!user) {
-                        console.error('No authenticated user found');
-                        return [];
-                    }
-
-                    // Get user's minors from users table (NEW: using minors JSON column)
-                    const { data: userRecord, error: userError } = await supabase
-                        .from('users')
-                        .select('minors')
-                        .eq('auth_id', user.id)
-                        .single();
-
-                    if (userError) {
-                        console.error('Error fetching user record:', userError);
-                        return [];
-                    }
-
-                    if (!userRecord?.minors || !Array.isArray(userRecord.minors) || userRecord.minors.length === 0) {
-                            return [];
-                    }
-
-                    const minorNames = userRecord.minors;
-
-                    // Query minor programs by names
-                    const { data: programs, error: programError } = await supabase
-                        .from('degree_programs')
-                        .select('id, name, requirements')
-                        .eq('degree_type', 'Minor')
-                        .in('name', minorNames)
-                        .eq('is_active', true);
-
-                    if (programError) {
-                        console.error('Error fetching minor programs:', programError);
-                        return [];
-                    }
-
-                    // Transform the database structure to match VisualMinorProgram[]
-                    const visualMinors: VisualMinorProgram[] = (programs || []).map(program => ({
-                        id: program.id,
-                        name: program.name,
-                        requirements: Array.isArray(program.requirements) ? program.requirements : [],
-                        footnotes: [] // You can add footnotes logic here if needed
-                    }));
-
-                    return visualMinors;
-
-                } catch (error) {
-                    console.error('Error in fetchMinorProgramsRequirements:', error);
-                    return [];
-                }
-            },
+            // Degree program requirements are fetched via dedicated hooks; removed from store
 
             updateStudentInfo: (info: Partial<StudentInfo> | UserProfile) => {
-                set((state) => {
-                    // Handle both StudentInfo and UserProfile types
-                    const updatedStudentInfo = {
-                        ...state.studentInfo,
-                        ...info,
-                        // Map UserProfile fields to StudentInfo if needed
-                        name: (info as any).name || state.studentInfo.name,
-                        email: (info as any).email || state.studentInfo.email,
-                        major: (info as any).major || state.studentInfo.major,
-                        threads: (info as any).threads || state.studentInfo.threads,
-                        minors: (info as any).minors || state.studentInfo.minors,
-                        expectedGraduation: (info as any).expectedGraduation || state.studentInfo.expectedGraduation,
-                        currentGPA: (info as any).currentGPA || state.studentInfo.currentGPA,
-                    };
+                // Compatibility shim: only triggers semester generation based on provided dates
+                // Does not store user profile/student info in planner store
+                const startDate = (info as any).startDate || (info as any).startYear;
+                const graduationDate = (info as any).expectedGraduation;
+                if (!startDate || !graduationDate) return;
 
-                    // Generate semesters if we have the required data
-                    const startDate = (info as any).startDate || (info as any).startYear;
-                    const graduationDate = (info as any).expectedGraduation;
-                    
-                    if (startDate && graduationDate) {
-                        // Parse startDate to get semester and year
-                        let startSemester = 'Fall';
-                        let startYear = new Date().getFullYear();
-                        
-                        if (typeof startDate === 'string') {
-                            if (startDate.includes('Fall') || startDate.includes('Spring') || startDate.includes('Summer')) {
-                                const parts = startDate.split(' ');
-                                startSemester = parts[0];
-                                startYear = parseInt(parts[1]) || new Date().getFullYear();
-                            } else {
-                                // Try to parse as year
-                                const yearMatch = startDate.match(/\d{4}/);
-                                if (yearMatch) {
-                                    startYear = parseInt(yearMatch[0]);
-                                }
-                            }
-                        } else if (typeof startDate === 'number') {
-                            startYear = startDate;
-                        }
-                        
-                        const formattedStartDate = `${startSemester} ${startYear}`;
-                        
-                        // Also format graduation date if it's not already in semester format
-                        let formattedGraduationDate = graduationDate;
-                        if (typeof graduationDate === 'string') {
-                            // Check if already in semester format (e.g., "Fall 2023")
-                            if (!graduationDate.match(/^(Fall|Spring|Summer)\s+\d{4}$/)) {
-                                // Convert from YYYY-MM-DD format or similar
-                                const convertToSeasonYear = (dateString: string): string => {
-                                    const [year, month] = dateString.split('-');
-                                    const monthNum = parseInt(month);
-                                    
-                                    let season: string;
-                                    if (monthNum >= 8 && monthNum <= 12) {
-                                        season = 'Fall';
-                                    } else if (monthNum >= 1 && monthNum <= 5) {
-                                        season = 'Spring';
-                                    } else {
-                                        season = 'Summer';
-                                    }
-                                    
-                                    return `${season} ${year}`;
-                                };
-                                
-                                try {
-                                    formattedGraduationDate = convertToSeasonYear(graduationDate);
-                                } catch (error) {
-                                    console.error('Error converting graduation date format:', error);
-                                    // Use a default graduation date
-                                    const currentYear = new Date().getFullYear();
-                                    formattedGraduationDate = `Spring ${currentYear + 4}`;
-                                }
-                            }
-                        }
-                        
-                        console.log(`🎓 Formatted dates for semester generation: ${formattedStartDate} → ${formattedGraduationDate}`);
-                        
-                        // Generate semesters immediately without setTimeout for better performance
-                        const { semesters } = get();
-                        if (Object.keys(semesters).length === 0) {
-                            get().generateSemesters(formattedStartDate, formattedGraduationDate);
-                        }
+                let startSemester = 'Fall';
+                let startYear = new Date().getFullYear();
+                if (typeof startDate === 'string') {
+                    if (startDate.includes('Fall') || startDate.includes('Spring') || startDate.includes('Summer')) {
+                        const parts = startDate.split(' ');
+                        startSemester = parts[0];
+                        startYear = parseInt(parts[1]) || new Date().getFullYear();
+                    } else {
+                        const yearMatch = startDate.match(/\d{4}/);
+                        if (yearMatch) startYear = parseInt(yearMatch[0]);
                     }
+                } else if (typeof startDate === 'number') {
+                    startYear = startDate;
+                }
 
-                    return {
-                        studentInfo: updatedStudentInfo,
-                        userProfile: info as UserProfile, // Also update userProfile
-                    };
-                });
+                const formattedStartDate = `${startSemester} ${startYear}`;
+                let formattedGraduationDate: any = graduationDate;
+                if (typeof graduationDate === 'string' && !graduationDate.match(/^(Fall|Spring|Summer)\s+\d{4}$/)) {
+                    try {
+                        formattedGraduationDate = convertToSeasonYear(graduationDate);
+                    } catch {
+                        const currentYear = new Date().getFullYear();
+                        formattedGraduationDate = `Spring ${currentYear + 4}`;
+                    }
+                }
+
+                const { semesters } = get();
+                if (Object.keys(semesters).length === 0) {
+                    get().generateSemesters(formattedStartDate, formattedGraduationDate);
+                }
             },
 
             addCourseToSemester: (course: PlannedCourse) => {
@@ -765,33 +246,15 @@ export const usePlannerStore = create<PlannerState>()(
                         },
                     };
 
-                    const newActivity: ActivityItem = {
-                        id: Date.now(),
-                        type: "course_added",
-                        title: `Added ${course.code} to ${semester.season} ${semester.year}`,
-                        description: course.title,
-                        timestamp: new Date(),
-                    };
-
-                    // Use constant to prevent infinite growth
-                    const MAX_ACTIVITY_ITEMS = 10;
                     return {
                         semesters: updatedSemesters,
-                        recentActivity: [
-                            newActivity,
-                            ...state.recentActivity.slice(0, MAX_ACTIVITY_ITEMS - 1),
-                        ],
                     };
                 });
 
                 // Use batch update instead of setTimeout to prevent unnecessary re-renders
                 get().updateSemesterGPA(course.semesterId);
 
-                // Auto-sync to Supabase after 2s delay (debounced for UX)
-                // User sees instant localStorage save, then background Supabase sync
-                setTimeout(() => {
-                    get().syncToSupabase();
-                }, 2000);
+                // External persistence handled via API hooks/migration helper
             },
 
             removeCourseFromSemester: (
@@ -803,7 +266,6 @@ export const usePlannerStore = create<PlannerState>()(
                     if (!semester) return state;
 
                     const safeCourses = semester.courses || [];
-                    const courseToRemove = safeCourses.find(c => c?.id === courseId);
                     const updatedCourses = safeCourses.filter(
                         (c) => c?.id !== courseId,
                     );
@@ -812,16 +274,6 @@ export const usePlannerStore = create<PlannerState>()(
                         0,
                     );
 
-                    // Add removal activity
-                    const newActivity: ActivityItem = {
-                        id: Date.now(),
-                        type: "course_added", // Using course_added as generic activity type
-                        title: `Removed ${courseToRemove?.code || 'course'} from ${semester.season} ${semester.year}`,
-                        description: courseToRemove?.title || 'Course removed',
-                        timestamp: new Date(),
-                    };
-
-                    const MAX_ACTIVITY_ITEMS = 10;
                     return {
                         semesters: {
                             ...state.semesters,
@@ -831,20 +283,13 @@ export const usePlannerStore = create<PlannerState>()(
                                 totalCredits,
                             },
                         },
-                        recentActivity: [
-                            newActivity,
-                            ...state.recentActivity.slice(0, MAX_ACTIVITY_ITEMS - 1),
-                        ],
                     };
                 });
 
                 // Use batch update instead of setTimeout to prevent unnecessary re-renders
                 get().updateSemesterGPA(semesterId);
 
-                // Auto-sync to Supabase after 2s delay (debounced for UX)
-                setTimeout(() => {
-                    get().syncToSupabase();
-                }, 2000);
+                // External persistence handled via API hooks/migration helper
             },
 
             moveCourse: (
@@ -1023,18 +468,6 @@ export const usePlannerStore = create<PlannerState>()(
                             : course,
                     );
 
-                    const course = safeCourses.find((c) => c?.id === courseId);
-                    const newActivity: ActivityItem = {
-                        id: Date.now(),
-                        type: status === "completed" ? "requirement_completed" : "course_added",
-                        title: `${course?.code || 'Course'} marked as ${status}`,
-                        description: grade
-                            ? `Grade: ${grade}`
-                            : `Status updated to ${status}`,
-                        timestamp: new Date(),
-                    };
-
-                    const MAX_ACTIVITY_ITEMS = 10;
                     return {
                         semesters: {
                             ...state.semesters,
@@ -1043,85 +476,20 @@ export const usePlannerStore = create<PlannerState>()(
                                 courses: updatedCourses,
                             },
                         },
-                        recentActivity: [
-                            newActivity,
-                            ...state.recentActivity.slice(0, MAX_ACTIVITY_ITEMS - 1),
-                        ],
                     };
                 });
 
                 // Use batch update instead of setTimeout to prevent unnecessary re-renders
                 get().updateSemesterGPA(semesterId);
 
-                // Auto-sync to Supabase after 2s delay (debounced for UX)
-                setTimeout(() => {
-                    get().syncToSupabase();
-                }, 2000);
+                // External persistence handled via API hooks/migration helper
             },
 
             setSelectedSemester: (semesterId: number | null) => {
                 set({ selectedSemester: semesterId });
             },
 
-            setSidebarOpen: (open: boolean) => {
-                set({ sidebarOpen: open });
-            },
-
-            updateAcademicProgress: () => {
-                const state = get();
-                const allCourses = state.getAllCourses(); // Use safe method
-
-                const creditsCompleted = allCourses
-                    .filter((c) => c.status === "completed")
-                    .reduce((sum, c) => sum + (c.credits || 0), 0);
-
-                const creditsInProgress = allCourses
-                    .filter((c) => c.status === "in-progress")
-                    .reduce((sum, c) => sum + (c.credits || 0), 0);
-
-                const creditsPlanned = allCourses
-                    .filter((c) => c.status === "planned")
-                    .reduce((sum, c) => sum + (c.credits || 0), 0);
-
-                const currentGPA = get().calculateGPA();
-
-                set({
-                    academicProgress: {
-                        ...state.academicProgress,
-                        creditsCompleted,
-                        creditsInProgress,
-                        creditsPlanned,
-                        currentGPA,
-                    },
-                });
-            },
-
-            calculateGPA: () => {
-                const state = get();
-                const allCourses = state.getAllCourses(); // Use safe method
-                const completedCourses = allCourses.filter(
-                    (c) => c.status === "completed" && c.grade
-                );
-
-                if (completedCourses.length === 0) return 0;
-
-                const totalPoints = completedCourses.reduce((sum, course) => {
-                    return sum + gradeToGPA(course.grade!) * (course.credits || 0);
-                }, 0);
-
-                const totalCredits = completedCourses.reduce(
-                    (sum, course) => sum + (course.credits || 0),
-                    0,
-                );
-
-                return totalCredits > 0 ? totalPoints / totalCredits : 0;
-            },
-
-            getTotalCredits: () => {
-                const state = get();
-                const allCourses = state.getAllCourses(); // Use safe method
-                return allCourses.reduce((sum, c) => sum + (c.credits || 0), 0);
-            },
+            
 
             calculateSemesterGPA: (semesterId: number) => {
                 const state = get();
@@ -1162,175 +530,48 @@ export const usePlannerStore = create<PlannerState>()(
                 });
             },
 
-            getGPAHistory: () => {
-                const state = get();
-                const safeSemesters = state.getSafeSemesters(); // Use safe method
-                
-                return safeSemesters
-                    .map((semester) => ({
-                        semester: `${semester.season} ${semester.year}`,
-                        year: semester.year,
-                        gpa: semester.gpa || 0,
-                        credits: (semester.courses || [])
-                            .filter((c) => c?.status === "completed")
-                            .reduce((sum, c) => sum + (c?.credits || 0), 0),
-                    }))
-                    .filter((s) => s.credits > 0)
-                    .sort(
-                        (a, b) =>
-                            a.year - b.year ||
-                            a.semester.localeCompare(b.semester),
-                    );
-            },
+            
 
-            addActivity: (activity: Omit<ActivityItem, "id" | "timestamp">) => {
-                set((state) => {
-                    // Limit recent activity to maximum 10 items to prevent memory leaks
-                    const MAX_ACTIVITY_ITEMS = 10;
-                    const newActivity = {
-                        ...activity,
-                        id: Date.now(),
-                        timestamp: new Date(),
-                    };
-                    
-                    return {
-                        recentActivity: [
-                            newActivity,
-                            ...state.recentActivity.slice(0, MAX_ACTIVITY_ITEMS - 1),
-                        ],
-                    };
-                });
-            },
-
-            updateStudentThreads: async (threads: number[]) => {
-                // Update both the numeric IDs and convert to names for studentInfo
-                const state = get();
-                const threadNames = threads
-                    .map((id) => {
-                        const program = state.degreePrograms.find(
-                            (p) => p?.id === id,
-                        );
-                        return program?.name || "";
-                    })
-                    .filter(Boolean);
-
-                set((state) => ({
-                    studentInfo: { ...state.studentInfo, threads: threadNames },
-                    selectedThreads: threads,
-                }));
-
-                await get().fetchAndUpdateRequirements();
-                get().calculateThreadProgress();
-            },
-
-            updateStudentMinors: async (minors: number[]) => {
-                // Update both the numeric IDs and convert to names for studentInfo
-                const state = get();
-                const minorNames = minors
-                    .map((id) => {
-                        const program = state.degreePrograms.find(
-                            (p) => p?.id === id,
-                        );
-                        return program?.name || "";
-                    })
-                    .filter(Boolean);
-
-                set((state) => ({
-                    studentInfo: { ...state.studentInfo, minors: minorNames },
-                    selectedMinors: minors,
-                }));
-
-                await get().fetchAndUpdateRequirements();
-                get().calculateMinorProgress();
-            },
-
-            updateStudentMajor: async (major: string) => {
-                set((state) => ({
-                    studentInfo: { ...state.studentInfo, major },
-                }));
-                await get().fetchAndUpdateRequirements();
-            },
-
-            fetchAndUpdateRequirements: async () => {
-                const state = get();
-                try {
-                    // Fetch thread requirements
-                    if (state.studentInfo.threads?.length > 0) {
-                        const { data: threadReqs, error: threadError } =
-                            await supabase
-                                .from("degree_programs")
-                                .select("*")
-                                .eq("degree_type", "Thread")
-                                .in("id", state.studentInfo.threads);
-
-                        if (threadError) throw threadError;
-
-                        set((state) => ({
-                            studentInfo: {
-                                ...state.studentInfo,
-                                threadRequirements: threadReqs || [],
-                            },
-                        }));
-                    }
-
-                    // Fetch minor requirements
-                    if (state.studentInfo.minors?.length > 0) {
-                        const { data: minorReqs, error: minorError } =
-                            await supabase
-                                .from("degree_programs")
-                                .select("*")
-                                .eq("degree_type", "Minor")
-                                .in("id", state.studentInfo.minors);
-
-                        if (minorError) throw minorError;
-
-                        set((state) => ({
-                            studentInfo: {
-                                ...state.studentInfo,
-                                minorRequirements: minorReqs || [],
-                            },
-                        }));
-                    }
-
-                    // Fetch major requirements
-                    if (state.studentInfo.major) {
-                        const { data: majorReqs, error: majorError } =
-                            await supabase
-                                .from("degree_programs")
-                                .select("*")
-                                .eq("degree_type", "BS")
-                                .eq("name", state.studentInfo.major);
-
-                        if (majorError) throw majorError;
-
-                        set((state) => ({
-                            studentInfo: {
-                                ...state.studentInfo,
-                                majorRequirements: majorReqs || [],
-                            },
-                        }));
-                    }
-                } catch (error) {
-                    console.error("Error fetching requirements:", error);
-                }
-            },
-
-            calculateThreadProgress: () => {
-                // This will be calculated in getThreadMinorProgress()
-                // keeping for backward compatibility
-            },
-
-            calculateMinorProgress: () => {
-                // This will be calculated in getThreadMinorProgress()
-                // keeping for backward compatibility
-            },
+            // Removed thread/minor updates and progress; handled by dedicated hooks/profile
 
             generateSemesters: (startDate: string, graduationDate: string) => {
+                // Comprehensive input validation
+                if (!startDate || !graduationDate) {
+                    console.error("[usePlannerStore] Invalid date format: dates are null/undefined", { startDate, graduationDate });
+                    return {};
+                }
+
+                if (typeof startDate !== 'string' || typeof graduationDate !== 'string') {
+                    console.error("[usePlannerStore] Invalid date format: dates must be strings", {
+                        startDate: typeof startDate,
+                        graduationDate: typeof graduationDate
+                    });
+                    return {};
+                }
+
+                if (!isValidSeasonYear(startDate) || !isValidSeasonYear(graduationDate)) {
+                    const error = new Error(
+                        `[usePlannerStore] Invalid date format. ` +
+                        `Expected 'Season YYYY' format (e.g., 'Fall 2024'). ` +
+                        `Received: start='${startDate}', graduation='${graduationDate}'. ` +
+                        `Please complete your profile with valid dates.`
+                    );
+                    console.error(error.message);
+                    throw error;
+                }
+
                 const [startSeason, startYear] = startDate.split(" ");
                 const [gradSeason, gradYear] = graduationDate.split(" ");
 
                 if (!startSeason || !startYear || !gradSeason || !gradYear) {
-                    console.error("Invalid date format for semester generation");
+                    console.error("[usePlannerStore] Invalid date format: missing season or year after split", {
+                        startDate,
+                        startSeason,
+                        startYear,
+                        graduationDate,
+                        gradSeason,
+                        gradYear
+                    });
                     return {};
                 }
 
@@ -1383,6 +624,7 @@ export const usePlannerStore = create<PlannerState>()(
                         totalCredits: 0,
                         maxCredits: 18,
                         isActive: isCurrentSemester,
+                        isCompleted: false,
                         gpa: 0,
                     };
 
@@ -1399,6 +641,30 @@ export const usePlannerStore = create<PlannerState>()(
                 }
 
                 set({ semesters });
+
+                // Persist generated semesters to the backend where possible.
+                // Fire-and-forget: don't block UI if user is unauthenticated or API fails.
+                if (typeof window !== 'undefined') {
+                    (async () => {
+                        try {
+                            const semesterArray = Object.values(semesters).map(s => ({
+                                semesterId: s.id,
+                                year: s.year,
+                                season: s.season,
+                                courses: s.courses || [],
+                                maxCredits: (s as any).maxCredits || (s as any).max_credits || 18,
+                                isActive: !!s.isActive,
+                            }));
+
+                            // Use batch endpoint to upsert all semesters at once
+                            await api.semesters.bulkCreate(semesterArray);
+                        } catch (err) {
+                            // Ignore persistence errors; store is still updated locally.
+                            console.warn('Failed to persist generated semesters (bulk):', err);
+                        }
+                    })();
+                }
+
                 return semesters;
             },
 
@@ -1406,11 +672,7 @@ export const usePlannerStore = create<PlannerState>()(
             exportPlanningData: () => {
                 const state = get();
                 const exportData = {
-                    studentInfo: state.studentInfo,
                     semesters: state.semesters,
-                    selectedThreads: state.selectedThreads,
-                    selectedMinors: state.selectedMinors,
-                    academicProgress: state.academicProgress,
                     exportedAt: new Date().toISOString(),
                     version: "1.0"
                 };
@@ -1422,7 +684,7 @@ export const usePlannerStore = create<PlannerState>()(
                     const importedData = JSON.parse(data);
                     
                     // Validate the imported data structure
-                    if (!importedData.studentInfo || !importedData.semesters) {
+                    if (!importedData.semesters) {
                         console.error("Invalid import data: missing required fields");
                         return false;
                     }
@@ -1430,15 +692,10 @@ export const usePlannerStore = create<PlannerState>()(
                     // Merge imported data with current state
                     set((state) => ({
                         ...state,
-                        studentInfo: importedData.studentInfo,
                         semesters: importedData.semesters || {},
-                        selectedThreads: importedData.selectedThreads || [],
-                        selectedMinors: importedData.selectedMinors || [],
-                        academicProgress: importedData.academicProgress || state.academicProgress,
                     }));
 
-                    // Recalculate progress after import
-                    get().updateAcademicProgress();
+                    // Progress now derived via hooks/services
                     
                     return true;
                 } catch (error) {
@@ -1469,8 +726,7 @@ export const usePlannerStore = create<PlannerState>()(
                     };
                 });
 
-                // Update progress after clearing
-                get().updateAcademicProgress();
+                // Progress now derived via hooks/services
             },
 
             getCompletionStats: () => {
@@ -1526,122 +782,12 @@ export const usePlannerStore = create<PlannerState>()(
                 };
             },
 
-            // Sync planner data to Supabase (debounced auto-sync for persistence)
-            syncToSupabase: async () => {
-                const state = get();
-
-                try {
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (!user) {
-                        console.log('No authenticated user - skipping sync');
-                        return;
-                    }
-
-                    const userId = user.id;
-
-                    // Get all courses from semesters
-                    const allCourses = state.getAllCourses();
-                    const plannedCourses = allCourses.filter(c => c.status === 'planned');
-                    const completedCourses = allCourses.filter(c => c.status === 'completed');
-
-                    // Sync planned courses to user_semester_plans table
-                    if (plannedCourses.length > 0) {
-                        const planRecords = plannedCourses.map(course => {
-                            const semester = state.semesters[course.semesterId];
-                            return {
-                                user_id: userId,
-                                semester_id: course.semesterId.toString(),
-                                course_id: course.id,
-                                course_code: course.code,
-                                credits: course.credits,
-                                status: 'planned',
-                                semester_name: semester ? `${semester.season} ${semester.year}` : '',
-                                updated_at: new Date().toISOString()
-                            };
-                        });
-
-                        const { error: planError } = await supabase
-                            .from('user_semester_plans')
-                            .upsert(planRecords, {
-                                onConflict: 'user_id,semester_id,course_id',
-                                ignoreDuplicates: false
-                            });
-
-                        if (planError) {
-                            console.error('Error syncing planned courses:', planError);
-                        }
-                    }
-
-                    // Sync completed courses to user_course_completions table
-                    if (completedCourses.length > 0) {
-                        const completionRecords = completedCourses.map(course => {
-                            const semester = state.semesters[course.semesterId];
-                            return {
-                                user_id: userId,
-                                course_id: course.id,
-                                course_code: course.code,
-                                grade: course.grade || null,
-                                semester: semester ? `${semester.season} ${semester.year}` : '',
-                                credits: course.credits,
-                                status: 'completed',
-                                updated_at: new Date().toISOString()
-                            };
-                        });
-
-                        const { error: compError } = await supabase
-                            .from('user_course_completions')
-                            .upsert(completionRecords, {
-                                onConflict: 'user_id,course_id',
-                                ignoreDuplicates: false
-                            });
-
-                        if (compError) {
-                            console.error('Error syncing completed courses:', compError);
-                        }
-                    }
-
-                    console.log('✅ Synced to Supabase:', {
-                        planned: plannedCourses.length,
-                        completed: completedCourses.length
-                    });
-                } catch (error) {
-                    console.error('Error in syncToSupabase:', error);
-                }
-            },
+            // Removed direct Supabase sync
 
             clearUserData: () => {
                 set((state) => ({
                     ...state,
-                    studentInfo: {
-                        id: 0,
-                        name: "",
-                        email: "",
-                        major: "",
-                        threads: [],
-                        minors: [],
-                        startYear: new Date().getFullYear(),
-                        expectedGraduation: "",
-                        currentGPA: 0,
-                        majorRequirements: [],
-                        minorRequirements: [],
-                        threadRequirements: [],
-                    },
                     semesters: {},
-                    academicProgress: {
-                        totalCreditsRequired: 126,
-                        creditsCompleted: 0,
-                        creditsInProgress: 0,
-                        creditsPlanned: 0,
-                        currentGPA: 0,
-                        projectedGPA: 0,
-                        graduationDate: "",
-                        onTrack: false,
-                        threadProgress: 0,
-                        minorProgress: 0,
-                    },
-                    recentActivity: [],
-                    selectedThreads: [],
-                    selectedMinors: [],
                 }));
             },
         }),
@@ -1674,41 +820,35 @@ export const usePlannerStore = create<PlannerState>()(
                 }
             },
             partialize: (state) => {
-                // Calculate storage size and implement cleanup if needed
-                const dataToStore = {
-                    studentInfo: state.studentInfo,
-                    userProfile: state.userProfile,
-                    semesters: state.semesters,
-                    academicProgress: state.academicProgress,
-                    selectedThreads: state.selectedThreads,
-                    selectedMinors: state.selectedMinors,
-                    // Limit recent activity to prevent localStorage bloat
-                    recentActivity: state.recentActivity.slice(0, 10),
+                const migrated = typeof window !== 'undefined' && localStorage.getItem('gt-semesters-migrated') === 'true';
+                // Only persist semesters prior to migration; afterwards, persist metadata only
+                const base = {
                     // Store timestamp to track when data was last updated
                     lastUpdated: Date.now(),
                     // Store session ID for anonymous users only
                     sessionId: getAnonymousSessionId(),
-                };
-                
-                // Estimate storage size (rough calculation)
-                const storageSize = JSON.stringify(dataToStore).length;
-                const MAX_STORAGE_SIZE = 5 * 1024 * 1024; // 5MB limit
-                
-                if (storageSize > MAX_STORAGE_SIZE) {
-                    console.warn('Planner data exceeds storage limit, reducing data size');
-                    // Reduce data size by removing older activity and limiting semesters
-                    return {
-                        ...dataToStore,
-                        recentActivity: state.recentActivity.slice(0, 5),
-                        // Keep only active semesters if storage is too large
-                        semesters: Object.fromEntries(
-                            Object.entries(state.semesters)
-                                .filter(([_, sem]) => (sem.courses || []).length > 0)
-                                .slice(0, 20) // Limit to 20 semesters
-                        ),
-                    };
+                } as Record<string, any>;
+
+                const dataToStore = migrated ? base : { ...base, semesters: state.semesters };
+
+                if (!migrated) {
+                    // Estimate storage size (rough calculation) only when persisting semesters
+                    const storageSize = JSON.stringify(dataToStore).length;
+                    const MAX_STORAGE_SIZE = 5 * 1024 * 1024; // 5MB limit
+
+                    if (storageSize > MAX_STORAGE_SIZE) {
+                        console.warn('Planner data exceeds storage limit, reducing data size');
+                        return {
+                            ...base,
+                            semesters: Object.fromEntries(
+                                Object.entries(state.semesters)
+                                    .filter(([_, sem]) => (sem.courses || []).length > 0)
+                                    .slice(0, 20)
+                            ),
+                        };
+                    }
                 }
-                
+
                 return dataToStore;
             },
             version: 1,

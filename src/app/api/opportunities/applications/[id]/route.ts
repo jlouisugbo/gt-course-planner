@@ -8,7 +8,7 @@ interface RouteParams {
 }
 
 // GET /api/opportunities/applications/[id] - Get specific application
-export async function GET(request: Request, { params }: RouteParams) {
+export async function GET(_request: Request, { params }: RouteParams) {
   try {
     const supabase = await createClient();
     const { id } = await params;
@@ -187,7 +187,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 }
 
 // DELETE /api/opportunities/applications/[id] - Delete application
-export async function DELETE(request: Request, { params }: RouteParams) {
+export async function DELETE(_request: Request, { params }: RouteParams) {
   try {
     const supabase = await createClient();
     const { id } = await params;

@@ -4,7 +4,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
@@ -19,28 +18,30 @@ import {
   Upload,
   Target
 } from 'lucide-react';
-import { useReliablePlannerStore } from '@/hooks/useReliablePlannerStore';
+import { useDashboard } from '@/hooks/useDashboard';
 import { PlannerGrid } from './PlannerGrid';
 import { CourseRecommendationsAI } from './CourseRecommendationsAI';
 import { AcademicTimeline } from './AcademicTimeline';
 import { PlannerStats } from './PlannerStats';
 import ProfileSetup from '@/components/profile/ProfileSetup';
+import { usePlannerUIStore } from '@/hooks/usePlannerUIStore';
 
 export const PlannerDashboard: React.FC = () => {
   const [showProfileSetup, setShowProfileSetup] = useState(false);
   
-  // Use reliable planner store that combines data loading with planner functionality
-  const {
-    semesters,
-    userProfile,
-    degreeProgram,
-    minorPrograms,
-    dataLoading,
-    dataError,
-    isFullyInitialized,
-    reloadData,
-    ...plannerStore
-  } = useReliablePlannerStore();
+  // Use unified dashboard data (aggregated from new hooks)
+  const dashboard = useDashboard();
+  const semesters = dashboard.semesters as Record<string, any>;
+  const userProfile = dashboard.userProfile as any;
+  const degreeProgram = dashboard.requirements?.degreeProgram as any;
+  // const minorPrograms = dashboard.requirements?.minorPrograms as any[];
+  const dataLoading = dashboard.isLoading;
+  const dataError = dashboard.error;
+  const isFullyInitialized = !dashboard.isLoading;
+  const reloadData = dashboard.refresh;
+  const { sidebarOpen, setSidebarOpen } = usePlannerUIStore();
+  const sidebarCollapsed = !sidebarOpen;
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   
   const activeUserProfile = userProfile;
 
@@ -95,6 +96,7 @@ export const PlannerDashboard: React.FC = () => {
       
       return () => clearTimeout(timeout);
     }
+    return undefined;
   }, [dataLoading, isFullyInitialized, reloadData]);
 
   // Show loading state while initializing
@@ -153,6 +155,13 @@ export const PlannerDashboard: React.FC = () => {
               </div>
               
               <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  onClick={toggleSidebar}
+                  className="flex items-center gap-2 border-gray-300 text-gray-700 hover:bg-gray-100"
+                >
+                  {sidebarCollapsed ? 'Show Sidebar' : 'Hide Sidebar'}
+                </Button>
                 {dataError && (
                   <Button
                     variant="outline"
@@ -222,14 +231,16 @@ export const PlannerDashboard: React.FC = () => {
             <TabsContent value="planner" className="space-y-5 mt-5">
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
                 {/* Course Recommendations Sidebar - 25% */}
-                <div className="lg:col-span-1">
-                  <div className="sticky top-4">
-                    <CourseRecommendationsAI userProfile={userProfile} />
+                {!sidebarCollapsed && (
+                  <div className="lg:col-span-1">
+                    <div className="sticky top-4">
+                      <CourseRecommendationsAI userProfile={userProfile} />
+                    </div>
                   </div>
-                </div>
+                )}
                 
                 {/* Main Planning Grid - 75% */}
-                <div className="lg:col-span-3">
+                <div className={sidebarCollapsed ? 'lg:col-span-4' : 'lg:col-span-3'}>
                   <PlannerGrid 
                     semesters={semesters}
                     userProfile={userProfile}

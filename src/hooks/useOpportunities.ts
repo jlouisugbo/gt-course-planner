@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '@/lib/api/client';
 import {
   Opportunity,
   OpportunityApplication,
@@ -12,16 +13,10 @@ export const useOpportunities = (filters?: OpportunityFilters) => {
   return useQuery({
     queryKey: ['opportunities', filters],
     queryFn: async () => {
-      const params = new URLSearchParams();
-      if (filters?.type) params.set('type', filters.type);
-
-      const response = await fetch(`/api/opportunities?${params}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch opportunities');
-      }
-
-      const data = await response.json();
-      return data.data as Opportunity[];
+      const params: Record<string, unknown> = {};
+      if (filters?.type) params.type = filters.type;
+      const data = await api.opportunities.list(params);
+      return (data?.data ?? data ?? []) as Opportunity[];
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -32,13 +27,8 @@ export const useMyApplications = () => {
   return useQuery({
     queryKey: ['my-applications'],
     queryFn: async () => {
-      const response = await fetch('/api/opportunities/applications');
-      if (!response.ok) {
-        throw new Error('Failed to fetch applications');
-      }
-
-      const data = await response.json();
-      return data.data as OpportunityApplication[];
+      const data = await api.opportunities.applications.list();
+      return (data?.data ?? data ?? []) as OpportunityApplication[];
     },
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
@@ -49,13 +39,8 @@ export const useApplication = (id: number) => {
   return useQuery({
     queryKey: ['application', id],
     queryFn: async () => {
-      const response = await fetch(`/api/opportunities/applications/${id}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch application');
-      }
-
-      const data = await response.json();
-      return data.data as OpportunityApplication;
+      const data = await api.opportunities.applications.get(id);
+      return (data?.data ?? data) as OpportunityApplication;
     },
     enabled: !!id,
   });
@@ -67,19 +52,8 @@ export const useCreateApplication = () => {
 
   return useMutation({
     mutationFn: async (data: CreateApplicationData) => {
-      const response = await fetch('/api/opportunities/applications', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create application');
-      }
-
-      const result = await response.json();
-      return result.data as OpportunityApplication;
+      const result = await api.opportunities.applications.create(data);
+      return (result?.data ?? result) as OpportunityApplication;
     },
     onSuccess: () => {
       // Invalidate applications list to refetch
@@ -94,19 +68,8 @@ export const useUpdateApplication = () => {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: UpdateApplicationData }) => {
-      const response = await fetch(`/api/opportunities/applications/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update application');
-      }
-
-      const result = await response.json();
-      return result.data as OpportunityApplication;
+      const result = await api.opportunities.applications.update(id, data);
+      return (result?.data ?? result) as OpportunityApplication;
     },
     onSuccess: (data, variables) => {
       // Invalidate both the list and the specific application
@@ -122,15 +85,7 @@ export const useDeleteApplication = () => {
 
   return useMutation({
     mutationFn: async (id: number) => {
-      const response = await fetch(`/api/opportunities/applications/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to delete application');
-      }
-
+      await api.opportunities.applications.delete(id);
       return { success: true };
     },
     onSuccess: () => {

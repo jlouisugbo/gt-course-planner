@@ -3,7 +3,7 @@
  * This provides sample course plans when users first sign up
  */
 
-import { Course } from '@/hooks/usePlannerStore';
+import { Course } from '@/types';
 
 interface SemesterPlan {
   semesterKey: string;
@@ -32,8 +32,9 @@ const createCourse = (
   college: 'Georgia Institute of Technology',
   offerings: { fall: true, spring: true, summer: false },
   difficulty: 3,
+  // Non-typed helper flag used in demo rendering only
   type: 'regular'
-});
+} as any);
 
 export const DEMO_COURSE_PLANS: MajorCoursePlan[] = [
   {

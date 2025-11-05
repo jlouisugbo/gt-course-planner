@@ -322,7 +322,7 @@ export const useProfileSetup = (existingProfile?: Partial<UserProfile>, onSucces
         major: profile.major || '',
         selected_threads: profile.threads || [],
         minors: profile.minors || [],
-        graduation_year: profile.graduation_year || (profile.expectedGraduation ? parseInt(profile.expectedGraduation.match(/\d{4}/)?.[0] || '') || null : null),
+  graduation_year: (profile.graduation_year ?? (profile.expectedGraduation ? (parseInt(profile.expectedGraduation.match(/\d{4}/)?.[0] || '') || undefined) : undefined)) as number | undefined,
         degree_program_id: profile.degree_program_id,
         has_detailed_gpa: (profile.currentGPA && profile.currentGPA > 0) || false,
         semester_gpas: profile.semester_gpas || [],

@@ -246,34 +246,49 @@ export interface MinorRequirement extends DegreeRequirement {
   minorCode: string;
 }
 
-export interface ThreadRequirement extends DegreeRequirement {
-  threadCode: string;
-}
+// Note: ThreadRequirement is defined above with a dedicated shape; legacy extension removed.
 
-// Export all types
-export type {
-  RequirementType,
-  EnrollmentType,
-  DegreeProgram,
-  RequirementCategory,
-  FlexibleOption,
-  DegreeRequirement,
-  UserDegreeProgram,
-  UserRequirementProgress,
-  UserThreadSelection,
-  RequirementProgress,
-  DegreeProgressSummary,
-  CategoryProgress,
-  ThreadProgress,
-  RequirementCalculationRequest,
-  RequirementCalculationResponse,
-  RequirementUpdateRequest,
-  RequirementValidation,
-  CourseRequirementMatch,
-  RequirementDisplaySettings,
-  RequirementProgressSnapshot,
-  ConditionalRequirement,
-  CreditBucketRequirement,
-  MajorRequirement,
-  MinorRequirement
+// -----------------------------------------------------
+// Backward-compatibility aliases for UI layer types
+// -----------------------------------------------------
+import type { Course as BaseCourseType } from './courses';
+
+// Local prerequisite node shape to match UI components
+export type PrereqNode =
+  | string
+  | { id: string; grade?: string }
+  | ["and" | "or", ...PrereqNode[]];
+
+export type BaseCourse = BaseCourseType;
+export type RegularCourse = VisualCourse;
+export type OrGroupCourse = VisualCourse;
+export type AndGroupCourse = VisualCourse;
+export type SelectionCourse = VisualCourse;
+export type FlexibleCourse = VisualCourse;
+export type VisualCourse = Omit<BaseCourseType, 'prerequisites'> & {
+  // Legacy/compat fields used by UI
+  type?: string;
+  courseType?: string;
+  selectionCount?: number;
+  selectionOptions?: any[];
+  groupCourses?: VisualCourse[];
+  courses?: VisualCourse[];
+  isOption?: boolean;
+  footnoteRefs?: number[];
+  minCredits?: number;
+  // Align prerequisites with UI components that accept a different shape
+  prerequisites?: PrereqNode | PrereqNode[];
 };
+export type EnhancedCourse = VisualCourse;
+export interface VisualRequirementCategory extends RequirementCategory {
+  courses: VisualCourse[];
+  minCredits?: number;
+  footnotes?: Array<{ id?: number; number?: number; text: string }>;
+}
+export interface VisualDegreeProgram extends DegreeProgram {
+  requirements: VisualRequirementCategory[];
+  footnotes?: Array<{ id?: number; number?: number; text: string }>;
+}
+export type VisualMinorProgram = VisualDegreeProgram;
+export type DatabaseCourse = BaseCourseType;
+export type EnhancedCourseMap = Record<string, EnhancedCourse>;

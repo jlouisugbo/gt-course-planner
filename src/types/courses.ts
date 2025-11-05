@@ -5,6 +5,7 @@ export interface Course {
     description: string;
     credits: number;
     prerequisites: PrerequisiteStructure; // More specific type
+    postrequisites?: any; // Optional postrequisites structure for compatibility
     college: string; // College name (from college table or legacy field)
     offerings: SemesterOffering;
     difficulty: number;

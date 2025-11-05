@@ -1,13 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
-import { useUserAwarePlannerStore } from './useUserAwarePlannerStore';
+import { usePlannerStore } from '@/hooks/usePlannerStore';
 
 /**
  * Hook to initialize the planner store with user data when they log in
  */
 export const usePlannerInitialization = () => {
     const { user, userRecord } = useAuth();
-    const plannerStore = useUserAwarePlannerStore();
+    const plannerStore = usePlannerStore();
     const isInitializedRef = useRef(false);
     const lastUserIdRef = useRef<string | null>(null);
 
@@ -35,8 +35,8 @@ export const usePlannerInitialization = () => {
             console.log('Initializing planner store for user:', user.id);
 
             // Check if we already have data in the store
-            const existingProfile = plannerStore.userProfile;
-            const existingSemesters = plannerStore.semesters;
+            const existingProfile = (plannerStore as any).userProfile;
+            const existingSemesters = (plannerStore as any).semesters || {};
 
             // If no existing data or user has changed, initialize from database
             if (!existingProfile || Object.keys(existingSemesters).length === 0) {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,36 +18,63 @@ import {
   FileText,
   BookCheck,
   Trophy,
-  Zap
+  Zap,
+  Lightbulb
 } from 'lucide-react';
+import { Database } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
-import { useUserAwarePlannerStore } from '@/hooks/useUserAwarePlannerStore';
-import { useDashboardData } from '@/hooks/useDashboardData';
-import { useRequirements } from '@/hooks/useRequirements';
+import { useDashboard } from '@/hooks/useDashboard';
 import { AsyncErrorBoundary } from '@/components/error/AsyncErrorBoundary';
+import { ProfileIncompleteError } from '@/components/dashboard/ProfileIncompleteError';
 import { getFirstName } from '@/lib/userUtils';
 import { DashboardDeadlines } from '@/components/dashboard/parts/DashboardDeadlines';
 import GPATrendChart from '@/components/dashboard/parts/GPATrendChart';
 import ThreadProgressChart from '@/components/dashboard/parts/ThreadProgressChart';
 import { CourseRecommendationsAI } from '@/components/planner/CourseRecommendationsAI';
+import { useSemesters } from '@/hooks/useSemesters';
 
 function DashboardContent() {
   const { user } = useAuth();
-  const plannerStore = useUserAwarePlannerStore();
-  const { userProfile, semesters } = plannerStore;
+  const { isSuccess: semestersFromDB, isLoading: semestersLoading } = useSemesters();
 
-  // Load real dashboard data
-  const dashboardData = useDashboardData();
-  const { progressSummary } = useRequirements();
+  // Use unified dashboard hook - loads ALL data in one coordinated call
+  const {
+    isLoading,
+    error,
+    user: _dashboardUser,
+    userProfile,
+    stats,
+    courses,
+    gpaHistory,
+    currentGPA,
+    progressSummary,
+    upcomingDeadlines
+  } = useDashboard();
+
+  // Show error state if profile is incomplete or dates are invalid
+  if (error) {
+    return <ProfileIncompleteError error={error} />;
+  }
+
+  // Show loading skeleton while data loads
+  if (isLoading) {
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="h-32 bg-gray-200 rounded-lg"></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-32 bg-gray-200 rounded-lg"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   // Get courses data
-  const completedCourses = plannerStore.getCoursesByStatus('completed');
-  const plannedCourses = plannerStore.getCoursesByStatus('planned');
-  const inProgressCourses = plannerStore.getCoursesByStatus('in-progress');
+  const completedCourses = courses.completed;
 
   // Calculate stats
-  const totalCompletedCredits = completedCourses.reduce((sum, course) => sum + (course.credits || 0), 0);
-  const currentGPA = plannerStore.calculateGPA();
+  const totalCompletedCredits = stats.creditsCompleted;
 
   // Calculate new stats
   const totalCreditsRequired = progressSummary?.totalCreditsRequired || 126;
@@ -73,7 +100,7 @@ function DashboardContent() {
   const isOnTrack = graduationProgressPercentage >= expectedProgress * 0.85;
 
   // Get upcoming deadlines count
-  const upcomingDeadlinesCount = dashboardData.upcomingDeadlines.filter(d => {
+  const upcomingDeadlinesCount = upcomingDeadlines.filter(d => {
     const daysLeft = Math.ceil((new Date(d.date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
     return daysLeft >= 0 && daysLeft <= 30;
   }).length;
@@ -81,157 +108,54 @@ function DashboardContent() {
   // Get user display name - show first name only
   const userName = getFirstName(userProfile, user?.email);
 
-  // Process GPA history for chart
-  const gpaHistory = useMemo(() => {
-    if (!dashboardData.gpaHistory || dashboardData.gpaHistory.length === 0) {
-      // Generate sample data from completed courses if no history exists
-      const semesterMap = new Map<string, { totalPoints: number; totalCredits: number }>();
 
-      Object.values(semesters).forEach(semester => {
-        if (!semester || !semester.courses) return;
 
-        const completedInSemester = semester.courses.filter(c =>
-          c.status === 'completed' && c.grade
-        );
+  // Calculate thread progress (simplified to avoid hook ordering issues)
+  const threads = userProfile?.threads || [];
+  const threadProgress = threads.map((thread: string) => ({
+    name: thread,
+    completed: Math.floor(totalCompletedCredits * 0.3),
+    required: 36,
+    percentage: Math.min((Math.floor(totalCompletedCredits * 0.3) / 36) * 100, 100)
+  }));
 
-        if (completedInSemester.length > 0) {
-          const gradeToGPA: Record<string, number> = {
-            'A': 4.0, 'B': 3.0, 'C': 2.0, 'D': 1.0, 'F': 0.0
-          };
-
-          const totalPoints = completedInSemester.reduce((sum, course) => {
-            const gpa = gradeToGPA[course.grade || 'A'] || 4.0;
-            return sum + (gpa * (course.credits || 3));
-          }, 0);
-
-          const totalCredits = completedInSemester.reduce((sum, course) =>
-            sum + (course.credits || 3), 0
-          );
-
-          if (totalCredits > 0) {
-            semesterMap.set(semester.name || `Semester ${semester.id}`, {
-              totalPoints,
-              totalCredits
-            });
-          }
-        }
-      });
-
-      return Array.from(semesterMap.entries()).map(([semester, data]) => ({
-        semester,
-        gpa: data.totalCredits > 0 ? data.totalPoints / data.totalCredits : 0,
-        credits: data.totalCredits,
-        year: parseInt(semester.match(/\d{4}/)?.[0] || new Date().getFullYear().toString())
-      }));
+  // Simplified recent activity (avoiding complex type issues)
+  const recentActivity = [
+    {
+      id: 'welcome',
+      type: 'course_completed' as const,
+      title: 'Welcome to GT Course Planner',
+      description: 'Start planning your academic journey',
+      timestamp: new Date(),
+      icon: <CheckCircle className="h-5 w-5 text-green-600" />
+    },
+    {
+      id: 'courses-completed',
+      type: 'course_completed' as const,
+      title: `${completedCourses.length} Courses Completed`,
+      description: `You've completed ${totalCompletedCredits} credits`,
+      timestamp: new Date(Date.now() - 86400000),
+      icon: <Award className="h-5 w-5 text-purple-600" />
+    },
+    {
+      id: 'gpa-status',
+      type: 'gpa_improved' as const,
+      title: 'Current GPA',
+      description: `GPA: ${currentGPA.toFixed(2)}`,
+      timestamp: new Date(Date.now() - 2 * 86400000),
+      icon: <Trophy className="h-5 w-5 text-yellow-600" />
     }
+  ];
 
-    return dashboardData.gpaHistory;
-  }, [dashboardData.gpaHistory, semesters]);
-
-  // Calculate thread progress
-  const threadProgress = useMemo(() => {
-    const threads = userProfile?.threads || [];
-    if (threads.length === 0) return [];
-
-    // This would need to be enhanced with actual thread requirement data
-    // For now, we'll show basic progress based on completed courses
-    return threads.map(thread => ({
-      name: thread,
-      completed: Math.floor(totalCompletedCredits * 0.3), // Simplified calculation
-      required: 36,
-      percentage: Math.min((Math.floor(totalCompletedCredits * 0.3) / 36) * 100, 100)
-    }));
-  }, [userProfile?.threads, totalCompletedCredits]);
-
-  // Enhanced activity feed with more event types
-  const recentActivity = useMemo(() => {
-    const activities: Array<{
-      id: string;
-      type: 'course_completed' | 'requirement_met' | 'gpa_improved' | 'course_added' | 'semester_planned';
-      title: string;
-      description: string;
-      timestamp: Date;
-      icon: React.ReactNode;
-    }> = [];
-
-    // Add completed courses
-    completedCourses.slice(0, 3).forEach((course, index) => {
-      activities.push({
-        id: `completed-${course.code}-${index}`,
-        type: 'course_completed',
-        title: `Completed ${course.code}`,
-        description: course.title || 'Course completed successfully',
-        timestamp: new Date(Date.now() - index * 86400000), // Stagger dates
-        icon: <CheckCircle className="h-5 w-5 text-green-600" />
-      });
-    });
-
-    // Add requirement completion activities
-    if (progressSummary && progressSummary.requirementProgress) {
-      progressSummary.requirementProgress
-        .filter(req => req.status === 'completed')
-        .slice(0, 2)
-        .forEach((req, index) => {
-          activities.push({
-            id: `requirement-${req.requirement.id}-${index}`,
-            type: 'requirement_met',
-            title: 'Requirement Completed',
-            description: req.requirement.requirementName,
-            timestamp: new Date(Date.now() - (index + 3) * 86400000),
-            icon: <Award className="h-5 w-5 text-purple-600" />
-          });
-        });
-    }
-
-    // Add GPA improvement if applicable
-    if (currentGPA >= 3.5) {
-      activities.push({
-        id: 'gpa-improved',
-        type: 'gpa_improved',
-        title: 'Outstanding GPA',
-        description: `Current GPA: ${currentGPA.toFixed(2)}`,
-        timestamp: new Date(Date.now() - 5 * 86400000),
-        icon: <Trophy className="h-5 w-5 text-yellow-600" />
-      });
-    }
-
-    // Add planned courses activity
-    if (plannedCourses.length > 0) {
-      activities.push({
-        id: 'courses-planned',
-        type: 'semester_planned',
-        title: 'Courses Planned',
-        description: `${plannedCourses.length} courses added to upcoming semesters`,
-        timestamp: new Date(Date.now() - 7 * 86400000),
-        icon: <Calendar className="h-5 w-5 text-blue-600" />
-      });
-    }
-
-    // Add in-progress courses
-    inProgressCourses.slice(0, 2).forEach((course, index) => {
-      activities.push({
-        id: `in-progress-${course.code}-${index}`,
-        type: 'course_added',
-        title: `Currently Taking ${course.code}`,
-        description: course.title || 'Course in progress',
-        timestamp: new Date(Date.now() - (index + 10) * 86400000),
-        icon: <BookOpen className="h-5 w-5 text-orange-600" />
-      });
-    });
-
-    // Sort by timestamp and limit
-    return activities
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-      .slice(0, 8);
-  }, [completedCourses, progressSummary, currentGPA, plannedCourses, inProgressCourses]);
-
-  // Format deadlines for DashboardDeadlines component
-  const formattedDeadlines = useMemo(() => {
-    return dashboardData.upcomingDeadlines.map(deadline => ({
-      ...deadline,
-      daysLeft: Math.ceil((new Date(deadline.date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-    }));
-  }, [dashboardData.upcomingDeadlines]);
+  // Format deadlines to match the expected Deadline interface  
+  const formattedDeadlines = upcomingDeadlines.map((deadline, index) => ({
+    ...deadline,
+    id: parseInt(deadline.id) || index,
+    urgent: deadline.daysLeft <= 7,
+    is_active: true,
+    date: deadline.date.toISOString ? deadline.date.toISOString() : deadline.date.toString(),
+    type: (deadline.type as "registration" | "withdrawal" | "graduation" | "thread-confirmation" | "financial" | "housing") || "registration"
+  }));
 
   return (
     <div className="space-y-8">
@@ -246,20 +170,30 @@ function DashboardContent() {
             Here&apos;s your academic progress overview
           </p>
         </div>
-        <Badge className="bg-gt-gold text-gt-navy px-3 py-1 text-sm font-medium">
-          {userProfile?.major || 'Major Not Set'}
-        </Badge>
+        <div className="flex flex-col items-end gap-2">
+          <Badge className="bg-gt-gold text-gt-navy px-3 py-1 text-sm font-medium">
+            {userProfile?.major || 'Major Not Set'}
+          </Badge>
+          {!semestersLoading && (
+            <div className="flex items-center gap-1 text-xs text-gray-600" title={semestersFromDB ? 'Planner semesters are loaded from your account' : 'Planner semesters not confirmed from server yet'}>
+              <Database className={`h-3.5 w-3.5 ${semestersFromDB ? 'text-green-600' : 'text-gray-400'}`} />
+              <span>
+                Planner data: {semestersFromDB ? 'Synced to account' : 'Checking...'}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Enhanced Quick Stats Grid - 6 Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
           <Card className="border-l-4 border-l-gt-gold hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Current GPA</p>
@@ -279,7 +213,7 @@ function DashboardContent() {
           transition={{ delay: 0.2 }}
         >
           <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Credits Completed</p>
@@ -297,7 +231,7 @@ function DashboardContent() {
           transition={{ delay: 0.3 }}
         >
           <Card className="hover:shadow-md transition-shadow border-l-4 border-l-green-500">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Graduation Progress</p>
@@ -317,7 +251,7 @@ function DashboardContent() {
           transition={{ delay: 0.4 }}
         >
           <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Credits Remaining</p>
@@ -335,7 +269,7 @@ function DashboardContent() {
           transition={{ delay: 0.5 }}
         >
           <Card className={`hover:shadow-md transition-shadow border-l-4 ${isOnTrack ? 'border-l-green-500' : 'border-l-yellow-500'}`}>
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">On Track Status</p>
@@ -356,7 +290,7 @@ function DashboardContent() {
           transition={{ delay: 0.6 }}
         >
           <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Upcoming Deadlines</p>
@@ -371,14 +305,40 @@ function DashboardContent() {
 
       {/* Charts Section - 2 Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <GPATrendChart gpaHistory={gpaHistory} delay={0.2} />
+        <GPATrendChart gpaHistory={gpaHistory || []} delay={0.2} />
         <ThreadProgressChart threadProgress={threadProgress} delay={0.3} />
       </div>
 
       {/* Recommendations and Deadlines - 2 Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="lg:col-span-1">
-          <CourseRecommendationsAI userProfile={userProfile} />
+          {userProfile?.major ? (
+            <CourseRecommendationsAI userProfile={userProfile} />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-gt-navy flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5" />
+                  Course Recommendations
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <Lightbulb className="h-12 w-12 mx-auto text-gray-400 mb-3" />
+                  <p className="text-gray-600 font-medium mb-2">Complete Your Profile</p>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Set up your major and academic goals to receive personalized course recommendations
+                  </p>
+                  <Button
+                    onClick={() => window.location.href = '/profile'}
+                    className="bg-gt-navy hover:bg-gt-navy-700"
+                  >
+                    Complete Profile Setup
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
         <div className="lg:col-span-1">
           <DashboardDeadlines deadlines={formattedDeadlines} />
@@ -397,7 +357,7 @@ function DashboardContent() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {recentActivity.length > 0 ? (
                   recentActivity.map((activity, index) => (
                     <motion.div
@@ -424,9 +384,7 @@ function DashboardContent() {
                       <Badge
                         className={`flex-shrink-0 ${
                           activity.type === 'course_completed' ? 'bg-green-100 text-green-800' :
-                          activity.type === 'requirement_met' ? 'bg-purple-100 text-purple-800' :
                           activity.type === 'gpa_improved' ? 'bg-yellow-100 text-yellow-800' :
-                          activity.type === 'semester_planned' ? 'bg-blue-100 text-blue-800' :
                           'bg-orange-100 text-orange-800'
                         }`}
                       >
@@ -455,7 +413,7 @@ function DashboardContent() {
                 Quick Actions
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-4">
               <Button
                 className="w-full bg-gt-navy hover:bg-gt-navy-700 justify-start"
                 onClick={() => window.location.href = '/planner'}

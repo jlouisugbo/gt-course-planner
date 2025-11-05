@@ -94,19 +94,12 @@ export default function SecurityDashboard() {
     try {
       setError(null);
       
-      const [metricsResponse, eventsResponse, healthResponse] = await Promise.all([
-        fetch(`/api/security/metrics?timeframe=${selectedTimeframe}`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('supabase.auth.token')}` }
-        }),
-        fetch('/api/security/events?limit=50', {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('supabase.auth.token')}` }
-        }),
+        const [metricsResponse, eventsResponse, healthResponse] = await Promise.all([
+        fetch(`/api/security/metrics?timeframe=${selectedTimeframe}`),
+        fetch('/api/security/events?limit=50'),
         fetch('/api/security/metrics/health', {
           method: 'POST',
-          headers: { 
-            'Authorization': `Bearer ${localStorage.getItem('supabase.auth.token')}`,
-            'Content-Type': 'application/json'
-          }
+          headers: { 'Content-Type': 'application/json' }
         })
       ]);
 
@@ -136,18 +129,19 @@ export default function SecurityDashboard() {
   useEffect(() => {
     fetchSecurityData();
 
+    let interval: ReturnType<typeof setInterval> | null = null;
     if (autoRefresh) {
-      const interval = setInterval(fetchSecurityData, 30000); // 30 seconds
-      return () => clearInterval(interval);
+      interval = setInterval(fetchSecurityData, 30000); // 30 seconds
     }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [selectedTimeframe, autoRefresh, fetchSecurityData]);
 
   // Export security report
   const exportSecurityReport = async () => {
     try {
-      const response = await fetch('/api/security/events?format=csv', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('supabase.auth.token')}` }
-      });
+      const response = await fetch('/api/security/events?format=csv');
       
       if (!response.ok) throw new Error('Failed to export report');
       

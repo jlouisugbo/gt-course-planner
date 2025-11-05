@@ -1,4 +1,4 @@
-import { MajorRequirement, MinorRequirement, ThreadRequirement } from '@/types';
+import { MajorRequirement, MinorRequirement, ThreadRequirement } from './requirements';
 export interface SemesterGPA {
     semester: string; // Format: "Fall 2023", "Spring 2024", etc.
     gpa: number;

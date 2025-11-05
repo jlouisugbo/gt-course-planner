@@ -59,7 +59,7 @@ interface StandardizedModalProps {
   footerClassName?: string;
   
   // Accessibility
-  initialFocus?: React.RefObject<HTMLElement>;
+  initialFocus?: React.RefObject<HTMLElement | null>;
   ariaLabel?: string;
   ariaDescribedBy?: string;
   role?: string;
@@ -158,12 +158,13 @@ export const StandardizedModal: React.FC<StandardizedModalProps> = ({
 
   // Handle focus management
   useEffect(() => {
+    let focusTimeout: ReturnType<typeof setTimeout> | null = null;
     if (isOpen) {
       // Store current focused element
       previousFocusRef.current = document.activeElement as HTMLElement;
       
       // Focus management after modal opens
-      const focusTimeout = setTimeout(() => {
+      focusTimeout = setTimeout(() => {
         if (initialFocus?.current) {
           initialFocus.current.focus();
         } else if (closeButtonRef.current) {
@@ -172,13 +173,15 @@ export const StandardizedModal: React.FC<StandardizedModalProps> = ({
           modalRef.current?.focus();
         }
       }, 100);
-
-      return () => clearTimeout(focusTimeout);
     } else if (previousFocusRef.current) {
       // Return focus to previously focused element
       previousFocusRef.current.focus();
       previousFocusRef.current = null;
     }
+
+    return () => {
+      if (focusTimeout) clearTimeout(focusTimeout);
+    };
   }, [isOpen, initialFocus]);
 
   // Handle escape key

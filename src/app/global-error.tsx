@@ -18,7 +18,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
     const logger = createComponentLogger('GLOBAL_ERROR_HANDLER');
     
     // Log the error securely
-    logger.critical('Global error boundary triggered', error, {
+    logger.error('Global error boundary triggered', error, {
       digest: error.digest,
       timestamp: new Date().toISOString(),
       userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',

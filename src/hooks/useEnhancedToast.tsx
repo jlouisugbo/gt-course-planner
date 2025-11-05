@@ -66,7 +66,7 @@ export function useEnhancedToast() {
       </div>
     );
 
-    baseToast.custom(toastContent, {
+    baseToast.custom(() => toastContent, {
       duration: options?.duration || 4000,
       unstyled: true,
     });

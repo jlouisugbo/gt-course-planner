@@ -17,7 +17,7 @@ export const DEMO_USER: UserData = {
   auth_id: 'demo-user-auth-id',
   email: 'alex.johnson@gatech.edu',
   full_name: 'Alex Johnson',
-  gt_id: 'ajohnson3',
+  gt_id: 0,
   gt_username: 'ajohnson3',
   major: 'Computer Science',
   selected_threads: ['Intelligence', 'Devices'],
@@ -28,17 +28,11 @@ export const DEMO_USER: UserData = {
   is_transfer_student: false,
   transfer_credits: 0,
   plan_settings: {
-    plan_name: "Alex's GT Course Plan",
+    planName: "Alex's GT Course Plan",
     starting_semester: 'Fall 2022',
-    starting_year: 2022,
-    graduation_year: 2026,
-    expected_graduation: '2026-05-15',
-    total_credits: 126,
-    target_gpa: 3.5,
-    is_transfer_student: false,
-    transfer_credits: 0,
-    current_gpa: 3.75,
-    total_credits_earned: 45
+  year: '2022',
+  is_transfer_student: false,
+  transfer_credits: 0
   },
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString()

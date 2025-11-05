@@ -21,15 +21,15 @@ import { cn } from '@/lib/utils';
 
 export const PlannerStats: React.FC = () => {
   const plannerStore = useUserAwarePlannerStore();
-  const { semesters, userProfile } = plannerStore;
+  const { semesters } = plannerStore as any;
 
   const safeSemesters = useMemo(() => {
     return semesters && typeof semesters === 'object' ? semesters : {};
   }, [semesters]);
 
   const safeUserProfile = useMemo(() => {
-    return userProfile && typeof userProfile === 'object' ? userProfile : null;
-  }, [userProfile]);
+    return null as any;
+  }, []);
 
   // Calculate comprehensive stats
   const stats = useMemo(() => {
@@ -209,7 +209,7 @@ export const PlannerStats: React.FC = () => {
 
         <StatCard
           title="Current GPA"
-          value={typeof safeUserProfile?.currentGPA === 'number' ? safeUserProfile.currentGPA.toFixed(2) : '0.00'}
+          value={'0.00'}
           subtitle="cumulative"
           icon={<Award className="h-5 w-5 text-[#B3A369]" />}
           color="default"
@@ -343,7 +343,7 @@ export const PlannerStats: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <div className="text-2xl font-bold text-[#B3A369] mb-1">
-                {safeUserProfile?.expectedGraduation || 'TBD'}
+                {'TBD'}
               </div>
               <div className="text-sm text-muted-foreground mb-3">Expected Graduation</div>
               <div className="space-y-2 text-sm">

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '@/lib/api/client';
 import {
   Advisor,
   AdvisorConnection,
@@ -14,20 +15,12 @@ export const useAdvisors = (filters?: AdvisorFilters) => {
   return useQuery({
     queryKey: ['advisors', filters],
     queryFn: async () => {
-      const params = new URLSearchParams();
-      if (filters?.specialization) params.set('specialization', filters.specialization);
-      if (filters?.department) params.set('department', filters.department);
-      if (filters?.acceptingStudents !== undefined) {
-        params.set('acceptingStudents', String(filters.acceptingStudents));
-      }
-
-      const response = await fetch(`/api/advisors?${params}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch advisors');
-      }
-
-      const data = await response.json();
-      return data.data as Advisor[];
+      const params: Record<string, unknown> = {};
+      if (filters?.specialization) params.specialization = filters.specialization;
+      if (filters?.department) params.department = filters.department;
+      if (filters?.acceptingStudents !== undefined) params.acceptingStudents = filters.acceptingStudents;
+      const data = await api.advisors.list(params);
+      return (data?.data ?? data ?? []) as Advisor[];
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -38,13 +31,8 @@ export const useAdvisor = (id: number) => {
   return useQuery({
     queryKey: ['advisor', id],
     queryFn: async () => {
-      const response = await fetch(`/api/advisors/${id}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch advisor');
-      }
-
-      const data = await response.json();
-      return data.data as Advisor;
+      const data = await api.advisors.get(id);
+      return (data?.data ?? data) as Advisor;
     },
     enabled: !!id,
   });
@@ -55,13 +43,8 @@ export const useMyAdvisors = () => {
   return useQuery({
     queryKey: ['my-advisors'],
     queryFn: async () => {
-      const response = await fetch('/api/advisors/connections');
-      if (!response.ok) {
-        throw new Error('Failed to fetch advisor connections');
-      }
-
-      const data = await response.json();
-      return data.data as AdvisorConnection[];
+      const data = await api.advisors.connections.list();
+      return (data?.data ?? data ?? []) as AdvisorConnection[];
     },
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
@@ -73,19 +56,8 @@ export const useCreateConnection = () => {
 
   return useMutation({
     mutationFn: async (data: CreateConnectionData) => {
-      const response = await fetch('/api/advisors/connections', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create connection');
-      }
-
-      const result = await response.json();
-      return result.data as AdvisorConnection;
+      const result = await api.advisors.connections.create(data);
+      return (result?.data ?? result) as AdvisorConnection;
     },
     onSuccess: () => {
       // Invalidate connections list to refetch
@@ -99,13 +71,8 @@ export const useAppointments = () => {
   return useQuery({
     queryKey: ['appointments'],
     queryFn: async () => {
-      const response = await fetch('/api/advisors/appointments');
-      if (!response.ok) {
-        throw new Error('Failed to fetch appointments');
-      }
-
-      const data = await response.json();
-      return data.data as AdvisorAppointment[];
+      const data = await api.advisors.appointments.list();
+      return (data?.data ?? data ?? []) as AdvisorAppointment[];
     },
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
@@ -116,13 +83,8 @@ export const useAppointment = (id: number) => {
   return useQuery({
     queryKey: ['appointment', id],
     queryFn: async () => {
-      const response = await fetch(`/api/advisors/appointments/${id}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch appointment');
-      }
-
-      const data = await response.json();
-      return data.data as AdvisorAppointment;
+      const data = await api.advisors.appointments.get(id);
+      return (data?.data ?? data) as AdvisorAppointment;
     },
     enabled: !!id,
   });
@@ -134,19 +96,8 @@ export const useCreateAppointment = () => {
 
   return useMutation({
     mutationFn: async (data: CreateAppointmentData) => {
-      const response = await fetch('/api/advisors/appointments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create appointment');
-      }
-
-      const result = await response.json();
-      return result.data as AdvisorAppointment;
+      const result = await api.advisors.appointments.create(data);
+      return (result?.data ?? result) as AdvisorAppointment;
     },
     onSuccess: () => {
       // Invalidate appointments list to refetch
@@ -161,19 +112,8 @@ export const useUpdateAppointment = () => {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: UpdateAppointmentData }) => {
-      const response = await fetch(`/api/advisors/appointments/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update appointment');
-      }
-
-      const result = await response.json();
-      return result.data as AdvisorAppointment;
+      const result = await api.advisors.appointments.update(id, data);
+      return (result?.data ?? result) as AdvisorAppointment;
     },
     onSuccess: (data, variables) => {
       // Invalidate both the list and the specific appointment
@@ -189,15 +129,7 @@ export const useDeleteAppointment = () => {
 
   return useMutation({
     mutationFn: async (id: number) => {
-      const response = await fetch(`/api/advisors/appointments/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to delete appointment');
-      }
-
+      await api.advisors.appointments.delete(id);
       return { success: true };
     },
     onSuccess: () => {

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { createSecureRoute, SECURITY_CONFIGS } from '@/lib/security/middleware';
 import { UserProfileUpdateSchema } from '@/lib/validation/schemas';
-import { safeGetUserProfile, safeUpdateUserProfile } from '@/lib/security/database';
+import { safeGetUserProfile } from '@/lib/security/database';
 import { createSecureErrorHandler } from '@/lib/security/errorHandler';
 
 // Secure GET handler using security middleware
@@ -109,13 +109,35 @@ export const PUT = createSecureRoute(async (request, context) => {
     try {
         // Use the already validated data from security middleware
         const validatedData = context.validatedData!.body;
-        
-        // Update user profile using safe database method
-        const updatedUser = await safeUpdateUserProfile(context.user!.id, validatedData);
+        // Perform an upsert (create if missing, update otherwise) using admin client
+        const authId = context.user!.id;
+
+        const upsertPayload: any = {
+            auth_id: authId,
+            email: validatedData.email ?? validatedData.email,
+            full_name: validatedData.fullName ?? validatedData.full_name,
+            major: validatedData.major ?? validatedData.major,
+            minors: validatedData.minors ?? validatedData.minors,
+            plan_settings: validatedData.planSettings ?? validatedData.plan_settings,
+            graduation_year: validatedData.graduationYear ?? validatedData.graduation_year,
+            degree_program_id: validatedData.degreeProgramId ?? validatedData.degree_program_id,
+            gt_username: validatedData.gtUsername ?? validatedData.gt_username,
+            has_detailed_gpa: validatedData.hasDetailedGPA ?? validatedData.has_detailed_gpa,
+        };
+
+        const { data: upserted, error: upsertError } = await supabaseAdmin()
+            .from('users')
+            .upsert(upsertPayload, { onConflict: 'auth_id' })
+            .select()
+            .single();
+
+        if (upsertError) {
+            throw upsertError;
+        }
 
         return NextResponse.json({
-            message: 'Profile updated successfully',
-            user: updatedUser
+            message: 'Profile upserted successfully',
+            user: upserted
         });
     } catch (error: any) {
         const errorHandler = createSecureErrorHandler('/api/user-profile', 'PUT', context.user?.id);

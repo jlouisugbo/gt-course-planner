@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
+import { api } from "@/lib/api/client";
 import { UserData } from "@/types/user";
 import { Loader2 } from "lucide-react";
 import { isDemoMode, getDemoUser, getDemoAuthUser } from "@/lib/demo-mode";
@@ -32,22 +33,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   // Fetch user record from database (simple, no error states)
-  const fetchUserRecord = useCallback(async (authId: string): Promise<UserData | null> => {
+  // Fetch user profile via server API. Falls back to direct DB insert only when creation is needed.
+  const fetchUserRecord = useCallback(async (): Promise<UserData | null> => {
     try {
-      const { data: userRecord, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("auth_id", authId)
-        .maybeSingle();
+  const resp = await api.users.getProfile();
+      // api.users.getProfile returns null/404-handled errors as thrown exceptions.
+      if (!resp) return null;
 
-      if (error) {
-        console.error("Error fetching user record:", error);
-        return null;
-      }
+      // Normalize server response fields to the local UserData shape used by the app
+      const normalized: Partial<UserData> = {
+        id: resp.id,
+        auth_id: resp.auth_id,
+        email: resp.email,
+        full_name: resp.fullName ?? undefined,
+        major: resp.major ?? undefined,
+        minors: resp.minors ?? [],
+        selected_threads: resp.selectedThreads ?? [],
+        plan_settings: (resp.planSettings as any) ?? {},
+        current_gpa: resp.overallGPA ?? undefined,
+        gt_id: undefined, // not in profile; can be resolved elsewhere
+        graduation_year: resp.graduationYear ?? undefined,
+      };
 
-      return userRecord;
+      return normalized as UserData;
     } catch (error) {
-      console.error("Error in fetchUserRecord:", error);
+      // API route may return 404 if profile not created yet - return null so caller can create
+      console.debug('api.users.getProfile() returned no profile or error', error);
       return null;
     }
   }, []);
@@ -55,34 +66,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Ensure user exists in database (create if needed) - simplified
   const ensureUserExists = useCallback(async (user: User): Promise<UserData | null> => {
     try {
-      let userRecord = await fetchUserRecord(user.id);
+      // Try server API first
+  let userRecord = await fetchUserRecord();
 
       if (!userRecord) {
-        const { data: newUser, error: insertError } = await supabase
-          .from("users")
-          .insert({
-            auth_id: user.id,
-            email: user.email!,
-            full_name: user.user_metadata?.full_name || user.email!.split("@")[0],
-            plan_settings: {
-              plan_name: "My 4-Year Plan",
-              starting_semester: "Fall 2024",
-            },
-          })
-          .select()
-          .single();
+        // No server-side profile yet. Create or update via server API (upsert behavior).
+        const createPayload: Partial<any> = {
+          // matches UserProfileUpdate in api client (snake_case keys)
+          full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
+          plan_settings: {
+            plan_name: 'My 4-Year Plan',
+            starting_semester: 'Fall 2024',
+          }
+        };
 
-        if (insertError) {
-          console.error("Error creating user:", insertError);
-          return null;
-        }
-        userRecord = newUser;
+        const createResp = await api.users.updateProfile(createPayload as any);
+        const newUser = createResp;
+        userRecord = {
+          id: newUser?.id,
+          auth_id: newUser?.auth_id,
+          email: newUser?.email,
+          full_name: (newUser as any)?.full_name || (newUser as any)?.fullName,
+          plan_settings: (newUser as any)?.plan_settings || createPayload.plan_settings,
+        } as UserData;
       }
 
-      setUserRecord(userRecord);
+      if (userRecord) setUserRecord(userRecord);
+      
+      // After ensuring user exists, run semesters migration (idempotent)
+      try {
+        const { migrateSemestersToDB } = await import('@/lib/utils/semestersMigration');
+        const migrated = await migrateSemestersToDB();
+        if (migrated) {
+          console.log('[AuthProvider] Semesters migrated to DB.');
+        }
+      } catch (e) {
+        console.warn('[AuthProvider] Semesters migration skipped/failed:', e);
+      }
       return userRecord;
     } catch (error) {
-      console.error("Error in ensureUserExists:", error);
+      console.error('Error in ensureUserExists:', error);
       return null;
     }
   }, [fetchUserRecord]);
@@ -91,7 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshUserRecord = useCallback(async () => {
     if (!user?.id) return;
 
-    const record = await fetchUserRecord(user.id);
+  const record = await fetchUserRecord();
 
     if (record) {
       setUserRecord(record);
@@ -108,17 +131,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           major: record.major,
           threads: record.selected_threads || [],
           minors: record.minors || [],
-          startYear: record.plan_settings?.starting_year || new Date().getFullYear(),
-          expectedGraduation: record.plan_settings?.expected_graduation || '',
+          startYear: Number((record.plan_settings as any)?.year) || new Date().getFullYear(),
+          expectedGraduation: (record.expected_graduation as any) || ((record.plan_settings as any)?.expected_graduation) || '',
           currentGPA: record.current_gpa || 0,
           majorRequirements: [],
           minorRequirements: [],
           threadRequirements: [],
-          full_name: record.full_name,
-          auth_id: record.auth_id,
-          gtId: record.gt_id,
-          graduation_year: record.graduation_year,
-          plan_settings: record.plan_settings
+          gtId: record.gt_id
         });
       }
     }
@@ -157,17 +176,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             major: demoUser.major,
             threads: demoUser.selected_threads || [],
             minors: demoUser.minors || [],
-            startYear: demoUser.plan_settings?.starting_year || 2022,
-            expectedGraduation: demoUser.plan_settings?.expected_graduation || '',
+            startYear: Number((demoUser.plan_settings as any)?.year) || 2022,
+            expectedGraduation: (demoUser.expected_graduation as any) || ((demoUser.plan_settings as any)?.expected_graduation) || '',
             currentGPA: demoUser.current_gpa || 3.75,
             majorRequirements: [],
             minorRequirements: [],
             threadRequirements: [],
-            full_name: demoUser.full_name,
-            auth_id: demoUser.auth_id,
-            gtId: demoUser.gt_id,
-            graduation_year: demoUser.graduation_year,
-            plan_settings: demoUser.plan_settings
+            gtId: demoUser.gt_id
           });
 
           return; // Exit early - skip real auth
@@ -194,11 +209,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initializeAuth();
 
     // Listen for auth changes - simple subscription
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string, session: any) => {
       setUser(session?.user ?? null);
       setSession(session);
 
-      if (event === "SIGNED_IN" && session?.user) {
+          if (event === "SIGNED_IN" && session?.user) {
         setLoading(true);
         await ensureUserExists(session.user);
         setLoading(false);

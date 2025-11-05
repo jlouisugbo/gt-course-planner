@@ -46,7 +46,7 @@ async function createNotification(request: CreateNotificationRequest): Promise<b
  * Create a deadline reminder notification
  */
 export async function createDeadlineNotification(
-  userId: number,
+  userId: string,
   data: DeadlineNotificationData
 ): Promise<boolean> {
   const { deadline, daysUntil } = data;
@@ -92,7 +92,7 @@ export async function createDeadlineNotification(
  * Create a requirement completion notification
  */
 export async function createRequirementNotification(
-  userId: number,
+  userId: string,
   data: RequirementNotificationData
 ): Promise<boolean> {
   const { requirement, isComplete } = data;
@@ -121,7 +121,7 @@ export async function createRequirementNotification(
  * Create a course-related notification
  */
 export async function createCourseNotification(
-  userId: number,
+  userId: string,
   data: CourseNotificationData
 ): Promise<boolean> {
   const { course, action } = data;
@@ -170,7 +170,7 @@ export async function createCourseNotification(
  * Create a GPA alert notification
  */
 export async function createGpaNotification(
-  userId: number,
+  userId: string,
   data: GpaNotificationData
 ): Promise<boolean> {
   const { gpa, trend, threshold } = data;
@@ -212,7 +212,7 @@ export async function createGpaNotification(
  * Create an advisor-related notification
  */
 export async function createAdvisorNotification(
-  userId: number,
+  userId: string,
   data: AdvisorNotificationData
 ): Promise<boolean> {
   const { advisor, action, appointment } = data;
@@ -271,7 +271,7 @@ export async function createAdvisorNotification(
  * Create a system notification (announcements, updates, etc.)
  */
 export async function createSystemNotification(
-  userId: number,
+  userId: string,
   title: string,
   message: string,
   options?: {

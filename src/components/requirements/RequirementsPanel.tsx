@@ -35,21 +35,28 @@ const RequirementsPanel: React.FC = () => {
 
     // Convert data to VisualDegreeProgram format for compatibility
     const degreeProgram: VisualDegreeProgram | null = degreeData ? {
-        id: degreeData.id,
-        name: degreeData.name,
-        degreeType: degreeData.degreeType,
-        college: undefined,
-        totalCredits: degreeData.totalCredits,
-        requirements: degreeData.requirements,
-        footnotes: degreeData.footnotes
+        id: (degreeData as any).id ?? 0,
+        name: (degreeData as any).name ?? 'Degree',
+        code: (degreeData as any).code ?? 'UNK',
+        college: (degreeData as any).college ?? 'Unknown',
+        totalCredits: (degreeData as any).totalCredits ?? 120,
+        minGpa: 0,
+        isActive: true,
+        requirements: (degreeData as any).requirements ?? [],
+        footnotes: (degreeData as any).footnotes ?? []
     } : null;
 
     // Convert minor programs to VisualMinorProgram format
-    const minorPrograms: VisualMinorProgram[] = minorData.map(minor => ({
+    const minorPrograms: VisualMinorProgram[] = minorData.map((minor: any) => ({
         id: minor.id,
         name: minor.name,
-        requirements: minor.requirements,
-        footnotes: minor.footnotes
+        code: minor.code ?? 'MIN',
+        college: minor.college ?? 'Unknown',
+        totalCredits: minor.totalCredits ?? 18,
+        minGpa: 0,
+        isActive: true,
+        requirements: minor.requirements ?? [],
+        footnotes: minor.footnotes ?? []
     }));
     
     if (isLoading) {

@@ -1,3 +1,4 @@
+ 
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabaseServer';
 
@@ -27,14 +28,14 @@ export async function GET(request: Request) {
       const acceptingStudents = searchParams.get('acceptingStudents');
 
       if (specialization) {
-        advisors = advisors.filter(adv =>
-          adv.specializations.some(s => s.toLowerCase().includes(specialization.toLowerCase()))
+        advisors = advisors.filter((adv: any) =>
+          adv.specializations.some((s: any) => String(s).toLowerCase().includes(specialization.toLowerCase()))
         );
       }
 
       if (department) {
-        advisors = advisors.filter(adv =>
-          adv.departments.some(d => d.toLowerCase().includes(department.toLowerCase()))
+        advisors = advisors.filter((adv: any) =>
+          adv.departments.some((d: any) => String(d).toLowerCase().includes(department.toLowerCase()))
         );
       }
 

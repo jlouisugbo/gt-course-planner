@@ -1,6 +1,14 @@
-import { StudentInfo,
-  AcademicProgress,
-  Course } from '@/types';
+import { StudentInfo, Course } from '@/types';
+
+export interface AcademicProgress {
+    creditsCompleted: number;
+    creditsInProgress: number;
+    creditsPlanned: number;
+    totalCreditsRequired: number;
+    currentGPA: number;
+    progressPercentage: number;
+    onTrack: boolean;
+}
 
 export interface ActivityItem {
     id: number;

@@ -40,8 +40,7 @@ export function OpportunityApplicationModal({
     try {
       await createApplication.mutateAsync({
         opportunity_id: opportunity.id,
-        cover_letter: coverLetter,
-        status: saveAsDraft ? 'draft' : 'submitted',
+        cover_letter: coverLetter
       });
 
       // Reset form and close

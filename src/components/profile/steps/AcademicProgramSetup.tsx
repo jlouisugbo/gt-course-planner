@@ -64,20 +64,20 @@ export const AcademicProgramSetup: React.FC<AcademicProgramSetupProps> = ({
         }
 
         // Show all degree types to understand the data
-        const degreeTypes = [...new Set(programs.map(p => p.degree_type))];
+  const degreeTypes = [...new Set(programs.map((p: any) => p.degree_type))];
         console.log('📋 Available degree types:', degreeTypes);
 
         const majors = programs
-          ?.filter(p => p.degree_type === 'BS' || p.degree_type === 'Major')
-          .map(p => p.name) || [];
+          ?.filter((p: any) => p.degree_type === 'BS' || p.degree_type === 'Major')
+          .map((p: any) => p.name) || [];
           
         const threads = programs
-          ?.filter(p => p.degree_type === 'Thread')
-          .map(p => p.name) || [];
+          ?.filter((p: any) => p.degree_type === 'Thread')
+          .map((p: any) => p.name) || [];
           
         const minors = programs
-          ?.filter(p => p.degree_type === 'Minor')
-          .map(p => p.name) || [];
+          ?.filter((p: any) => p.degree_type === 'Minor')
+          .map((p: any) => p.name) || [];
 
         console.log('✅ Filtered programs:', { 
           majors: { count: majors.length, sample: majors.slice(0, 3) },
@@ -103,7 +103,7 @@ export const AcademicProgramSetup: React.FC<AcademicProgramSetupProps> = ({
           setAvailableThreads(fallbackThreads);
         } else {
           // Also deduplicate threads from database to avoid any duplicates
-          const uniqueThreads = [...new Set(threads)];
+          const uniqueThreads = [...new Set(threads)] as string[];
           setAvailableThreads(uniqueThreads);
         }
 
@@ -115,7 +115,7 @@ export const AcademicProgramSetup: React.FC<AcademicProgramSetupProps> = ({
           setAvailableMinors(fallbackMinors);
         } else {
           // Also deduplicate minors from database to avoid any duplicates
-          const uniqueMinors = [...new Set(minors)];
+          const uniqueMinors = [...new Set(minors)] as string[];
           setAvailableMinors(uniqueMinors);
         }
         
