@@ -40,8 +40,10 @@ export function LandingPage() {
 
             // Import and initialize planner store with demo data
             const { usePlannerStore } = await import('@/hooks/usePlannerStore');
-            const { DEMO_USER, DEMO_COMPLETED_COURSES } = await import('@/lib/demo-data');
+            const { getDemoUser } = await import('@/lib/demo-mode');
+            const { DEMO_COMPLETED_COURSES } = await import('@/lib/demo-data');
 
+            const DEMO_USER = getDemoUser();
             const store = usePlannerStore.getState();
 
             // Initialize student info with demo user
