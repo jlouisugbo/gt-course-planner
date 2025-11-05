@@ -7,10 +7,10 @@ export interface AppLayoutProps {
 
 // Import proper types
 import { Course, SemesterData, PlannedCourse } from './courses';
-import { RequirementCategory } from './requirements';
-// Backward-compatibility aliases for UI prop types
-export type VisualCourse = Course;
-export type VisualRequirementCategory = RequirementCategory;
+import { RequirementCategory, VisualCourse, VisualRequirementCategory } from './requirements';
+import { CourseSearchFilters } from './courses-ui';
+// NOTE: VisualCourse and VisualRequirementCategory are imported from requirements.ts
+// Do not create aliases here - they are complex types with additional fields
 import { ThreadProgress, Deadline as DashboardDeadline, ActivityItem, DashboardData } from './dashboard';
 
 // Planner Components
@@ -126,15 +126,8 @@ export interface FlexibleTextCardProps {
   footnotes?: { [key: number]: string };
 }
 
-// Define CourseSearchFilters type
-export interface CourseSearchFilters {
-  search?: string;
-  college?: string;
-  credits?: number | null;
-  difficulty?: number | null;
-  type?: string;
-  semester?: string;
-}
+// NOTE: CourseSearchFilters is imported from courses-ui.ts above
+// Original duplicate definition removed to prevent type conflicts
 
 // Courses Components
 export interface RecommendedCoursesProps {

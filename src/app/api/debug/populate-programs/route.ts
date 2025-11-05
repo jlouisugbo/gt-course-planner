@@ -1,7 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { createClient } from '@/lib/supabaseServer';
 
+/**
+ * DEBUG ENDPOINT - DEVELOPMENT ONLY
+ * This endpoint populates the database with sample degree programs.
+ * It should NOT be accessible in production.
+ */
 export async function POST(request: NextRequest) {
+    // SECURITY: Only allow in development environment
+    if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json({
+            error: 'Debug endpoints are disabled in production'
+        }, { status: 403 });
+    }
+
+    // SECURITY: Require authentication and admin role
+    try {
+        const supabase = createClient();
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+        if (authError || !user) {
+            return NextResponse.json({
+                error: 'Authentication required for debug endpoints'
+            }, { status: 401 });
+        }
+
+        // Check if user is admin
+        const { data: userData } = await supabase
+            .from('users')
+            .select('admin')
+            .eq('auth_id', user.id)
+            .single();
+
+        if (!userData?.admin) {
+            return NextResponse.json({
+                error: 'Admin access required for database population'
+            }, { status: 403 });
+        }
+    } catch (authError) {
+        return NextResponse.json({
+            error: 'Authentication failed'
+        }, { status: 401 });
+    }
+
     try {
         console.log('🚀 Starting database population...');
 

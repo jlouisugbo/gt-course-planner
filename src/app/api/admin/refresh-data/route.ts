@@ -3,8 +3,31 @@ import { NextRequest, NextResponse } from 'next/server'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import { createClient } from '@supabase/supabase-js'
+import * as fs from 'fs'
+import * as path from 'path'
 
 const execAsync = promisify(exec)
+
+// SECURITY: Validate that required scripts exist before execution
+function validateScriptPaths(): { isValid: boolean; missingPaths: string[] } {
+    const requiredPaths = [
+        path.join(process.cwd(), 'crawler'),
+        path.join(process.cwd(), 'crawler', 'package.json'),
+        path.join(process.cwd(), 'scripts', 'import-gt-data.ts')
+    ];
+
+    const missingPaths: string[] = [];
+    for (const p of requiredPaths) {
+        if (!fs.existsSync(p)) {
+            missingPaths.push(p);
+        }
+    }
+
+    return {
+        isValid: missingPaths.length === 0,
+        missingPaths
+    };
+}
 
 // Lazy initialization to avoid build-time environment variable issues
 function getSupabaseClient() {
@@ -19,6 +42,14 @@ function getSupabaseClient() {
 
 export async function POST(request: NextRequest) {
   try {
+    // SECURITY: Disable in production or when scripts are missing
+    if (process.env.NODE_ENV === 'production' || process.env.DISABLE_DATA_REFRESH === 'true') {
+      return NextResponse.json({
+        error: 'Data refresh is disabled in this environment',
+        message: 'Use manual database operations or enable DISABLE_DATA_REFRESH=false'
+      }, { status: 403 });
+    }
+
     const supabase = getSupabaseClient()
 
     const authHeader = request.headers.get('authorization')
@@ -28,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     const token = authHeader.substring(7)
     const { data: { user }, error } = await supabase.auth.getUser(token)
-    
+
     if (error || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -37,6 +68,17 @@ export async function POST(request: NextRequest) {
     const isAdmin = await checkIfUserIsAdmin(user.id)
     if (!isAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    // SECURITY: Validate that required scripts exist before execution
+    const validation = validateScriptPaths();
+    if (!validation.isValid) {
+      return NextResponse.json({
+        error: 'Required crawler scripts not found',
+        message: 'This endpoint requires the GT Scheduler crawler to be set up',
+        missingPaths: validation.missingPaths,
+        setup: 'Run: npm run crawler:setup'
+      }, { status: 503 });
     }
 
     const { forceRefresh = false } = await request.json()
@@ -59,13 +101,39 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Run crawler
+    // SECURITY: Run commands with timeout and error handling
     console.log('🕷️ Running GT Scheduler crawler...')
-    await execAsync('cd crawler && npm run crawl')
+    try {
+      const { stdout: crawlOutput, stderr: crawlError } = await execAsync(
+        'cd crawler && npm run crawl',
+        { timeout: 300000, maxBuffer: 10 * 1024 * 1024 } // 5min timeout, 10MB buffer
+      );
+      console.log('Crawler output:', crawlOutput);
+      if (crawlError) console.warn('Crawler warnings:', crawlError);
+    } catch (crawlErr) {
+      console.error('Crawler failed:', crawlErr);
+      return NextResponse.json({
+        error: 'Crawler execution failed',
+        details: crawlErr instanceof Error ? crawlErr.message : 'Unknown error'
+      }, { status: 500 });
+    }
 
     // Import data
     console.log('📥 Importing crawler data...')
-    await execAsync('ts-node scripts/import-gt-data.ts ./crawler/data')
+    try {
+      const { stdout: importOutput, stderr: importError } = await execAsync(
+        'ts-node scripts/import-gt-data.ts ./crawler/data',
+        { timeout: 300000, maxBuffer: 10 * 1024 * 1024 } // 5min timeout, 10MB buffer
+      );
+      console.log('Import output:', importOutput);
+      if (importError) console.warn('Import warnings:', importError);
+    } catch (importErr) {
+      console.error('Import failed:', importErr);
+      return NextResponse.json({
+        error: 'Data import failed',
+        details: importErr instanceof Error ? importErr.message : 'Unknown error'
+      }, { status: 500 });
+    }
 
     // Update last run timestamp
     await supabase

@@ -33,11 +33,11 @@ export type {
 // REQUIREMENTS-RELATED EXPORTS
 // =====================================================
 
-export type { 
+export type {
     RequirementType,
     EnrollmentType,
     DegreeProgram,
-    RequirementCategory, 
+    RequirementCategory,
     FlexibleOption,
     DegreeRequirement,
     UserDegreeProgram,
@@ -46,6 +46,8 @@ export type {
     RequirementProgress,
     DegreeProgressSummary,
     CategoryProgress,
+    DetailedThreadProgress,
+    ThreadProgressDetail,
     RequirementCalculationRequest,
     RequirementCalculationResponse,
     RequirementUpdateRequest,

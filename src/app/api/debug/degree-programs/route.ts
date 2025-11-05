@@ -1,7 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { createClient } from '@/lib/supabaseServer';
 
+/**
+ * DEBUG ENDPOINT - DEVELOPMENT ONLY
+ * This endpoint is for debugging degree program queries.
+ * It should NOT be accessible in production.
+ */
 export async function GET(request: NextRequest) {
+    // SECURITY: Only allow in development environment
+    if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json({
+            error: 'Debug endpoints are disabled in production'
+        }, { status: 403 });
+    }
+
+    // SECURITY: Require authentication even in development
+    try {
+        const supabase = createClient();
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+        if (authError || !user) {
+            return NextResponse.json({
+                error: 'Authentication required for debug endpoints'
+            }, { status: 401 });
+        }
+    } catch (authError) {
+        return NextResponse.json({
+            error: 'Authentication failed'
+        }, { status: 401 });
+    }
+
     try {
         const { searchParams } = new URL(request.url);
         const majorName = searchParams.get('major') || 'Aerospace Engineering';

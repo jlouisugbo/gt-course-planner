@@ -126,7 +126,7 @@ export interface DegreeProgressSummary {
   estimatedGraduationSemester: string;
   requirementProgress: RequirementProgress[];
   categoryProgress: CategoryProgress[];
-  threadProgress: ThreadProgress[];
+  threadProgress: DetailedThreadProgress[];
   warnings: string[];
   blockers: string[];
   recommendations: string[];
@@ -141,7 +141,9 @@ export interface CategoryProgress {
   status: 'completed' | 'in-progress' | 'not-started';
 }
 
-export interface ThreadProgress {
+// Detailed thread progress for calculation/processing
+// (different from dashboard's ThreadProgress which is for simple visualization)
+export interface DetailedThreadProgress {
   thread: ThreadRequirement;
   selection?: UserThreadSelection;
   creditsCompleted: number;
@@ -151,6 +153,9 @@ export interface ThreadProgress {
   availableCourses: string[];
   status: 'completed' | 'in-progress' | 'not-started';
 }
+
+// Backward compatibility alias - prefer DetailedThreadProgress for new code
+export type ThreadProgressDetail = DetailedThreadProgress;
 
 // API request/response types
 export interface RequirementCalculationRequest {
@@ -259,18 +264,16 @@ export type PrereqNode =
   | { id: string; grade?: string }
   | ["and" | "or", ...PrereqNode[]];
 
+// Base course type alias
 export type BaseCourse = BaseCourseType;
-export type RegularCourse = VisualCourse;
-export type OrGroupCourse = VisualCourse;
-export type AndGroupCourse = VisualCourse;
-export type SelectionCourse = VisualCourse;
-export type FlexibleCourse = VisualCourse;
+
+// VisualCourse - Extended course type for UI components with additional display fields
 export type VisualCourse = Omit<BaseCourseType, 'prerequisites'> & {
   // Legacy/compat fields used by UI
   type?: string;
   courseType?: string;
   selectionCount?: number;
-  selectionOptions?: any[];
+  selectionOptions?: any[]; // TODO: Add proper type for selection options
   groupCourses?: VisualCourse[];
   courses?: VisualCourse[];
   isOption?: boolean;
@@ -279,16 +282,28 @@ export type VisualCourse = Omit<BaseCourseType, 'prerequisites'> & {
   // Align prerequisites with UI components that accept a different shape
   prerequisites?: PrereqNode | PrereqNode[];
 };
+
+// Enhanced course with all visual fields (alias for VisualCourse)
 export type EnhancedCourse = VisualCourse;
+export type EnhancedCourseMap = Record<string, EnhancedCourse>;
+
+// Visual requirement category for UI display
 export interface VisualRequirementCategory extends RequirementCategory {
   courses: VisualCourse[];
   minCredits?: number;
   footnotes?: Array<{ id?: number; number?: number; text: string }>;
 }
+
+// Visual degree program for UI display
 export interface VisualDegreeProgram extends DegreeProgram {
   requirements: VisualRequirementCategory[];
   footnotes?: Array<{ id?: number; number?: number; text: string }>;
 }
+
+// Visual minor program (same as degree program)
 export type VisualMinorProgram = VisualDegreeProgram;
-export type DatabaseCourse = BaseCourseType;
-export type EnhancedCourseMap = Record<string, EnhancedCourse>;
+
+// UNUSED ALIASES REMOVED (2025-11-05):
+// - RegularCourse, OrGroupCourse, AndGroupCourse, SelectionCourse, FlexibleCourse
+//   These were all aliases to VisualCourse with no usage in codebase
+// - DatabaseCourse (alias to BaseCourseType, use BaseCourse instead)
