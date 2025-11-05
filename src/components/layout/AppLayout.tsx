@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import { DemoBanner } from "@/components/demo/DemoBanner";
+import { isDemoMode } from "@/lib/demo-mode";
 
 interface AppLayoutProps {
     children: React.ReactNode;
@@ -34,8 +35,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
         }
     }, [user]);
 
-    // Don't render navigation on landing page or when not authenticated
-    const shouldShowNavigation = user && pathname !== '/' && pathname !== '/landing';
+    // Don't render navigation on landing page or when not authenticated (unless demo mode)
+    const inDemoMode = isDemoMode();
+    const shouldShowNavigation = (user || inDemoMode) && pathname !== '/' && pathname !== '/landing';
 
     if (!shouldShowNavigation) {
         return (

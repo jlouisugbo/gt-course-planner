@@ -138,10 +138,9 @@ export const useDashboardData = (): DashboardData => {
   const loadDashboardData = useCallback(async () => {
     // DEMO MODE: Return mock data immediately, NO API CALLS
     if (typeof window !== 'undefined') {
-      const { isDemoMode } = await import('@/lib/demo-mode');
+      const { isDemoMode, getDemoUser } = await import('@/lib/demo-mode');
       if (isDemoMode()) {
         const {
-          DEMO_USER,
           DEMO_COMPLETED_COURSES,
           DEMO_IN_PROGRESS_COURSES,
           DEMO_PLANNED_COURSES,
@@ -149,6 +148,8 @@ export const useDashboardData = (): DashboardData => {
           DEMO_ACTIVITY,
           DEMO_DEADLINES
         } = await import('@/lib/demo-data');
+
+        const DEMO_USER = getDemoUser();
 
         console.log('[Demo Mode] useDashboardData: Using mock data, NO API calls');
 
