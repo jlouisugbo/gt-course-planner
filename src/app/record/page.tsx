@@ -19,6 +19,8 @@ import {
   Target
 } from 'lucide-react';
 import { useUserAwarePlannerStore } from '@/hooks/useUserAwarePlannerStore';
+import { isDemoMode } from '@/lib/demo-mode';
+import { DEMO_GPA_HISTORY as DEMO_GPA_DATA, generateDemoSemesters } from '@/lib/demo-data';
 
 interface SemesterGPA {
   semester: string;
@@ -30,18 +32,46 @@ interface SemesterGPA {
 
 export default function AcademicRecordPage() {
   const plannerStore = useUserAwarePlannerStore();
-  
+  const demoMode = isDemoMode();
+
   const [editingGPA, setEditingGPA] = useState<string | null>(null);
   const [tempGPA, setTempGPA] = useState<string>('');
-  const [semesterGPAs, setSemesterGPAs] = useState<SemesterGPA[]>([
-    { semester: 'Fall', year: 2023, gpa: 3.75, credits: 15, courses: 5 },
-    { semester: 'Spring', year: 2024, gpa: 3.85, credits: 16, courses: 5 },
-    { semester: 'Fall', year: 2024, gpa: 3.90, credits: 17, courses: 6 },
-  ]);
+
+  // Use demo data if in demo mode
+  const initialSemesterGPAs = demoMode
+    ? DEMO_GPA_DATA.map(item => ({
+        semester: item.semester,
+        year: item.year,
+        gpa: item.gpa,
+        credits: item.credits,
+        courses: 4, // Approximate from credits
+      }))
+    : [
+        { semester: 'Fall', year: 2023, gpa: 3.75, credits: 15, courses: 5 },
+        { semester: 'Spring', year: 2024, gpa: 3.85, credits: 16, courses: 5 },
+        { semester: 'Fall', year: 2024, gpa: 3.90, credits: 17, courses: 6 },
+      ];
+
+  const [semesterGPAs, setSemesterGPAs] = useState<SemesterGPA[]>(initialSemesterGPAs);
 
   // Get planned courses from planner
-  const plannedCourses = plannerStore.getCoursesByStatus('planned');
-  const completedCourses = plannerStore.getCoursesByStatus('completed');
+  const plannedCourses = demoMode
+    ? (() => {
+        const demoSemesters = generateDemoSemesters();
+        return Object.values(demoSemesters)
+          .flatMap(sem => sem.courses)
+          .filter(c => c.status === 'planned');
+      })()
+    : plannerStore.getCoursesByStatus('planned');
+
+  const completedCourses = demoMode
+    ? (() => {
+        const demoSemesters = generateDemoSemesters();
+        return Object.values(demoSemesters)
+          .flatMap(sem => sem.courses)
+          .filter(c => c.status === 'completed');
+      })()
+    : plannerStore.getCoursesByStatus('completed');
 
   // Calculate overall GPA
   const calculateOverallGPA = () => {

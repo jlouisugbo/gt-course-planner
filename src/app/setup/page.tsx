@@ -7,6 +7,7 @@ import ProfileSetup from '@/components/profile/ProfileSetup';
 import { UserProfile } from '@/types/user';
 import { Loader2, CheckCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { isDemoMode, DEMO_USER } from '@/lib/demo-mode';
 
 export default function SetupPage() {
     const { user } = useAuth();
@@ -16,6 +17,32 @@ export default function SetupPage() {
 
     useEffect(() => {
         const loadExistingProfile = async () => {
+            // Check if demo mode is active
+            if (isDemoMode()) {
+                console.log('🎯 Demo mode detected - loading demo profile');
+
+                // Convert DEMO_USER to UserProfile format
+                const demoProfile: Partial<UserProfile> = {
+                    name: DEMO_USER.full_name,
+                    email: DEMO_USER.email,
+                    gtId: Math.abs(DEMO_USER.id || 0),
+                    major: DEMO_USER.major,
+                    threads: DEMO_USER.selected_threads || [],
+                    minors: DEMO_USER.minors || [],
+                    expectedGraduation: `Spring ${DEMO_USER.graduation_year}`,
+                    startDate: DEMO_USER.plan_settings?.starting_semester || 'Fall 2022',
+                    currentGPA: DEMO_USER.current_gpa,
+                    totalCreditsEarned: DEMO_USER.total_credits_earned,
+                    isTransferStudent: DEMO_USER.is_transfer_student || false,
+                    transferCredits: DEMO_USER.transfer_credits || 0,
+                    year: 'Junior',
+                };
+
+                setExistingProfile(demoProfile);
+                setLoading(false);
+                return;
+            }
+
             if (!user) {
                 setLoading(false);
                 return;

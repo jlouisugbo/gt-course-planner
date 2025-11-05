@@ -61,13 +61,13 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
 
       <DropdownMenuContent
         align="end"
-        className="w-[400px] max-h-[600px] overflow-hidden"
+        className="w-[400px] max-h-[600px] overflow-hidden bg-white border border-gray-200 shadow-lg"
         sideOffset={8}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b">
+        <div className="flex items-center justify-between px-4 py-3 border-b bg-white">
           <div>
-            <DropdownMenuLabel className="p-0 font-semibold text-base">
+            <DropdownMenuLabel className="p-0 font-semibold text-base text-gray-900">
               Notifications
             </DropdownMenuLabel>
             {hasUnread && (
@@ -83,7 +83,7 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
               variant="ghost"
               size="sm"
               onClick={markAllAsRead}
-              className="h-8 text-xs"
+              className="h-8 text-xs hover:bg-gray-100"
             >
               <CheckCheck className="h-4 w-4 mr-1" />
               Mark all read
@@ -92,7 +92,7 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
         </div>
 
         {/* Content */}
-        <div className="max-h-[500px] overflow-y-auto p-2">
+        <div className="max-h-[500px] overflow-y-auto p-2 bg-white">
           {/* Loading state */}
           {isLoading && (
             <div className="flex items-center justify-center py-12">
@@ -148,10 +148,10 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
         {hasNotifications && !isLoading && !isError && (
           <>
             <DropdownMenuSeparator />
-            <div className="p-2">
+            <div className="p-2 bg-white">
               <Button
                 variant="ghost"
-                className="w-full text-sm"
+                className="w-full text-sm hover:bg-gray-100"
                 onClick={() => {
                   setIsOpen(false);
                   // Navigate to full notifications page (if you create one)

@@ -219,10 +219,10 @@ function DashboardContent() {
       });
     });
 
-    // Sort by timestamp and limit
+    // Sort by timestamp and limit to 4 items for compact view
     return activities
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-      .slice(0, 8);
+      .slice(0, 4);
   }, [completedCourses, progressSummary, currentGPA, plannedCourses, inProgressCourses]);
 
   // Format deadlines for DashboardDeadlines component
@@ -387,17 +387,17 @@ function DashboardContent() {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Enhanced Recent Activity */}
+        {/* Enhanced Recent Activity - Compact Version */}
         <div className="lg:col-span-2">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-gt-navy flex items-center gap-2">
-                <BookCheck className="h-5 w-5" />
+            <CardHeader className="pb-3">
+              <CardTitle className="text-gt-navy flex items-center gap-2 text-base">
+                <BookCheck className="h-4 w-4" />
                 Recent Activity
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
+            <CardContent className="pt-0">
+              <div className="space-y-2 max-h-[280px] overflow-y-auto">
                 {recentActivity.length > 0 ? (
                   recentActivity.map((activity, index) => (
                     <motion.div
@@ -405,24 +405,23 @@ function DashboardContent() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                      className="flex items-start gap-2 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                     >
                       <div className="flex-shrink-0 mt-0.5">
-                        {activity.icon}
+                        {React.cloneElement(activity.icon as React.ReactElement, { className: 'h-4 w-4' })}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-gt-navy text-sm">{activity.title}</p>
-                        <p className="text-sm text-gray-600 truncate">{activity.description}</p>
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="font-medium text-gt-navy text-xs">{activity.title}</p>
+                        <p className="text-xs text-gray-600 truncate">{activity.description}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">
                           {activity.timestamp.toLocaleDateString('en-US', {
                             month: 'short',
-                            day: 'numeric',
-                            year: 'numeric'
+                            day: 'numeric'
                           })}
                         </p>
                       </div>
                       <Badge
-                        className={`flex-shrink-0 ${
+                        className={`flex-shrink-0 text-xs h-5 px-1.5 ${
                           activity.type === 'course_completed' ? 'bg-green-100 text-green-800' :
                           activity.type === 'requirement_met' ? 'bg-purple-100 text-purple-800' :
                           activity.type === 'gpa_improved' ? 'bg-yellow-100 text-yellow-800' :
@@ -435,10 +434,10 @@ function DashboardContent() {
                     </motion.div>
                   ))
                 ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>No recent activity yet</p>
-                    <p className="text-sm mt-1">Start planning courses to see your activity here</p>
+                  <div className="text-center py-6 text-gray-500">
+                    <BookOpen className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                    <p className="text-xs">No recent activity yet</p>
+                    <p className="text-xs mt-1">Start planning courses to see your activity here</p>
                   </div>
                 )}
               </div>

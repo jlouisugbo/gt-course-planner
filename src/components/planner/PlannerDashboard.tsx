@@ -24,7 +24,9 @@ import { PlannerGrid } from './PlannerGrid';
 import { CourseRecommendationsAI } from './CourseRecommendationsAI';
 import { AcademicTimeline } from './AcademicTimeline';
 import { PlannerStats } from './PlannerStats';
+import { CourseSidebar } from './parts/CourseSidebar';
 import ProfileSetup from '@/components/profile/ProfileSetup';
+import { isDemoMode } from '@/lib/demo-mode';
 
 export const PlannerDashboard: React.FC = () => {
   const [showProfileSetup, setShowProfileSetup] = useState(false);
@@ -221,16 +223,20 @@ export const PlannerDashboard: React.FC = () => {
 
             <TabsContent value="planner" className="space-y-5 mt-5">
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
-                {/* Course Recommendations Sidebar - 25% */}
+                {/* Sidebar - 25% - Shows CourseSidebar in demo mode, otherwise CourseRecommendations */}
                 <div className="lg:col-span-1">
                   <div className="sticky top-4">
-                    <CourseRecommendationsAI userProfile={userProfile} />
+                    {isDemoMode() ? (
+                      <CourseSidebar />
+                    ) : (
+                      <CourseRecommendationsAI userProfile={userProfile} />
+                    )}
                   </div>
                 </div>
-                
+
                 {/* Main Planning Grid - 75% */}
                 <div className="lg:col-span-3">
-                  <PlannerGrid 
+                  <PlannerGrid
                     semesters={semesters}
                     userProfile={userProfile}
                     isLoading={dataLoading}

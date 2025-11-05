@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useCompletionTracking } from '@/hooks/useCompletionTracking';
 import { useRequirements } from '@/hooks/useRequirements';
+import { isDemoMode } from '@/lib/demo-mode';
+import { getDemoRequirements, getDemoRequirementsProgress } from '@/lib/demo-data';
 
 interface RequirementsFilters {
   searchQuery: string;
@@ -23,21 +25,80 @@ interface RequirementsFilters {
 }
 
 export const RequirementsDashboard: React.FC = () => {
-  
-  // Use enhanced requirements with Phase 2.1.2 features
+  const demoMode = isDemoMode();
+
+  // Use enhanced requirements with Phase 2.1.2 features (only if not in demo mode)
   const {
-    allRequirements,
-    completedCourseCodes,
-    plannedCourseCodes,
-    overallProgress,
-    progressSummary,
-    filteredRequirements,
+    allRequirements: realRequirements,
+    completedCourseCodes: realCompletedCodes,
+    plannedCourseCodes: realPlannedCodes,
+    overallProgress: realProgress,
+    progressSummary: realProgressSummary,
+    filteredRequirements: realFilteredRequirements,
     getNextRecommendedCourses,
     getCriticalPath,
     exportProgress,
-    isLoading: loading,
-    error
+    isLoading: realLoading,
+    error: realError
   } = useRequirements();
+
+  // Demo data
+  const demoRequirements = demoMode ? getDemoRequirements() : [];
+  const demoProgress = demoMode ? getDemoRequirementsProgress() : null;
+
+  // Convert demo requirements to format expected by RequirementsCategoryList
+  const formattedDemoRequirements = demoMode
+    ? demoRequirements.map(req => ({
+        id: req.id,
+        name: req.category,
+        description: req.name,
+        credits_required: req.credits_required,
+        courses: req.courses.map(c => ({
+          code: c.code,
+          title: c.title,
+          credits: c.credits,
+          completed: c.completed,
+        })),
+      }))
+    : [];
+
+  const demoCompletedCodes = demoMode
+    ? new Set(
+        demoRequirements.flatMap(req =>
+          req.courses.filter(c => c.completed).map(c => c.code)
+        )
+      )
+    : new Set();
+
+  const demoPlannedCodes = demoMode
+    ? new Set(
+        demoRequirements.flatMap(req =>
+          req.courses.filter(c => !c.completed).map(c => c.code)
+        )
+      )
+    : new Set();
+
+  // Use demo data or real data
+  const allRequirements = demoMode ? formattedDemoRequirements : realRequirements;
+  const completedCourseCodes = demoMode ? demoCompletedCodes : realCompletedCodes;
+  const plannedCourseCodes = demoMode ? demoPlannedCodes : realPlannedCodes;
+  const loading = demoMode ? false : realLoading;
+  const error = demoMode ? null : realError;
+  const overallProgress = demoMode
+    ? {
+        completedCredits: demoProgress?.completedCredits || 0,
+        totalCredits: demoProgress?.totalCredits || 0,
+        progressPercentage: demoProgress?.progressPercentage || 0,
+      }
+    : realProgress;
+  const progressSummary = demoMode
+    ? {
+        warnings: [],
+        blockers: [],
+        recommendations: [],
+        estimatedGraduationSemester: 'Spring 2026',
+      }
+    : realProgressSummary;
   
   // Use existing completion tracking hook for compatibility
   const { 
@@ -202,7 +263,14 @@ export const RequirementsDashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-gray-600">Courses</p>
-                  <p className="text-xl font-bold text-gt-navy mt-0">{completedCourseCodes.size}</p>
+                  <p className="text-xl font-bold text-gt-navy mt-0">
+                    {demoMode
+                      ? demoRequirements.reduce(
+                          (sum, req) => sum + req.courses.filter(c => c.completed).length,
+                          0
+                        )
+                      : realCompletedCodes.size}
+                  </p>
                 </div>
                 <CheckCircle className="h-6 w-6 text-gt-gold" />
               </div>

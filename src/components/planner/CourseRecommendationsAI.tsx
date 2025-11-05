@@ -463,26 +463,26 @@ const CourseRecommendationsAIComponent: React.FC<CourseRecommendationsAIProps> =
 
   return (
     <Card ref={dropRef} className={cn("h-full transition-all", isDropZoneOver && "ring-2 ring-red-400 bg-red-50")}>
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Lightbulb className="h-5 w-5 text-[#B3A369]" />
-          Intelligent Course Recommendations
+      <CardHeader className="pb-2 pt-4">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Lightbulb className="h-4 w-4 text-[#B3A369]" />
+          Course Recommendations
         </CardTitle>
-        
+
         {!isProfileIncomplete && (
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="relative mt-2">
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
             <Input
               placeholder="Search courses..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-9"
+              className="pl-8 h-8 text-xs"
             />
           </div>
         )}
       </CardHeader>
 
-      <CardContent className="pt-0">
+      <CardContent className="pt-0 pb-3">
         {isProfileIncomplete ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-16 h-16 bg-[#B3A369]/10 rounded-full flex items-center justify-center mb-4">
@@ -502,65 +502,65 @@ const CourseRecommendationsAIComponent: React.FC<CourseRecommendationsAIProps> =
           </div>
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="flex flex-col gap-2 mb-6">
+            <div className="flex flex-col gap-1.5 mb-3">
             <Button
               variant={activeTab === 'all' ? 'default' : 'outline'}
               onClick={() => setActiveTab('all')}
-              className="w-full justify-start text-left"
+              className="w-full justify-start text-left h-8 text-xs"
             >
-              <BookOpen className="h-4 w-4 mr-2" />
+              <BookOpen className="h-3 w-3 mr-2" />
               All Courses
             </Button>
             <Button
               variant={activeTab === 'ai' ? 'default' : 'outline'}
               onClick={() => setActiveTab('ai')}
-              className="w-full justify-start text-left"
+              className="w-full justify-start text-left h-8 text-xs"
             >
-              <Zap className="h-4 w-4 mr-2" />
+              <Zap className="h-3 w-3 mr-2" />
               AI Picks
             </Button>
             <Button
               variant={activeTab === 'required' ? 'default' : 'outline'}
               onClick={() => setActiveTab('required')}
-              className="w-full justify-start text-left"
+              className="w-full justify-start text-left h-8 text-xs"
             >
-              <CheckCircle2 className="h-4 w-4 mr-2" />
+              <CheckCircle2 className="h-3 w-3 mr-2" />
               Required
             </Button>
           </div>
 
-          <div className="h-[600px] pr-4 overflow-y-auto">
+          <div className="max-h-[280px] pr-2 overflow-y-auto">
             {coursesLoading ? (
-              <div className="flex items-center justify-center py-16">
+              <div className="flex items-center justify-center py-8">
                 <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#B3A369] mx-auto mb-2"></div>
-                  <p className="text-sm text-muted-foreground">Analyzing your academic progress...</p>
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#B3A369] mx-auto mb-2"></div>
+                  <p className="text-xs text-muted-foreground">Analyzing your academic progress...</p>
                 </div>
               </div>
             ) : (
               <>
-                <TabsContent value="all" className="mt-0 space-y-6">
+                <TabsContent value="all" className="mt-0 space-y-3">
                   <CourseSection
                     title="All Available Courses"
-                    recommendations={filteredRecommendations([...readyToTake, ...foundationCourses, ...threadCourses])}
+                    recommendations={filteredRecommendations([...readyToTake, ...foundationCourses, ...threadCourses]).slice(0, 4)}
                     icon={<BookOpen className="h-4 w-4 text-[#003057]" />}
                     description="All recommended courses based on your profile"
                   />
                 </TabsContent>
 
-                <TabsContent value="ai" className="mt-0 space-y-6">
+                <TabsContent value="ai" className="mt-0 space-y-3">
                   <CourseSection
                     title="AI-Enhanced Recommendations"
-                    recommendations={filteredRecommendations(aiRecommendations)}
+                    recommendations={filteredRecommendations(aiRecommendations).slice(0, 4)}
                     icon={<Zap className="h-4 w-4 text-purple-600" />}
                     description="Personalized picks based on your academic profile"
                   />
                 </TabsContent>
 
-                <TabsContent value="required" className="mt-0 space-y-6">
+                <TabsContent value="required" className="mt-0 space-y-3">
                   <CourseSection
                     title="Required Courses"
-                    recommendations={filteredRecommendations(foundationCourses)}
+                    recommendations={filteredRecommendations(foundationCourses).slice(0, 4)}
                     icon={<CheckCircle2 className="h-4 w-4 text-green-600" />}
                     description="Essential courses for your degree program"
                   />

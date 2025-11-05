@@ -122,7 +122,7 @@ export const DEMO_COMPLETED_COURSES: PlannedCourse[] = [
     type: 'regular'
   },
   {
-    id: 1101_2,
+    id: 11012,
     code: 'PSYC 1101',
     title: 'General Psychology',
     credits: 3,
@@ -898,6 +898,216 @@ export const DEMO_OPPORTUNITIES: Opportunity[] = [
     posted_by: null,
     created_at: '2024-09-20T00:00:00Z',
     updated_at: '2024-09-20T00:00:00Z'
+  },
+  // MORE INTERNSHIPS
+  {
+    id: 10,
+    title: 'Data Science Intern',
+    company: 'Netflix',
+    description: 'Work with Netflix\'s data science team to analyze viewer behavior and improve recommendation algorithms. Apply machine learning and statistical modeling to real-world streaming data at massive scale.',
+    opportunity_type: 'internship',
+    application_deadline: '2025-02-01',
+    requirements: {
+      majors: ['Computer Science', 'Data Science', 'Mathematics'],
+      min_gpa: 3.4,
+      skills: ['Python', 'R', 'Machine Learning', 'Statistics', 'SQL'],
+      preferred_courses: ['CS 4641', 'MATH 3215'],
+      year_level: 'Junior or Senior'
+    },
+    location: 'Los Gatos, CA',
+    is_active: true,
+    posted_by: null,
+    created_at: '2024-10-15T00:00:00Z',
+    updated_at: '2024-10-15T00:00:00Z'
+  },
+  {
+    id: 11,
+    title: 'Cybersecurity Intern',
+    company: 'Cisco',
+    description: 'Join Cisco\'s security team to work on threat detection, network security, and vulnerability assessment. Gain hands-on experience with enterprise security tools and practices.',
+    opportunity_type: 'internship',
+    application_deadline: '2025-01-15',
+    requirements: {
+      majors: ['Computer Science', 'Computer Engineering', 'Cybersecurity'],
+      min_gpa: 3.2,
+      skills: ['Networking', 'Security Protocols', 'Python', 'Linux'],
+      preferred_courses: ['CS 2110', 'CS 3750'],
+      year_level: 'Sophomore, Junior, or Senior'
+    },
+    location: 'San Jose, CA',
+    is_active: true,
+    posted_by: null,
+    created_at: '2024-10-22T00:00:00Z',
+    updated_at: '2024-10-22T00:00:00Z'
+  },
+  {
+    id: 12,
+    title: 'Backend Engineering Intern',
+    company: 'Stripe',
+    description: 'Build scalable payment infrastructure used by millions of businesses worldwide. Work with cutting-edge distributed systems and contribute to Stripe\'s API platform.',
+    opportunity_type: 'internship',
+    application_deadline: '2025-02-20',
+    requirements: {
+      majors: ['Computer Science', 'Software Engineering'],
+      min_gpa: 3.5,
+      skills: ['Ruby', 'Java', 'Go', 'Distributed Systems', 'APIs'],
+      preferred_courses: ['CS 3510', 'CS 4400'],
+      year_level: 'Junior or Senior'
+    },
+    location: 'San Francisco, CA',
+    is_active: true,
+    posted_by: null,
+    created_at: '2024-10-18T00:00:00Z',
+    updated_at: '2024-10-18T00:00:00Z'
+  },
+  {
+    id: 13,
+    title: 'UI/UX Design Intern',
+    company: 'Airbnb',
+    description: 'Create beautiful, intuitive user experiences for Airbnb\'s platform. Work alongside designers and engineers to prototype and ship product features.',
+    opportunity_type: 'internship',
+    application_deadline: '2025-01-25',
+    requirements: {
+      majors: ['Computer Science', 'Human-Computer Interaction', 'Design'],
+      min_gpa: 3.0,
+      skills: ['Figma', 'Sketch', 'HTML/CSS', 'JavaScript', 'User Research'],
+      preferred_courses: ['CS 2340', 'CS 4460'],
+      year_level: 'Any'
+    },
+    location: 'San Francisco, CA',
+    is_active: true,
+    posted_by: null,
+    created_at: '2024-10-25T00:00:00Z',
+    updated_at: '2024-10-25T00:00:00Z'
+  },
+  // MORE CO-OPS
+  {
+    id: 14,
+    title: 'Embedded Systems Co-op',
+    company: 'Tesla',
+    description: '3-semester co-op working on embedded systems for Tesla vehicles. Program microcontrollers, develop firmware, and contribute to autonomous driving features.',
+    opportunity_type: 'co-op',
+    application_deadline: '2025-02-15',
+    requirements: {
+      majors: ['Computer Science', 'Computer Engineering', 'Electrical Engineering'],
+      min_gpa: 3.4,
+      skills: ['C/C++', 'Embedded Systems', 'RTOS', 'Hardware Integration'],
+      preferred_courses: ['CS 2110', 'ECE 2035'],
+      year_level: 'Junior or Senior',
+      other: 'Must be available for 3 consecutive semesters'
+    },
+    location: 'Fremont, CA',
+    is_active: true,
+    posted_by: null,
+    created_at: '2024-10-20T00:00:00Z',
+    updated_at: '2024-10-20T00:00:00Z'
+  },
+  {
+    id: 15,
+    title: 'Software Engineering Co-op',
+    company: 'NCR Corporation',
+    description: 'Multi-semester co-op at NCR\'s Atlanta headquarters. Work on enterprise software for banking and retail. Great local opportunity with competitive pay and mentorship.',
+    opportunity_type: 'co-op',
+    application_deadline: '2025-01-10',
+    requirements: {
+      majors: ['Computer Science', 'Software Engineering'],
+      min_gpa: 3.0,
+      skills: ['Java', 'C#', 'SQL', 'Agile Development'],
+      preferred_courses: ['CS 2340', 'CS 4400'],
+      year_level: 'Sophomore, Junior, or Senior',
+      other: '2-3 semester commitment preferred'
+    },
+    location: 'Atlanta, GA',
+    is_active: true,
+    posted_by: null,
+    created_at: '2024-10-28T00:00:00Z',
+    updated_at: '2024-10-28T00:00:00Z'
+  },
+  // MORE RESEARCH
+  {
+    id: 16,
+    title: 'Research Assistant - Natural Language Processing',
+    company: 'GT NLP Lab',
+    description: 'Work on cutting-edge NLP research including large language models, text generation, and multilingual processing. Opportunities for publication and conference presentations.',
+    opportunity_type: 'research',
+    application_deadline: '2025-11-30',
+    requirements: {
+      majors: ['Computer Science', 'Linguistics'],
+      min_gpa: 3.6,
+      skills: ['Python', 'PyTorch', 'Transformers', 'NLP'],
+      preferred_courses: ['CS 4650', 'CS 4641'],
+      year_level: 'Junior or Senior',
+      other: '12-15 hours per week, 2-semester minimum'
+    },
+    location: 'Atlanta, GA (On-campus)',
+    is_active: true,
+    posted_by: null,
+    created_at: '2024-10-15T00:00:00Z',
+    updated_at: '2024-10-15T00:00:00Z'
+  },
+  {
+    id: 17,
+    title: 'Research Assistant - Human-Robot Interaction',
+    company: 'GT Institute for Robotics',
+    description: 'Study how humans interact with robots in collaborative environments. Design experiments, program robot behaviors, and analyze human subjects data.',
+    opportunity_type: 'research',
+    application_deadline: '2025-12-10',
+    requirements: {
+      majors: ['Computer Science', 'Robotics', 'Psychology'],
+      min_gpa: 3.3,
+      skills: ['Python', 'ROS', 'Data Analysis', 'Experimental Design'],
+      preferred_courses: ['CS 3600', 'PSYC 1101'],
+      year_level: 'Sophomore, Junior, or Senior',
+      other: 'IRB training required, flexible hours'
+    },
+    location: 'Atlanta, GA (On-campus)',
+    is_active: true,
+    posted_by: null,
+    created_at: '2024-10-12T00:00:00Z',
+    updated_at: '2024-10-12T00:00:00Z'
+  },
+  // MORE FULL-TIME JOBS
+  {
+    id: 18,
+    title: 'Software Development Engineer',
+    company: 'Apple',
+    description: 'Join Apple to work on products used by millions worldwide. Multiple openings across iOS, macOS, and cloud services teams. Solve challenging problems with cutting-edge technology.',
+    opportunity_type: 'job',
+    application_deadline: '2025-04-15',
+    requirements: {
+      majors: ['Computer Science', 'Computer Engineering'],
+      min_gpa: 3.4,
+      skills: ['Swift', 'Objective-C', 'C++', 'System Design', 'Algorithms'],
+      preferred_courses: ['CS 1332', 'CS 3510', 'CS 3750'],
+      year_level: 'Graduating 2025-2026',
+      other: 'Strong passion for Apple products and user experience'
+    },
+    location: 'Cupertino, CA',
+    is_active: true,
+    posted_by: null,
+    created_at: '2024-09-25T00:00:00Z',
+    updated_at: '2024-09-25T00:00:00Z'
+  },
+  {
+    id: 19,
+    title: 'New Grad - Site Reliability Engineer',
+    company: 'Datadog',
+    description: 'Build and maintain infrastructure for Datadog\'s monitoring platform. Work on high-performance distributed systems and automation tools.',
+    opportunity_type: 'job',
+    application_deadline: '2025-03-30',
+    requirements: {
+      majors: ['Computer Science', 'Computer Engineering'],
+      min_gpa: 3.2,
+      skills: ['Python', 'Go', 'Kubernetes', 'Linux', 'Monitoring Tools'],
+      preferred_courses: ['CS 3750', 'CS 4400'],
+      year_level: 'Graduating 2025-2026',
+      other: 'Strong debugging and systems troubleshooting skills'
+    },
+    location: 'New York, NY',
+    is_active: true,
+    posted_by: null,
+    created_at: '2024-10-01T00:00:00Z',
+    updated_at: '2024-10-01T00:00:00Z'
   }
 ];
 
@@ -1092,6 +1302,112 @@ export const DEMO_ADVISORS: Advisor[] = [
     is_active: true,
     created_at: '2021-01-15T00:00:00Z',
     updated_at: '2024-10-01T00:00:00Z'
+  },
+  {
+    id: 7,
+    user_id: null,
+    full_name: 'Dr. Amanda Foster',
+    email: 'amanda.foster@cc.gatech.edu',
+    title: 'Faculty Advisor - Devices Thread',
+    specializations: ['Devices Thread', 'Embedded Systems', 'IoT'],
+    departments: ['College of Computing'],
+    bio: 'Advisor for students interested in hardware, embedded systems, and Internet of Things. Dr. Foster helps students navigate the Devices thread and connects them with relevant industry partners and research opportunities.',
+    office_location: 'Klaus Building, Room 2207',
+    office_hours: {
+      'Monday': '2:00 PM - 4:00 PM',
+      'Wednesday': '10:00 AM - 12:00 PM'
+    },
+    booking_url: null,
+    is_accepting_students: true,
+    max_students: 45,
+    is_active: true,
+    created_at: '2020-09-01T00:00:00Z',
+    updated_at: '2024-10-01T00:00:00Z'
+  },
+  {
+    id: 8,
+    user_id: null,
+    full_name: 'Lisa Patel',
+    email: 'lisa.patel@gatech.edu',
+    title: 'Study Abroad Advisor',
+    specializations: ['Study Abroad', 'International Programs', 'Exchange Programs'],
+    departments: ['Office of International Education'],
+    bio: 'Helps CS students plan study abroad experiences that count toward degree requirements. Lisa coordinates with partner universities and ensures smooth credit transfers.',
+    office_location: 'Student Center, Room 247',
+    office_hours: {
+      'Tuesday': '1:00 PM - 4:00 PM',
+      'Thursday': '9:00 AM - 12:00 PM'
+    },
+    booking_url: null,
+    is_accepting_students: true,
+    max_students: null,
+    is_active: true,
+    created_at: '2019-08-15T00:00:00Z',
+    updated_at: '2024-10-01T00:00:00Z'
+  },
+  {
+    id: 9,
+    user_id: null,
+    full_name: 'Dr. Marcus Johnson',
+    email: 'marcus.johnson@cc.gatech.edu',
+    title: 'Faculty Advisor - People Thread',
+    specializations: ['People Thread', 'Human-Computer Interaction', 'UI/UX'],
+    departments: ['College of Computing'],
+    bio: 'Faculty advisor for the People thread focusing on human-centered computing. Guides students interested in HCI, user experience design, and social computing.',
+    office_location: 'CODA Building, Room 7150',
+    office_hours: {
+      'Wednesday': '3:00 PM - 5:00 PM',
+      'Friday': '10:00 AM - 12:00 PM'
+    },
+    booking_url: null,
+    is_accepting_students: true,
+    max_students: 35,
+    is_active: true,
+    created_at: '2020-01-10T00:00:00Z',
+    updated_at: '2024-10-01T00:00:00Z'
+  },
+  {
+    id: 10,
+    user_id: null,
+    full_name: 'Jennifer Williams',
+    email: 'jennifer.williams@gatech.edu',
+    title: 'First-Year Academic Advisor',
+    specializations: ['First-Year Students', 'Academic Transition', 'Course Planning'],
+    departments: ['College of Computing'],
+    bio: 'Specializes in helping first-year and transfer students transition to GT. Jennifer provides guidance on course selection, study skills, and campus resources.',
+    office_location: 'Klaus Building, Room 1555',
+    office_hours: {
+      'Monday': '9:00 AM - 12:00 PM',
+      'Wednesday': '1:00 PM - 4:00 PM',
+      'Thursday': '9:00 AM - 12:00 PM'
+    },
+    booking_url: null,
+    is_accepting_students: true,
+    max_students: 200,
+    is_active: true,
+    created_at: '2021-07-01T00:00:00Z',
+    updated_at: '2024-10-01T00:00:00Z'
+  },
+  {
+    id: 11,
+    user_id: null,
+    full_name: 'Dr. Kevin Lee',
+    email: 'kevin.lee@cc.gatech.edu',
+    title: 'Faculty Advisor - Theory Thread',
+    specializations: ['Theory Thread', 'Algorithms', 'Computational Theory'],
+    departments: ['College of Computing'],
+    bio: 'Faculty advisor for students interested in theoretical computer science, algorithms, and computational complexity. Dr. Lee also advises students on PhD applications in theory.',
+    office_location: 'Klaus Building, Room 3215',
+    office_hours: {
+      'Tuesday': '2:00 PM - 4:00 PM',
+      'Thursday': '2:00 PM - 4:00 PM'
+    },
+    booking_url: null,
+    is_accepting_students: true,
+    max_students: 30,
+    is_active: true,
+    created_at: '2019-09-01T00:00:00Z',
+    updated_at: '2024-10-01T00:00:00Z'
   }
 ];
 
@@ -1226,4 +1542,520 @@ export function getDemoConnections(): AdvisorConnection[] {
  */
 export function getDemoAppointments(): AdvisorAppointment[] {
   return [...DEMO_APPOINTMENTS];
+}
+
+// =====================================================
+// DEMO NOTIFICATIONS
+// =====================================================
+
+export interface Notification {
+  id: number;
+  type: 'success' | 'info' | 'warning' | 'deadline';
+  title: string;
+  message: string;
+  timestamp: Date;
+  read: boolean;
+  actionUrl?: string;
+}
+
+/**
+ * Demo Notifications - Realistic GT student notifications
+ */
+export const DEMO_NOTIFICATIONS: Notification[] = [
+  {
+    id: 1,
+    type: 'deadline',
+    title: 'Registration Opens Soon',
+    message: 'Registration for Spring 2025 opens in 3 days (November 8)',
+    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+    read: false,
+    actionUrl: '/planner'
+  },
+  {
+    id: 2,
+    type: 'success',
+    title: 'Course Completed',
+    message: 'You completed CS 2110 with an A! Great work!',
+    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
+    read: false
+  },
+  {
+    id: 3,
+    type: 'info',
+    title: 'New Internship Opportunity',
+    message: 'Google is now accepting applications for Summer 2025 ML Internships',
+    timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+    read: true,
+    actionUrl: '/opportunities'
+  },
+  {
+    id: 4,
+    type: 'info',
+    title: 'Advisor Appointment Scheduled',
+    message: 'Your appointment with Dr. Mitchell is confirmed for November 5 at 2:00 PM',
+    timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
+    read: true,
+    actionUrl: '/advisors'
+  },
+  {
+    id: 5,
+    type: 'success',
+    title: 'GPA Improved',
+    message: 'Your cumulative GPA increased to 3.75 after Spring 2024 grades posted',
+    timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
+    read: true,
+    actionUrl: '/record'
+  },
+  {
+    id: 6,
+    type: 'warning',
+    title: 'Requirement Alert',
+    message: 'You still need 3 more credits for your Intelligence Thread requirement',
+    timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+    read: true,
+    actionUrl: '/requirements'
+  },
+  {
+    id: 7,
+    type: 'info',
+    title: 'Research Opportunity',
+    message: 'GT ML Lab has openings for undergraduate researchers',
+    timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // 10 days ago
+    read: true,
+    actionUrl: '/opportunities'
+  },
+  {
+    id: 8,
+    type: 'deadline',
+    title: 'Drop/Swap Deadline',
+    message: 'Last day to drop or swap Fall 2024 courses is September 15',
+    timestamp: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 14 days ago
+    read: true
+  }
+];
+
+/**
+ * Get demo notifications
+ */
+export function getDemoNotifications(): Notification[] {
+  return [...DEMO_NOTIFICATIONS];
+}
+
+// =====================================================
+// DEMO AVAILABLE COURSES (For Sidebar)
+// =====================================================
+
+/**
+ * Demo Available Courses - Courses that can be dragged to semesters
+ * These are courses not yet added to any semester
+ */
+export const DEMO_AVAILABLE_COURSES: PlannedCourse[] = [
+  // Advanced CS Courses
+  {
+    id: 4698,
+    code: 'CS 4698',
+    title: 'Undergraduate Research',
+    credits: 3,
+    description: 'Independent research project under faculty supervision',
+    status: 'planned',
+    semesterId: 0, // Not placed yet
+    prerequisites: { and: [2340] },
+    college: 'College of Computing',
+    offerings: { fall: true, spring: true, summer: true },
+    difficulty: 4,
+    type: 'regular'
+  },
+  {
+    id: 4731,
+    code: 'CS 4731',
+    title: 'Game AI',
+    credits: 3,
+    description: 'Artificial intelligence techniques for computer games',
+    status: 'planned',
+    semesterId: 0,
+    prerequisites: { and: [3600] },
+    college: 'College of Computing',
+    offerings: { fall: true, spring: false, summer: false },
+    difficulty: 4,
+    type: 'regular'
+  },
+  {
+    id: 4650,
+    code: 'CS 4650',
+    title: 'Natural Language Processing',
+    credits: 3,
+    description: 'Computational processing of natural language',
+    status: 'planned',
+    semesterId: 0,
+    prerequisites: { and: [3510, 1553] },
+    college: 'College of Computing',
+    offerings: { fall: true, spring: true, summer: false },
+    difficulty: 5,
+    type: 'regular'
+  },
+  {
+    id: 3750,
+    code: 'CS 3750',
+    title: 'Computer Systems & Architecture',
+    credits: 4,
+    description: 'Computer architecture and system design',
+    status: 'planned',
+    semesterId: 0,
+    prerequisites: { and: [2110] },
+    college: 'College of Computing',
+    offerings: { fall: true, spring: true, summer: false },
+    difficulty: 4,
+    type: 'regular'
+  },
+  {
+    id: 4240,
+    code: 'CS 4240',
+    title: 'Compilers',
+    credits: 3,
+    description: 'Compiler construction and optimization',
+    status: 'planned',
+    semesterId: 0,
+    prerequisites: { and: [2110, 3510] },
+    college: 'College of Computing',
+    offerings: { fall: true, spring: true, summer: false },
+    difficulty: 5,
+    type: 'regular'
+  },
+  {
+    id: 4261,
+    code: 'CS 4261',
+    title: 'Mobile Apps & Services',
+    credits: 3,
+    description: 'Mobile application development for iOS and Android',
+    status: 'planned',
+    semesterId: 0,
+    prerequisites: { and: [2340] },
+    college: 'College of Computing',
+    offerings: { fall: true, spring: true, summer: false },
+    difficulty: 3,
+    type: 'regular'
+  },
+  {
+    id: 4365,
+    code: 'CS 4365',
+    title: 'Introduction to Enterprise Computing',
+    credits: 3,
+    description: 'Large-scale enterprise software systems',
+    status: 'planned',
+    semesterId: 0,
+    prerequisites: { and: [2340] },
+    college: 'College of Computing',
+    offerings: { fall: true, spring: true, summer: false },
+    difficulty: 3,
+    type: 'regular'
+  },
+  {
+    id: 4440,
+    code: 'CS 4440',
+    title: 'Database Technologies',
+    credits: 3,
+    description: 'Advanced database systems and technologies',
+    status: 'planned',
+    semesterId: 0,
+    prerequisites: { and: [4400] },
+    college: 'College of Computing',
+    offerings: { fall: false, spring: true, summer: false },
+    difficulty: 4,
+    type: 'regular'
+  },
+  {
+    id: 4510,
+    code: 'CS 4510',
+    title: 'Automata & Complexity Theory',
+    credits: 3,
+    description: 'Advanced theory of computation',
+    status: 'planned',
+    semesterId: 0,
+    prerequisites: { and: [3510] },
+    college: 'College of Computing',
+    offerings: { fall: true, spring: true, summer: false },
+    difficulty: 5,
+    type: 'regular'
+  },
+  {
+    id: 4675,
+    code: 'CS 4675',
+    title: 'Advanced Internet Computing',
+    credits: 3,
+    description: 'Modern web technologies and architectures',
+    status: 'planned',
+    semesterId: 0,
+    prerequisites: { and: [2340] },
+    college: 'College of Computing',
+    offerings: { fall: true, spring: true, summer: false },
+    difficulty: 4,
+    type: 'regular'
+  },
+  // Math courses for minor
+  {
+    id: 2401,
+    code: 'MATH 2401',
+    title: 'Calculus III',
+    credits: 4,
+    description: 'Multivariable calculus and vector analysis',
+    status: 'planned',
+    semesterId: 0,
+    prerequisites: { and: [1552] },
+    college: 'College of Sciences',
+    offerings: { fall: true, spring: true, summer: true },
+    difficulty: 4,
+    type: 'regular'
+  },
+  {
+    id: 2106,
+    code: 'MATH 2106',
+    title: 'Foundations of Mathematical Proof',
+    credits: 3,
+    description: 'Introduction to mathematical reasoning and proof',
+    status: 'planned',
+    semesterId: 0,
+    prerequisites: { and: [1552] },
+    college: 'College of Sciences',
+    offerings: { fall: true, spring: true, summer: false },
+    difficulty: 4,
+    type: 'regular'
+  },
+  {
+    id: 3215,
+    code: 'MATH 3215',
+    title: 'Introduction to Probability & Statistics',
+    credits: 3,
+    description: 'Probability theory and statistical inference',
+    status: 'planned',
+    semesterId: 0,
+    prerequisites: { and: [1552] },
+    college: 'College of Sciences',
+    offerings: { fall: true, spring: true, summer: true },
+    difficulty: 3,
+    type: 'regular'
+  },
+  // Free Electives
+  {
+    id: 3000,
+    code: 'MGT 3000',
+    title: 'Financial & Managerial Accounting',
+    credits: 3,
+    description: 'Fundamentals of accounting for business',
+    status: 'planned',
+    semesterId: 0,
+    prerequisites: {},
+    college: 'Scheller College of Business',
+    offerings: { fall: true, spring: true, summer: true },
+    difficulty: 2,
+    type: 'regular'
+  },
+  {
+    id: 1503,
+    code: 'INTA 1503',
+    title: 'International Relations',
+    credits: 3,
+    description: 'Introduction to global politics and international relations',
+    status: 'planned',
+    semesterId: 0,
+    prerequisites: {},
+    college: 'Ivan Allen College',
+    offerings: { fall: true, spring: true, summer: false },
+    difficulty: 2,
+    type: 'regular'
+  },
+  {
+    id: 2035,
+    code: 'ECE 2035',
+    title: 'Programming Hardware/Software Systems',
+    credits: 3,
+    description: 'Programming embedded systems with C',
+    status: 'planned',
+    semesterId: 0,
+    prerequisites: { and: [1331] },
+    college: 'College of Engineering',
+    offerings: { fall: true, spring: true, summer: false },
+    difficulty: 4,
+    type: 'regular'
+  },
+  {
+    id: 1371,
+    code: 'PHIL 3109',
+    title: 'Ethics in Technology',
+    credits: 3,
+    description: 'Ethical issues in computing and technology',
+    status: 'planned',
+    semesterId: 0,
+    prerequisites: {},
+    college: 'Ivan Allen College',
+    offerings: { fall: true, spring: true, summer: false },
+    difficulty: 2,
+    type: 'regular'
+  },
+  {
+    id: 3790,
+    code: 'CS 3790',
+    title: 'Introduction to Cognitive Science',
+    credits: 3,
+    description: 'Interdisciplinary study of mind and intelligence',
+    status: 'planned',
+    semesterId: 0,
+    prerequisites: {},
+    college: 'College of Computing',
+    offerings: { fall: true, spring: false, summer: false },
+    difficulty: 3,
+    type: 'regular'
+  }
+];
+
+/**
+ * Get demo available courses (not yet placed in semesters)
+ */
+export function getDemoAvailableCourses(): PlannedCourse[] {
+  return [...DEMO_AVAILABLE_COURSES];
+}
+
+// =====================================================
+// DEMO REQUIREMENTS
+// =====================================================
+
+export interface DemoRequirement {
+  id: string;
+  category: string;
+  name: string;
+  credits_required: number;
+  credits_completed: number;
+  progress_percentage: number;
+  status: 'completed' | 'in-progress' | 'not-started';
+  courses: {
+    code: string;
+    title: string;
+    credits: number;
+    completed: boolean;
+  }[];
+}
+
+/**
+ * Demo Requirements - Mock degree requirement categories with progress
+ */
+export const DEMO_REQUIREMENTS: DemoRequirement[] = [
+  {
+    id: 'cs-core',
+    category: 'CS Core',
+    name: 'Computer Science Core Requirements',
+    credits_required: 21,
+    credits_completed: 18,
+    progress_percentage: 86,
+    status: 'in-progress',
+    courses: [
+      { code: 'CS 1301', title: 'Intro to Computing', credits: 3, completed: true },
+      { code: 'CS 1331', title: 'Object-Oriented Programming', credits: 3, completed: true },
+      { code: 'CS 1332', title: 'Data Structures & Algorithms', credits: 3, completed: true },
+      { code: 'CS 2110', title: 'Computer Organization & Programming', credits: 4, completed: true },
+      { code: 'CS 2340', title: 'Objects and Design', credits: 3, completed: false },
+      { code: 'CS 3510', title: 'Design & Analysis of Algorithms', credits: 3, completed: false },
+      { code: 'CS 3511', title: 'Algorithms, Machines, & Languages', credits: 3, completed: false },
+    ]
+  },
+  {
+    id: 'intelligence-thread',
+    category: 'Intelligence Thread',
+    name: 'Intelligence Thread Requirements',
+    credits_required: 12,
+    credits_completed: 9,
+    progress_percentage: 75,
+    status: 'in-progress',
+    courses: [
+      { code: 'CS 3600', title: 'Introduction to Artificial Intelligence', credits: 3, completed: false },
+      { code: 'CS 4641', title: 'Machine Learning', credits: 3, completed: false },
+      { code: 'CS 4476', title: 'Introduction to Computer Vision', credits: 3, completed: false },
+      { code: 'CS 4731', title: 'Game AI', credits: 3, completed: false },
+    ]
+  },
+  {
+    id: 'devices-thread',
+    category: 'Devices Thread',
+    name: 'Devices Thread Requirements',
+    credits_required: 12,
+    credits_completed: 6,
+    progress_percentage: 50,
+    status: 'in-progress',
+    courses: [
+      { code: 'CS 3750', title: 'Computer Systems & Architecture', credits: 4, completed: false },
+      { code: 'CS 3651', title: 'Prototyping Intelligent Devices', credits: 3, completed: false },
+      { code: 'ECE 2035', title: 'Programming Hardware/Software Systems', credits: 3, completed: false },
+      { code: 'CS 4290', title: 'Advanced Computer Architecture', credits: 3, completed: false },
+    ]
+  },
+  {
+    id: 'math-minor',
+    category: 'Mathematics Minor',
+    name: 'Mathematics Minor Requirements',
+    credits_required: 18,
+    credits_completed: 9,
+    progress_percentage: 50,
+    status: 'in-progress',
+    courses: [
+      { code: 'MATH 1551', title: 'Differential Calculus', credits: 4, completed: true },
+      { code: 'MATH 1552', title: 'Integral Calculus', credits: 4, completed: true },
+      { code: 'MATH 1553', title: 'Linear Algebra', credits: 4, completed: true },
+      { code: 'MATH 2551', title: 'Multivariable Calculus', credits: 4, completed: true },
+      { code: 'MATH 3012', title: 'Applied Combinatorics', credits: 3, completed: false },
+      { code: 'MATH 2050', title: 'Introduction to Proof', credits: 3, completed: false },
+    ]
+  },
+  {
+    id: 'general-education',
+    category: 'General Education',
+    name: 'General Education Requirements',
+    credits_required: 18,
+    credits_completed: 15,
+    progress_percentage: 83,
+    status: 'in-progress',
+    courses: [
+      { code: 'ENGL 1101', title: 'English Composition I', credits: 3, completed: true },
+      { code: 'ENGL 1102', title: 'English Composition II', credits: 3, completed: true },
+      { code: 'HIST 2111', title: 'US History to 1865', credits: 3, completed: true },
+      { code: 'PSYC 1101', title: 'General Psychology', credits: 3, completed: true },
+      { code: 'ECON 2105', title: 'Principles of Macroeconomics', credits: 3, completed: true },
+      { code: 'PHIL 3109', title: 'Ethics in Technology', credits: 3, completed: false },
+    ]
+  },
+  {
+    id: 'free-electives',
+    category: 'Free Electives',
+    name: 'Free Elective Requirements',
+    credits_required: 12,
+    credits_completed: 3,
+    progress_percentage: 25,
+    status: 'in-progress',
+    courses: [
+      { code: 'PHYS 2211', title: 'Intro Physics I', credits: 4, completed: true },
+      { code: 'PHYS 2212', title: 'Intro Physics II', credits: 4, completed: true },
+      { code: 'CS 4400', title: 'Database Systems', credits: 3, completed: false },
+      { code: 'MGT 3000', title: 'Financial & Managerial Accounting', credits: 3, completed: false },
+    ]
+  }
+];
+
+/**
+ * Get demo requirements
+ */
+export function getDemoRequirements(): DemoRequirement[] {
+  return [...DEMO_REQUIREMENTS];
+}
+
+/**
+ * Calculate overall demo requirements progress
+ */
+export function getDemoRequirementsProgress() {
+  const totalCreditsRequired = DEMO_REQUIREMENTS.reduce((sum, req) => sum + req.credits_required, 0);
+  const totalCreditsCompleted = DEMO_REQUIREMENTS.reduce((sum, req) => sum + req.credits_completed, 0);
+
+  return {
+    completedCredits: totalCreditsCompleted,
+    totalCredits: totalCreditsRequired,
+    progressPercentage: Math.round((totalCreditsCompleted / totalCreditsRequired) * 100),
+    categories: DEMO_REQUIREMENTS.length,
+    completedCategories: DEMO_REQUIREMENTS.filter(r => r.status === 'completed').length
+  };
 }
