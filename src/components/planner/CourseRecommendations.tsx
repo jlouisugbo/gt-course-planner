@@ -41,7 +41,8 @@ import { cn } from "@/lib/utils";
 import CourseDetailsModal from "./parts/CourseDetailsModal";
 import { FlexibleCourseCard } from "./parts/FlexibleCourseCard";
 import { usePrerequisiteValidation } from "@/hooks/usePrereqValidation";
-import { supabase } from "@/lib/supabaseClient";
+import { useAllCourses } from "@/hooks/useCourses";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { authService } from "@/lib/auth";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -50,6 +51,13 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
 }) => {
     const { semesters, addCourseToSemester, removeCourseFromSemester } = usePlannerStore();
     const { user } = useAuth();
+
+    // Fetch user profile (replaces direct Supabase queries)
+    const { profile } = useUserProfile();
+
+    // Fetch all courses (replaces direct Supabase queries)
+    const { allCourses: allCoursesFromHook, isLoading: coursesLoading } = useAllCourses();
+
     const [searchQuery, setSearchQuery] = useState("");
     const [searchInput, setSearchInput] = useState("");
     const [hasSearched, setHasSearched] = useState(false);
@@ -92,18 +100,15 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
                     return;
                 }
 
-                // Get user's major
-                const { data: userRecord, error: userError } = await supabase
-                    .from('users')
-                    .select('major, minors')
-                    .eq('auth_id', user.id)
-                    .single();
-
-                if (userError || !userRecord?.major) {
+                // Get user's major and minors from profile hook
+                if (!profile?.major) {
                     setError("User major not found. Please complete profile setup.");
                     setIsLoading(false);
                     return;
                 }
+
+                const userMajor = profile.major;
+                const userMinors = profile.minors || [];
 
                 const { data: sessionData } = await authService.getSession();
                 if (!sessionData.session?.access_token) {
@@ -112,7 +117,7 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
                     return;
                 }
 
-                const response = await fetch(`/api/degree-programs?major=${encodeURIComponent(userRecord.major)}&degree_type=BS`, {
+                const response = await fetch(`/api/degree-programs?major=${encodeURIComponent(userMajor)}&degree_type=BS`, {
                     headers: {
                         'Authorization': `Bearer ${sessionData.session.access_token}`,
                         'Content-Type': 'application/json'
@@ -120,8 +125,8 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
                 });
                 
                 if (!response.ok) {
-                    console.error("No degree program found for major:", userRecord.major);
-                    setError(`No degree program found for ${userRecord.major}`);
+                    console.error("No degree program found for major:", userMajor);
+                    setError(`No degree program found for ${userMajor}`);
                     setIsLoading(false);
                     return;
                 }
@@ -129,15 +134,15 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
                 const program = await response.json();
                 
                 if (!program?.requirements) {
-                    console.error("No requirements found for degree program:", userRecord.major);
-                    setError(`No requirements found for ${userRecord.major}`);
+                    console.error("No requirements found for degree program:", userMajor);
+                    setError(`No requirements found for ${userMajor}`);
                     setIsLoading(false);
                     return;
                 }
 
                 const minorPrograms: VisualMinorProgram[] = [];
-                if(userRecord.minors && Array.isArray(userRecord.minors)) {
-                    for (const minor of userRecord.minors) {
+                if(userMinors && Array.isArray(userMinors)) {
+                    for (const minor of userMinors) {
                         try {
                             const minorResponse = await fetch(`/api/degree-programs?major=${encodeURIComponent(minor)}&degree_type=Minor`, {
                                 headers: {
@@ -237,39 +242,35 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
                 const allCourseCodes = [...new Set([...courseCodesFromRequirements, ...courseCodesFromMinors])];
                 console.log("📚 Extracted course codes from requirements:", allCourseCodes);
 
-                // Fetch full course data from database for these codes
-                if (allCourseCodes.length > 0) {
-                    const { data: courseData, error: courseError } = await supabase
-                        .from('courses')
-                        .select('*')
-                        .in('code', allCourseCodes);
+                // Filter courses from hook data based on requirement codes
+                if (allCourseCodes.length > 0 && allCoursesFromHook) {
+                    // Filter courses that match the required codes
+                    const filteredCourses = allCoursesFromHook.filter(course =>
+                        allCourseCodes.includes(course.code)
+                    );
 
-                    if (courseError) {
-                        console.error("Error fetching course data:", courseError);
-                        setError("Error fetching course data from database");
-                    } else {
-                        const normalizedCourses = (courseData || [])
-                            .filter(course => course && typeof course === 'object')
-                            .map((course) => ({
-                                ...course,
-                                prerequisites: Array.isArray(course.prerequisites) ? course.prerequisites : [],
-                                corequisites: Array.isArray(course.corequisites) ? course.corequisites : [],
-                                attributes: Array.isArray(course.attributes) ? course.attributes : [],
-                                offerings: course.offerings && typeof course.offerings === 'object' 
-                                    ? course.offerings 
-                                    : { fall: true, spring: true, summer: false },
-                                threads: Array.isArray(course.threads) ? course.threads : [],
-                                difficulty: typeof course.difficulty === 'number' ? course.difficulty : 3,
-                                workload: typeof course.workload === 'number' ? course.workload : 10,
-                                instructors: Array.isArray(course.instructors) ? course.instructors : [],
-                                credits: typeof course.credits === 'number' ? course.credits : 3,
-                                code: course.code || 'Unknown',
-                                title: course.title || 'No title',
-                                description: course.description || 'No description',
-                                college: course.college || 'Unknown College',
-                            }));
+                    const normalizedCourses = filteredCourses
+                        .filter(course => course && typeof course === 'object')
+                        .map((course) => ({
+                            ...course,
+                            prerequisites: Array.isArray(course.prerequisites) ? course.prerequisites : [],
+                            corequisites: Array.isArray(course.corequisites) ? course.corequisites : [],
+                            attributes: Array.isArray(course.attributes) ? course.attributes : [],
+                            offerings: course.offerings && typeof course.offerings === 'object'
+                                ? course.offerings
+                                : { fall: true, spring: true, summer: false },
+                            threads: Array.isArray(course.threads) ? course.threads : [],
+                            difficulty: typeof course.difficulty === 'number' ? course.difficulty : 3,
+                            workload: typeof course.workload === 'number' ? course.workload : 10,
+                            instructors: Array.isArray(course.instructors) ? course.instructors : [],
+                            credits: typeof course.credits === 'number' ? course.credits : 3,
+                            code: course.code || 'Unknown',
+                            title: course.title || 'No title',
+                            description: course.description || 'No description',
+                            college: course.college || 'Unknown College',
+                        }));
 
-                        setCourses(normalizedCourses);
+                    setCourses(normalizedCourses);
                         
                         // Organize courses by requirement categories with AND group preservation
                         const categorizedCourses: {[key: string]: any} = {};
@@ -316,7 +317,6 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
                         
                         setDegreeProgramCourses(categorizedCourses);
                         console.log(`📊 Set ${normalizedCourses.length} courses from degree program`);
-                    }
                 }
 
                 setIsLoading(false);
@@ -329,56 +329,38 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
         };
 
         fetchCoursesFromDegreeProgram();
-    }, [user]);
+    }, [user, profile, allCoursesFromHook]);
 
-    // Fetch ALL courses for search tab
+    // Use all courses from hook for search tab
     useEffect(() => {
-        const fetchAllCourses = async () => {
-            if (!user) return;
-            
-            try {
-                console.log("🔍 Fetching ALL courses for search tab...");
-                
-                // Fetch all courses from database
-                const { data: allCoursesData, error: allCoursesError } = await supabase
-                    .from('courses')
-                    .select('*')
-                    .order('code');
+        if (!user || !allCoursesFromHook) return;
 
-                if (allCoursesError) {
-                    console.error("Error fetching all courses:", allCoursesError);
-                } else {
-                    const normalizedAllCourses = (allCoursesData || [])
-                        .filter(course => course && typeof course === 'object')
-                        .map((course) => ({
-                            ...course,
-                            prerequisites: Array.isArray(course.prerequisites) ? course.prerequisites : [],
-                            corequisites: Array.isArray(course.corequisites) ? course.corequisites : [],
-                            attributes: Array.isArray(course.attributes) ? course.attributes : [],
-                            offerings: course.offerings && typeof course.offerings === 'object' 
-                                ? course.offerings 
-                                : { fall: true, spring: true, summer: false },
-                            threads: Array.isArray(course.threads) ? course.threads : [],
-                            difficulty: typeof course.difficulty === 'number' ? course.difficulty : 3,
-                            workload: typeof course.workload === 'number' ? course.workload : 10,
-                            instructors: Array.isArray(course.instructors) ? course.instructors : [],
-                            credits: typeof course.credits === 'number' ? course.credits : 3,
-                            code: course.code || 'Unknown',
-                            title: course.title || 'No title',
-                            description: course.description || 'No description',
-                            college: course.college || 'Unknown College',
-                        }));
+        console.log("📊 Setting courses for search tab from hook...");
 
-                    setAllCourses(normalizedAllCourses);
-                    console.log(`📊 Set ${normalizedAllCourses.length} total courses for search`);
-                }
-            } catch (err) {
-                console.error("💥 Error fetching all courses:", err);
-            }
-        };
+        const normalizedAllCourses = allCoursesFromHook
+            .filter(course => course && typeof course === 'object')
+            .map((course) => ({
+                ...course,
+                prerequisites: Array.isArray(course.prerequisites) ? course.prerequisites : [],
+                corequisites: Array.isArray(course.corequisites) ? course.corequisites : [],
+                attributes: Array.isArray(course.attributes) ? course.attributes : [],
+                offerings: course.offerings && typeof course.offerings === 'object'
+                    ? course.offerings
+                    : { fall: true, spring: true, summer: false },
+                threads: Array.isArray(course.threads) ? course.threads : [],
+                difficulty: typeof course.difficulty === 'number' ? course.difficulty : 3,
+                workload: typeof course.workload === 'number' ? course.workload : 10,
+                instructors: Array.isArray(course.instructors) ? course.instructors : [],
+                credits: typeof course.credits === 'number' ? course.credits : 3,
+                code: course.code || 'Unknown',
+                title: course.title || 'No title',
+                description: course.description || 'No description',
+                college: course.college || 'Unknown College',
+            }));
 
-        fetchAllCourses();
-    }, [user]);
+        setAllCourses(normalizedAllCourses);
+        console.log(`📊 Set ${normalizedAllCourses.length} total courses for search`);
+    }, [user, allCoursesFromHook]);
 
     // Safe semester access
     const safeSemesters = useMemo(() => {
@@ -525,30 +507,13 @@ const CourseRecommendations: React.FC<CourseRecommendationsProps> = ({
         });
     }, [activeTab, availableCourses, availableCoursesForSearch, searchQuery, hasSearched]);
 
-    // Get completed courses from both planner and requirements tab
-    const [completedFromRequirements, setCompletedFromRequirements] = useState<string[]>([]);
-    
-    useEffect(() => {
-        const loadCompletedCourses = async () => {
-            if (!user) return;
-            
-            try {
-                const { data: userData, error } = await supabase
-                    .from('users')
-                    .select('completed_courses')
-                    .eq('auth_id', user.id)
-                    .single();
-
-                if (!error && userData && Array.isArray(userData.completed_courses)) {
-                    setCompletedFromRequirements(userData.completed_courses);
-                }
-            } catch (error) {
-                console.error('Error loading completed courses from requirements:', error);
-            }
-        };
-
-        loadCompletedCourses();
-    }, [user]);
+    // Get completed courses from profile hook
+    const completedFromRequirements = useMemo(() => {
+        if (!profile || !Array.isArray(profile.completedCourses)) {
+            return [];
+        }
+        return profile.completedCourses;
+    }, [profile]);
 
     const recommendedCourses = useMemo(() => {
         // Combine completed courses from planner and requirements tab
