@@ -10,19 +10,52 @@ import { motion } from "framer-motion";
 import { VisualDegreeProgram, VisualMinorProgram } from "@/types/requirements";
 import { RequirementSection } from "./parts/RequirementSection";
 import { useCompletionTracking } from "@/hooks/useCompletionTracking";
-import { useReliableDataLoader } from "@/hooks/useReliableDataLoader";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { useDegreeProgram, useMultipleDegreePrograms } from "@/hooks/useDegreePrograms";
 
 const RequirementsPanel: React.FC = () => {
-    // Use reliable data loader (only one instance should load globally)
+    // Load user profile
     const {
-        userProfile,
-        degreeProgram: degreeData,
-        minorPrograms: minorData,
-        isLoading,
-        error,
-        isInitialized,
-        reload
-    } = useReliableDataLoader();
+        profile: userProfile,
+        isLoading: profileLoading,
+        isError: profileError,
+        error: profileErrorMsg,
+        refetch: reloadProfile
+    } = useUserProfile();
+
+    // Load degree program based on user's major
+    const {
+        program: degreeData,
+        isLoading: degreeLoading,
+        isError: degreeError,
+        error: degreeErrorMsg,
+        refetch: reloadDegree
+    } = useDegreeProgram({
+        major: userProfile?.major || ''
+    });
+
+    // Load minor programs
+    const {
+        programs: minorData,
+        isLoading: minorsLoading,
+        isError: minorsError,
+        error: minorsErrorMsg,
+    } = useMultipleDegreePrograms();
+
+    // Combine loading and error states
+    const isLoading = profileLoading || degreeLoading || minorsLoading;
+    const error = profileError
+        ? profileErrorMsg?.message
+        : degreeError
+            ? degreeErrorMsg?.message
+            : minorsError
+                ? minorsErrorMsg?.message
+                : null;
+    const isInitialized = !isLoading && !error;
+    const reload = () => {
+        reloadProfile();
+        reloadDegree();
+    };
     
     // Use centralized completion tracking
     const { 

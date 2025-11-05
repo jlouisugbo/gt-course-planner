@@ -31,10 +31,9 @@ import { Plus, Search, Filter, BookOpen, Star, Lock, AlertTriangle } from "lucid
 import { Course, PlannedCourse } from "@/types/courses";
 import { useUserAwarePlannerStore } from "@/hooks/useUserAwarePlannerStore";
 import { motion, AnimatePresence } from "framer-motion";
-import { useAllCourses } from '@/hooks/useAllCourses';
+import { useAllCourses } from '@/hooks/useCourses'; // Updated to use useCourses instead of dead useAllCourses
 import { useAuth } from '@/providers/AuthProvider';
 import { authService } from '@/lib/auth';
-import { supabase } from '@/lib/supabaseClient';
 import { PrereqModal } from './PrereqModal';
 import { evaluatePrerequisites } from '@/lib/prereqUtils';
 import { useCompletionTracking } from '@/hooks/useCompletionTracking'; 
@@ -82,19 +81,25 @@ const CourseManager: React.FC<CourseManagerProps> = ({
     });
 
     // Use optimized all courses hook with memoization
-    const { 
-        courses: allCoursesData,
-        filteredCourses: allFilteredCourses,
-        isLoading, 
+    const {
+        allCourses,
+        isLoading,
         error,
-        hasMore,
-        loadMore,
-        totalCount
     } = useAllCourses({
         search: searchQuery || undefined
     });
 
-    const courses = searchQuery ? allFilteredCourses : allCoursesData;
+    // Filter courses locally based on search query
+    const courses = useMemo(() => {
+        if (!searchQuery || !allCourses) return allCourses || [];
+        const lowerQuery = searchQuery.toLowerCase();
+        return allCourses.filter(course =>
+            course.code.toLowerCase().includes(lowerQuery) ||
+            course.title.toLowerCase().includes(lowerQuery) ||
+            course.description?.toLowerCase().includes(lowerQuery)
+        );
+    }, [allCourses, searchQuery]);
+
     const semester = semesters[semesterId];
     
     // Fetch program requirements and extract course codes

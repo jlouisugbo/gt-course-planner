@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, BookOpen, Clock, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
-import { supabase } from "@/lib/supabaseClient";
+import { useCourseByCode } from "@/hooks/useCourses";
 import { VisualCourse, EnhancedCourse } from "@/types/requirements";
 import { CourseModal } from "./CourseModal";
 
@@ -16,71 +16,46 @@ interface CourseCardProps {
     isOption?: boolean;
 }
 
-export const CourseCard: React.FC<CourseCardProps> = ({ 
-    course, 
-    programType, 
-    isOption = false 
+export const CourseCard: React.FC<CourseCardProps> = ({
+    course,
+    programType,
+    isOption = false
 }) => {
-    const [enhancedCourse, setEnhancedCourse] = useState<EnhancedCourse | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [showModal, setShowModal] = useState(false);
 
-    useEffect(() => {
-        const fetchCourseDetails = async () => {
-            try {
-                setLoading(true);
-                setError(null);
+    // Use hook to fetch course details (only if it's a real course)
+    const shouldFetch = course.code && course.code !== 'OR_GROUP' && course.code !== 'SELECT_GROUP';
+    const {
+        course: courseData,
+        isLoading: loading,
+        isError
+    } = useCourseByCode(shouldFetch ? course.code : '');
 
-                // Query the course details from the database with college join
-                const { data: courseData, error: courseError } = await supabase
-                    .from('courses')
-                    .select(`
-                        code, title, credits, description, prerequisites, course_type, college_id,
-                        colleges!college_id(name)
-                    `)
-                    .eq('code', course.code)
-                    .single();
-
-                if (courseError) {
-                    console.error('Error fetching course:', courseError);
-                    setError('Course not found');
-                    setEnhancedCourse({
-                        ...course,
-                        credits: 3, // fallback
-                        description: 'Course details not available'
-                    });
-                } else {
-                    // Merge course data with original course structure
-                    setEnhancedCourse({
-                        ...course,
-                        credits: courseData.credits,
-                        description: courseData.description,
-                        prerequisites: courseData.prerequisites,
-                        college: (courseData.colleges as any)?.[0]?.name || 'Unknown College',
-                        department: courseData.code?.split(' ')[0] || 'Unknown'
-                    });
-                }
-            } catch (err) {
-                console.error('Error in fetchCourseDetails:', err);
-                setError('Failed to load course details');
-                setEnhancedCourse({
-                    ...course,
-                    credits: 3, // fallback
-                    description: 'Course details not available'
-                });
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (course.code && course.code !== 'OR_GROUP' && course.code !== 'SELECT_GROUP') {
-            fetchCourseDetails();
-        } else {
-            setLoading(false);
-            setEnhancedCourse(course as EnhancedCourse);
+    // Build enhanced course from hook data or fallback
+    const enhancedCourse = useMemo<EnhancedCourse | null>(() => {
+        if (!shouldFetch) {
+            return course as EnhancedCourse;
         }
-    }, [course]);
+
+        if (isError || !courseData) {
+            return {
+                ...course,
+                credits: 3, // fallback
+                description: 'Course details not available'
+            };
+        }
+
+        return {
+            ...course,
+            credits: courseData.credits,
+            description: courseData.description,
+            prerequisites: courseData.prerequisites,
+            college: (courseData as any).colleges?.[0]?.name || 'Unknown College',
+            department: courseData.code?.split(' ')[0] || 'Unknown'
+        };
+    }, [course, courseData, isError, shouldFetch]);
+
+    const error = isError ? 'Failed to load course details' : null;
 
     const handleCardClick = () => {
         if (enhancedCourse && !loading) {

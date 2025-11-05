@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
 import { authService } from '@/lib/auth';
-import { supabase } from '@/lib/supabaseClient';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -64,41 +64,33 @@ const CourseSearchFiltersComponent: React.FC<CourseSearchFiltersProps> = ({
   onRequirementFilter,
 }) => {
   const { user } = useAuth();
+  const { profile } = useUserProfile();
   const [requirementCategories, setRequirementCategories] = useState<string[]>([]);
   const [, setIsLoadingCategories] = useState(true);
 
   // Fetch requirement categories from degree program
   useEffect(() => {
     const fetchRequirementCategories = async () => {
-      if (!user) {
+      if (!user || !profile?.major) {
         setIsLoadingCategories(false);
         return;
       }
 
       try {
-        // Get user's major
-        const { data: userRecord, error: userError } = await supabase
-          .from('users')
-          .select('major')
-          .eq('auth_id', user.id)
-          .single();
-
-        if (userError || !userRecord?.major) return;
-
         // Get degree program requirements with authentication
         const { data: sessionData } = await authService.getSession();
         if (!sessionData.session?.access_token) return;
 
-        const degreeResponse = await fetch(`/api/degree-programs?major=${encodeURIComponent(userRecord.major)}&degree_type=BS`, {
+        const degreeResponse = await fetch(`/api/degree-programs?major=${encodeURIComponent(profile.major)}&degree_type=BS`, {
             headers: {
                 'Authorization': `Bearer ${sessionData.session.access_token}`,
                 'Content-Type': 'application/json'
             }
         });
         if (!degreeResponse.ok) return;
-        
+
         const degreeData = await degreeResponse.json();
-        
+
         if (degreeData.requirements && Array.isArray(degreeData.requirements)) {
           const categories = degreeData.requirements.map((req: any) => req.name).filter(Boolean);
           setRequirementCategories(categories);
@@ -111,7 +103,7 @@ const CourseSearchFiltersComponent: React.FC<CourseSearchFiltersProps> = ({
     };
 
     fetchRequirementCategories();
-  }, [user]);
+  }, [user, profile]);
 
   const toggleFilter = useCallback((filter: string) => {
     if (setSelectedFilters) {

@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { GraduationCap, Plus, X, BookOpen, Award } from "lucide-react";
 import { FormError, FormLoadingSpinner } from "@/components/ui/form-validation";
 import { ExtendedProfileData } from "@/hooks/useProfileSetup";
-import { supabase } from "@/lib/supabaseClient";
+import { useAllDegreePrograms } from "@/hooks/useDegreePrograms";
 import { majors as constantMajors, minors as constantMinors, CS_THREADS, COE_THREADS } from "@/lib/constants";
 
 interface AcademicProgramSetupProps {
@@ -30,118 +30,55 @@ export const AcademicProgramSetup: React.FC<AcademicProgramSetupProps> = ({
   updateProfile,
   errors,
 }) => {
-  const [availableMajors, setAvailableMajors] = useState<string[]>([]);
-  const [availableThreads, setAvailableThreads] = useState<string[]>([]);
-  const [availableMinors, setAvailableMinors] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [newThread, setNewThread] = useState('');
   const [newMinor, setNewMinor] = useState('');
 
-  // Load available programs from database
-  useEffect(() => {
-    const loadPrograms = async () => {
-      try {
-        setIsLoading(true);
-        console.log('🔄 Loading programs from database...');
-        
-        // Get all degree programs
-        const { data: programs, error } = await supabase
-          .from('degree_programs')
-          .select('name, degree_type')
-          .eq('is_active', true)
-          .order('name');
+  // Load available programs from database using hook
+  const { programs, isLoading, isError } = useAllDegreePrograms();
 
-        console.log('📊 Raw programs data:', { programs, error });
+  // Extract and filter programs by type with fallback to constants
+  const availableMajors = React.useMemo(() => {
+    if (isError || !programs || programs.length === 0) {
+      console.warn('🔄 No majors found in database, using complete GT major list');
+      return constantMajors.map(major => major.value);
+    }
 
-        if (error) {
-          console.error('❌ Database error:', error);
-          throw error;
-        }
+    const majors = programs
+      .filter((p) => p.degree_type === 'BS' || p.degree_type === 'Major')
+      .map((p) => p.name);
 
-        if (!programs || programs.length === 0) {
-          console.warn('⚠️ No programs returned from database');
-          throw new Error('No programs found');
-        }
+    return majors.length > 0 ? majors : constantMajors.map(major => major.value);
+  }, [programs, isError]);
 
-        // Show all degree types to understand the data
-  const degreeTypes = [...new Set(programs.map((p: any) => p.degree_type))];
-        console.log('📋 Available degree types:', degreeTypes);
+  const availableThreads = React.useMemo(() => {
+    if (isError || !programs || programs.length === 0) {
+      console.warn('🔄 No threads found in database, using CS threads from constants');
+      return [...new Set([...CS_THREADS, ...COE_THREADS])];
+    }
 
-        const majors = programs
-          ?.filter((p: any) => p.degree_type === 'BS' || p.degree_type === 'Major')
-          .map((p: any) => p.name) || [];
-          
-        const threads = programs
-          ?.filter((p: any) => p.degree_type === 'Thread')
-          .map((p: any) => p.name) || [];
-          
-        const minors = programs
-          ?.filter((p: any) => p.degree_type === 'Minor')
-          .map((p: any) => p.name) || [];
+    const threads = programs
+      .filter((p) => p.degree_type === 'Thread')
+      .map((p) => p.name);
 
-        console.log('✅ Filtered programs:', { 
-          majors: { count: majors.length, sample: majors.slice(0, 3) },
-          threads: { count: threads.length, sample: threads.slice(0, 3) },
-          minors: { count: minors.length, sample: minors.slice(0, 3) }
-        });
+    return threads.length > 0
+      ? [...new Set(threads)]
+      : [...new Set([...CS_THREADS, ...COE_THREADS])];
+  }, [programs, isError]);
 
-        // Ensure we have some data, use comprehensive constants if needed
-        if (majors.length === 0) {
-          console.warn('🔄 No majors found in database, using complete GT major list');
-          const fallbackMajors = constantMajors.map(major => major.value);
-          console.log(`📚 Using ${fallbackMajors.length} majors from constants`);
-          setAvailableMajors(fallbackMajors);
-        } else {
-          setAvailableMajors(majors);
-        }
+  const availableMinors = React.useMemo(() => {
+    if (isError || !programs || programs.length === 0) {
+      console.warn('🔄 No minors found in database, using complete GT minor list');
+      return [...new Set(constantMinors.map(minor => minor.value))];
+    }
 
-        if (threads.length === 0) {
-          console.warn('🔄 No threads found in database, using CS threads from constants');
-          // Deduplicate threads when combining CS and COE threads
-          const fallbackThreads = [...new Set([...CS_THREADS, ...COE_THREADS])];
-          console.log(`📚 Using ${fallbackThreads.length} unique threads from constants`);
-          setAvailableThreads(fallbackThreads);
-        } else {
-          // Also deduplicate threads from database to avoid any duplicates
-          const uniqueThreads = [...new Set(threads)] as string[];
-          setAvailableThreads(uniqueThreads);
-        }
+    const minors = programs
+      .filter((p) => p.degree_type === 'Minor')
+      .map((p) => p.name);
 
-        if (minors.length === 0) {
-          console.warn('🔄 No minors found in database, using complete GT minor list');
-          // Deduplicate minors in case of any duplicates
-          const fallbackMinors = [...new Set(constantMinors.map(minor => minor.value))];
-          console.log(`📚 Using ${fallbackMinors.length} unique minors from constants`);
-          setAvailableMinors(fallbackMinors);
-        } else {
-          // Also deduplicate minors from database to avoid any duplicates
-          const uniqueMinors = [...new Set(minors)] as string[];
-          setAvailableMinors(uniqueMinors);
-        }
-        
-      } catch (error) {
-        console.error('❌ Error loading programs:', error);
-        // Set comprehensive fallback data from constants
-        console.log('🔄 Using complete GT program data from constants due to error');
-        
-        const fallbackMajors = constantMajors.map(major => major.value);
-        // Deduplicate threads when combining CS and COE threads
-        const fallbackThreads = [...new Set([...CS_THREADS, ...COE_THREADS])];
-        // Deduplicate minors in case of any duplicates
-        const fallbackMinors = [...new Set(constantMinors.map(minor => minor.value))];
-        
-        console.log(`📚 Fallback data: ${fallbackMajors.length} majors, ${fallbackThreads.length} unique threads, ${fallbackMinors.length} minors`);
-        
-        setAvailableMajors(fallbackMajors);
-        setAvailableThreads(fallbackThreads);
-        setAvailableMinors(fallbackMinors);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadPrograms();
-  }, []);
+    return minors.length > 0
+      ? [...new Set(minors)]
+      : [...new Set(constantMinors.map(minor => minor.value))];
+  }, [programs, isError]);
 
   const addThread = () => {
     if (newThread && !profile.threads?.includes(newThread)) {

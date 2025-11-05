@@ -371,3 +371,65 @@ export const courseFilters = {
     );
   }
 };
+
+/**
+ * Fetch a single course by code
+ */
+async function fetchCourseByCode(code: string): Promise<Course> {
+  const response = await fetch(`/api/courses/${encodeURIComponent(code)}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch course: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * Hook to fetch a single course by code with college information
+ *
+ * @example
+ * ```typescript
+ * const { course, isLoading, error } = useCourseByCode('CS 1301');
+ * ```
+ */
+export function useCourseByCode(code: string) {
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    refetch
+  } = useQuery<Course, Error>({
+    queryKey: ['course', code],
+    queryFn: () => fetchCourseByCode(code),
+    enabled: !!code, // Only fetch if code is provided
+    staleTime: 15 * 60 * 1000, // 15 minutes - course details don't change often
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnWindowFocus: false,
+    retry: (failureCount, error) => {
+      // Don't retry on 404
+      if (error.message.includes('404') || error.message.includes('not found')) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+    meta: {
+      onError: (error: Error) => {
+        handleError(error, {
+          context: `useCourseByCode(${code})`,
+          showToast: false,
+          logToConsole: true
+        });
+      }
+    }
+  });
+
+  return {
+    course: data || null,
+    isLoading,
+    isError,
+    error: error || null,
+    refetch: async () => {
+      await refetch();
+    }
+  };
+}

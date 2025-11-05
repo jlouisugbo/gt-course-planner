@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 // import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle2, Calendar } from "lucide-react";
 import { motion } from "framer-motion";
-import { supabase } from "@/lib/supabaseClient";
+import { useCourseByCode } from "@/hooks/useCourses";
 import { VisualCourse, EnhancedCourse } from "@/types/requirements";
 import { CourseModal } from "./CourseModal";
 import { cn } from "@/lib/utils";
@@ -20,116 +20,88 @@ interface CompletableCourseCardProps {
     onToggleComplete?: (courseCode: string) => void;
 }
 
-export const CompletableCourseCard: React.FC<CompletableCourseCardProps> = ({ 
-    course, 
-    programType, 
+export const CompletableCourseCard: React.FC<CompletableCourseCardProps> = ({
+    course,
+    programType,
     isOption = false,
     isCompleted = false,
     isPlanned = false,
     onToggleComplete
 }) => {
     const { semesters } = usePlannerStore();
-    const [enhancedCourse, setEnhancedCourse] = useState<EnhancedCourse | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [, setError] = useState<string | null>(null);
     const [showModal, setShowModal] = useState(false);
 
     const isFlexible = course.courseType === 'flexible';
-    
+
     // Check if course is planned in any semester
     const plannedCourseInfo = React.useMemo(() => {
         if (!semesters || !course.code) return null;
-        
+
         const allPlannedCourses = Object.values(semesters)
             .filter(semester => semester && Array.isArray(semester.courses))
-            .flatMap(semester => 
+            .flatMap(semester =>
                 semester.courses.map(plannedCourse => ({
                     ...plannedCourse,
                     semesterInfo: semester
                 }))
             );
-        
+
         const plannedCourse = allPlannedCourses.find(planned => planned.code === course.code);
         return plannedCourse || null;
     }, [semesters, course.code]);
-    
+
     const isCourseActuallyPlanned = isPlanned || !!plannedCourseInfo;
 
-    useEffect(() => {
-        const fetchCourseDetails = async () => {
-            try {
-                setLoading(true);
-                setError(null);
+    // Determine if we should fetch course details
+    const shouldFetch = !isFlexible && course.code && course.code !== 'OR_GROUP' && course.code !== 'SELECT_GROUP';
 
-                // For flexible courses, don't fetch from database
-                if (isFlexible) {
-                    setEnhancedCourse({
-                        ...course,
-                        credits: 3, // fallback
-                        description: 'Flexible requirement - choose from approved courses'
-                    } as EnhancedCourse);
-                    setLoading(false);
-                    return;
-                }
+    // Use hook to fetch course details
+    const {
+        course: courseData,
+        isLoading: loading,
+        isError
+    } = useCourseByCode(shouldFetch ? course.code : '');
 
-                // Query the course details from the database with college join
-                const { data: courseData, error: courseError } = await supabase
-                    .from('courses')
-                    .select(`
-                        code, title, credits, description, prerequisites, course_type, college_id,
-                        colleges!college_id(name)
-                    `)
-                    .eq('code', course.code)
-                    .single();
-
-                if (courseError) {
-                    // Don't log 400 errors as errors - just handle gracefully
-                    if (courseError.code !== 'PGRST116') {
-                        console.warn(`Course ${course.code} not found in database:`, courseError.message);
-                    }
-                    
-                    // Create a fallback course with the basic information we have
-                    setEnhancedCourse({
-                        ...course,
-                        title: course.title || `${course.code} (Course details unavailable)`,
-                        credits: 3, // fallback
-                        description: `Course ${course.code} - Details not available in course catalog`,
-                        prerequisites: '[]',
-                        college: 'Unknown',
-                        department: course.code.split(' ')[0] // Extract department from course code
-                    } as EnhancedCourse);
-                    // Don't show as error to user
-                } else {
-                    // Merge course data with original course structure
-                    setEnhancedCourse({
-                        ...course,
-                        title: courseData.title || course.title,
-                        credits: courseData.credits || 3,
-                        description: courseData.description || `${course.code} course description not available`,
-                        prerequisites: JSON.stringify(courseData.prerequisites || []),
-                        college: (courseData.colleges as any)?.name || 'Unknown College',
-                        department: courseData.code?.split(' ')[0] || 'Unknown'
-                    } as EnhancedCourse);
-                }
-            } catch (err) {
-                console.error('Error in fetchCourseDetails:', err);
-                setEnhancedCourse({
-                    ...course,
-                    credits: 3, // fallback
-                    description: 'Course details not available'
-                } as EnhancedCourse);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (course.code && course.code !== 'OR_GROUP' && course.code !== 'SELECT_GROUP') {
-            fetchCourseDetails();
-        } else {
-            setLoading(false);
-            setEnhancedCourse(course as EnhancedCourse);
+    // Build enhanced course from hook data or fallback
+    const enhancedCourse = useMemo<EnhancedCourse | null>(() => {
+        // For flexible courses
+        if (isFlexible) {
+            return {
+                ...course,
+                credits: 3,
+                description: 'Flexible requirement - choose from approved courses'
+            } as EnhancedCourse;
         }
-    }, [course.code, isFlexible, course]);
+
+        // For non-real courses
+        if (!shouldFetch) {
+            return course as EnhancedCourse;
+        }
+
+        // If error or no data, create fallback
+        if (isError || !courseData) {
+            return {
+                ...course,
+                title: course.title || `${course.code} (Course details unavailable)`,
+                credits: 3,
+                description: `Course ${course.code} - Details not available in course catalog`,
+                prerequisites: '[]',
+                college: 'Unknown',
+                department: course.code.split(' ')[0]
+            } as EnhancedCourse;
+        }
+
+        // Merge course data with original course structure
+        return {
+            ...course,
+            title: courseData.title || course.title,
+            credits: courseData.credits || 3,
+            description: courseData.description || `${course.code} course description not available`,
+            prerequisites: JSON.stringify(courseData.prerequisites || []),
+            college: (courseData as any).colleges?.name || 'Unknown College',
+            department: courseData.code?.split(' ')[0] || 'Unknown'
+        } as EnhancedCourse;
+    }, [course, courseData, isError, isFlexible, shouldFetch]);
 
     const handleCardClick = () => {
         if (enhancedCourse && !loading) {
