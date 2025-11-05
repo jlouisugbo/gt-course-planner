@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -80,8 +80,6 @@ export const RequirementsDashboard: React.FC = () => {
 
   // Use demo data or real data
   const allRequirements = demoMode ? formattedDemoRequirements : realRequirements;
-  const completedCourseCodes = demoMode ? demoCompletedCodes : realCompletedCodes;
-  const plannedCourseCodes = demoMode ? demoPlannedCodes : realPlannedCodes;
   const loading = demoMode ? false : realLoading;
   const error = demoMode ? null : realError;
   const overallProgress = demoMode
@@ -99,11 +97,34 @@ export const RequirementsDashboard: React.FC = () => {
         estimatedGraduationSemester: 'Spring 2026',
       }
     : realProgressSummary;
-  
-  // Use existing completion tracking hook for compatibility
-  const { 
-    toggleCourseCompletion
+
+  // Demo mode: Local state for completed courses
+  const [demoLocalCompletedCodes, setDemoLocalCompletedCodes] = useState<Set<string>>(demoCompletedCodes);
+
+  // Use demo local state or real data for completed/planned courses
+  const completedCourseCodes = demoMode ? demoLocalCompletedCodes : realCompletedCodes;
+  const plannedCourseCodes = demoMode ? demoPlannedCodes : realPlannedCodes;
+
+  // Use existing completion tracking hook for compatibility (non-demo mode)
+  const {
+    toggleCourseCompletion: realToggleCourseCompletion
   } = useCompletionTracking();
+
+  // Demo mode toggle function that uses local state
+  const demoToggleCourseCompletion = useCallback((courseCode: string) => {
+    setDemoLocalCompletedCodes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(courseCode)) {
+        newSet.delete(courseCode);
+      } else {
+        newSet.add(courseCode);
+      }
+      return newSet;
+    });
+  }, []);
+
+  // Use demo toggle or real toggle based on mode
+  const toggleCourseCompletion = demoMode ? demoToggleCourseCompletion : realToggleCourseCompletion;
 
   // State for warnings modal
   const [showWarningsModal, setShowWarningsModal] = useState(false);

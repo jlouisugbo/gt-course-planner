@@ -39,7 +39,7 @@ export function OpportunityCard({ opportunity, onApply }: OpportunityCardProps) 
       <CardHeader className="p-2.5 sm:p-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <CardTitle className="text-base sm:text-lg mb-1 truncate">{opportunity.title}</CardTitle>
+            <CardTitle className="text-base sm:text-lg mb-1 line-clamp-2">{opportunity.title}</CardTitle>
             <CardDescription className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mt-0.5">
               <Briefcase className="h-4 w-4 flex-shrink-0" />
               <span className="truncate">{opportunity.company}</span>

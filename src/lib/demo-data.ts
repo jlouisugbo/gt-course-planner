@@ -713,7 +713,7 @@ export const DEMO_OPPORTUNITIES: Opportunity[] = [
     company: 'Google',
     description: 'Work on cutting-edge machine learning projects with the Google Brain team. Build scalable ML models and infrastructure to power Google products used by billions. Collaborate with world-class researchers and engineers on projects involving computer vision, NLP, and deep learning.',
     opportunity_type: 'internship',
-    application_deadline: '2025-02-15',
+    application_deadline: '2026-02-15',
     requirements: {
       majors: ['Computer Science', 'Computer Engineering'],
       min_gpa: 3.5,
@@ -733,7 +733,7 @@ export const DEMO_OPPORTUNITIES: Opportunity[] = [
     company: 'Microsoft',
     description: 'Join Microsoft Azure team to build and maintain cloud infrastructure serving millions of customers. Work on distributed systems, containerization, and cloud-native architectures. Gain experience with Azure services, Kubernetes, and large-scale deployment automation.',
     opportunity_type: 'internship',
-    application_deadline: '2025-03-01',
+    application_deadline: '2026-03-01',
     requirements: {
       majors: ['Computer Science'],
       min_gpa: 3.3,
@@ -753,7 +753,7 @@ export const DEMO_OPPORTUNITIES: Opportunity[] = [
     company: 'TechStart Financial',
     description: 'Build the next generation of fintech products for a rapidly growing Atlanta startup. Work across the full stack using React, Node.js, and PostgreSQL. Contribute to production code from day one and learn modern web development practices in an agile environment.',
     opportunity_type: 'internship',
-    application_deadline: '2025-01-20',
+    application_deadline: '2025-12-20',
     requirements: {
       majors: ['Computer Science', 'Software Engineering'],
       min_gpa: 3.0,
@@ -775,7 +775,7 @@ export const DEMO_OPPORTUNITIES: Opportunity[] = [
     company: 'SpaceX',
     description: 'Multi-semester co-op position working on autonomous robotics systems for spacecraft and ground operations. Design control algorithms, integrate sensors, and develop simulation environments. Work alongside aerospace engineers on mission-critical systems.',
     opportunity_type: 'co-op',
-    application_deadline: '2025-01-31',
+    application_deadline: '2026-01-31',
     requirements: {
       majors: ['Computer Science', 'Computer Engineering', 'Aerospace Engineering'],
       min_gpa: 3.3,
@@ -796,7 +796,7 @@ export const DEMO_OPPORTUNITIES: Opportunity[] = [
     company: 'NASA',
     description: '3-semester co-op developing mission-critical software for NASA Mission Control. Work on real-time systems monitoring astronauts and spacecraft. Requires US citizenship and ability to obtain security clearance. Gain unique experience in space operations software.',
     opportunity_type: 'co-op',
-    application_deadline: '2025-02-28',
+    application_deadline: '2026-02-28',
     requirements: {
       majors: ['Computer Science', 'Computer Engineering'],
       min_gpa: 3.4,
@@ -819,7 +819,7 @@ export const DEMO_OPPORTUNITIES: Opportunity[] = [
     company: 'GT Machine Learning Lab',
     description: 'Assist with cutting-edge computer vision research in the GT ML Lab. Work on projects involving object detection, image segmentation, and video analysis. Co-author research papers and present at conferences. Excellent preparation for graduate school.',
     opportunity_type: 'research',
-    application_deadline: '2025-11-15',
+    application_deadline: '2025-12-15',
     requirements: {
       majors: ['Computer Science'],
       min_gpa: 3.5,
@@ -840,7 +840,7 @@ export const DEMO_OPPORTUNITIES: Opportunity[] = [
     company: 'GT Robotics Lab',
     description: 'Join the GT Robotics Lab to work on autonomous navigation and path planning algorithms. Implement and test algorithms on real robotic platforms. Contribute to research projects funded by NSF and industry partners.',
     opportunity_type: 'research',
-    application_deadline: '2025-12-01',
+    application_deadline: '2026-01-15',
     requirements: {
       majors: ['Computer Science', 'Computer Engineering', 'Robotics'],
       min_gpa: 3.2,
@@ -863,7 +863,7 @@ export const DEMO_OPPORTUNITIES: Opportunity[] = [
     company: 'Amazon',
     description: 'Join Amazon Web Services (AWS) as a full-time software engineer. Work on distributed systems serving millions of customers worldwide. Solve complex technical challenges at massive scale. Opportunities across multiple teams and locations.',
     opportunity_type: 'job',
-    application_deadline: '2025-04-01',
+    application_deadline: '2026-04-01',
     requirements: {
       majors: ['Computer Science', 'Computer Engineering', 'Software Engineering'],
       min_gpa: 3.0,
@@ -884,7 +884,7 @@ export const DEMO_OPPORTUNITIES: Opportunity[] = [
     company: 'Meta',
     description: 'Build products used by over 3 billion people worldwide. Work on web, mobile, AR/VR, and AI technologies. Join a team of world-class engineers and ship code that impacts billions. Competitive compensation and benefits.',
     opportunity_type: 'job',
-    application_deadline: '2025-03-15',
+    application_deadline: '2026-03-15',
     requirements: {
       majors: ['Computer Science', 'Computer Engineering'],
       min_gpa: 3.3,
@@ -906,7 +906,7 @@ export const DEMO_OPPORTUNITIES: Opportunity[] = [
     company: 'Netflix',
     description: 'Work with Netflix\'s data science team to analyze viewer behavior and improve recommendation algorithms. Apply machine learning and statistical modeling to real-world streaming data at massive scale.',
     opportunity_type: 'internship',
-    application_deadline: '2025-02-01',
+    application_deadline: '2026-02-01',
     requirements: {
       majors: ['Computer Science', 'Data Science', 'Mathematics'],
       min_gpa: 3.4,
@@ -926,7 +926,7 @@ export const DEMO_OPPORTUNITIES: Opportunity[] = [
     company: 'Cisco',
     description: 'Join Cisco\'s security team to work on threat detection, network security, and vulnerability assessment. Gain hands-on experience with enterprise security tools and practices.',
     opportunity_type: 'internship',
-    application_deadline: '2025-01-15',
+    application_deadline: '2025-12-15',
     requirements: {
       majors: ['Computer Science', 'Computer Engineering', 'Cybersecurity'],
       min_gpa: 3.2,
@@ -946,7 +946,7 @@ export const DEMO_OPPORTUNITIES: Opportunity[] = [
     company: 'Stripe',
     description: 'Build scalable payment infrastructure used by millions of businesses worldwide. Work with cutting-edge distributed systems and contribute to Stripe\'s API platform.',
     opportunity_type: 'internship',
-    application_deadline: '2025-02-20',
+    application_deadline: '2026-02-20',
     requirements: {
       majors: ['Computer Science', 'Software Engineering'],
       min_gpa: 3.5,
@@ -966,7 +966,7 @@ export const DEMO_OPPORTUNITIES: Opportunity[] = [
     company: 'Airbnb',
     description: 'Create beautiful, intuitive user experiences for Airbnb\'s platform. Work alongside designers and engineers to prototype and ship product features.',
     opportunity_type: 'internship',
-    application_deadline: '2025-01-25',
+    application_deadline: '2025-12-25',
     requirements: {
       majors: ['Computer Science', 'Human-Computer Interaction', 'Design'],
       min_gpa: 3.0,
@@ -987,7 +987,7 @@ export const DEMO_OPPORTUNITIES: Opportunity[] = [
     company: 'Tesla',
     description: '3-semester co-op working on embedded systems for Tesla vehicles. Program microcontrollers, develop firmware, and contribute to autonomous driving features.',
     opportunity_type: 'co-op',
-    application_deadline: '2025-02-15',
+    application_deadline: '2026-02-15',
     requirements: {
       majors: ['Computer Science', 'Computer Engineering', 'Electrical Engineering'],
       min_gpa: 3.4,
@@ -1008,7 +1008,7 @@ export const DEMO_OPPORTUNITIES: Opportunity[] = [
     company: 'NCR Corporation',
     description: 'Multi-semester co-op at NCR\'s Atlanta headquarters. Work on enterprise software for banking and retail. Great local opportunity with competitive pay and mentorship.',
     opportunity_type: 'co-op',
-    application_deadline: '2025-01-10',
+    application_deadline: '2026-01-10',
     requirements: {
       majors: ['Computer Science', 'Software Engineering'],
       min_gpa: 3.0,
@@ -1030,7 +1030,7 @@ export const DEMO_OPPORTUNITIES: Opportunity[] = [
     company: 'GT NLP Lab',
     description: 'Work on cutting-edge NLP research including large language models, text generation, and multilingual processing. Opportunities for publication and conference presentations.',
     opportunity_type: 'research',
-    application_deadline: '2025-11-30',
+    application_deadline: '2025-12-30',
     requirements: {
       majors: ['Computer Science', 'Linguistics'],
       min_gpa: 3.6,
@@ -1051,7 +1051,7 @@ export const DEMO_OPPORTUNITIES: Opportunity[] = [
     company: 'GT Institute for Robotics',
     description: 'Study how humans interact with robots in collaborative environments. Design experiments, program robot behaviors, and analyze human subjects data.',
     opportunity_type: 'research',
-    application_deadline: '2025-12-10',
+    application_deadline: '2026-01-10',
     requirements: {
       majors: ['Computer Science', 'Robotics', 'Psychology'],
       min_gpa: 3.3,
@@ -1073,7 +1073,7 @@ export const DEMO_OPPORTUNITIES: Opportunity[] = [
     company: 'Apple',
     description: 'Join Apple to work on products used by millions worldwide. Multiple openings across iOS, macOS, and cloud services teams. Solve challenging problems with cutting-edge technology.',
     opportunity_type: 'job',
-    application_deadline: '2025-04-15',
+    application_deadline: '2026-04-15',
     requirements: {
       majors: ['Computer Science', 'Computer Engineering'],
       min_gpa: 3.4,
@@ -1094,7 +1094,7 @@ export const DEMO_OPPORTUNITIES: Opportunity[] = [
     company: 'Datadog',
     description: 'Build and maintain infrastructure for Datadog\'s monitoring platform. Work on high-performance distributed systems and automation tools.',
     opportunity_type: 'job',
-    application_deadline: '2025-03-30',
+    application_deadline: '2026-03-30',
     requirements: {
       majors: ['Computer Science', 'Computer Engineering'],
       min_gpa: 3.2,
@@ -1912,6 +1912,96 @@ export const DEMO_AVAILABLE_COURSES: PlannedCourse[] = [
  */
 export function getDemoAvailableCourses(): PlannedCourse[] {
   return [...DEMO_AVAILABLE_COURSES];
+}
+
+// =====================================================
+// DEMO COURSE RECOMMENDATIONS
+// =====================================================
+
+export interface DemoCourseRecommendation {
+  code: string;
+  title: string;
+  credits: number;
+  reason: string;
+  priority: 'high' | 'medium' | 'low';
+  prerequisites_met: boolean;
+}
+
+/**
+ * Demo Course Recommendations - Personalized suggestions for the demo student
+ */
+export const DEMO_COURSE_RECOMMENDATIONS: DemoCourseRecommendation[] = [
+  {
+    code: 'CS 3510',
+    title: 'Design & Analysis of Algorithms',
+    credits: 3,
+    reason: 'Core CS requirement. You have completed the prerequisites (CS 1332 and MATH 1553).',
+    priority: 'high',
+    prerequisites_met: true
+  },
+  {
+    code: 'CS 3600',
+    title: 'Introduction to Artificial Intelligence',
+    credits: 3,
+    reason: 'Recommended for Intelligence thread. Prerequisites satisfied. Popular for ML careers.',
+    priority: 'high',
+    prerequisites_met: true
+  },
+  {
+    code: 'CS 4400',
+    title: 'Introduction to Database Systems',
+    credits: 3,
+    reason: 'Essential for full-stack development. Prerequisite (CS 1332) completed.',
+    priority: 'high',
+    prerequisites_met: true
+  },
+  {
+    code: 'CS 4641',
+    title: 'Machine Learning',
+    credits: 3,
+    reason: 'Perfect for Intelligence thread. Take after CS 3510 and MATH 1553 (both completed).',
+    priority: 'high',
+    prerequisites_met: true
+  },
+  {
+    code: 'CS 3220',
+    title: 'Computer Architecture',
+    credits: 4,
+    reason: 'Builds on CS 2110. Great for understanding low-level systems.',
+    priority: 'medium',
+    prerequisites_met: true
+  },
+  {
+    code: 'CS 4476',
+    title: 'Introduction to Computer Vision',
+    credits: 3,
+    reason: 'Excellent for Intelligence thread. Requires CS 3510 and linear algebra (both done).',
+    priority: 'medium',
+    prerequisites_met: true
+  },
+  {
+    code: 'CS 4510',
+    title: 'Automata & Complexity Theory',
+    credits: 3,
+    reason: 'Advanced theory course. Builds on CS 3510 (which you are taking now).',
+    priority: 'medium',
+    prerequisites_met: false
+  },
+  {
+    code: 'CS 4650',
+    title: 'Natural Language Processing',
+    credits: 3,
+    reason: 'Recommended for AI/ML focus. Prerequisites: CS 3510 and MATH 1553.',
+    priority: 'medium',
+    prerequisites_met: true
+  }
+];
+
+/**
+ * Get demo course recommendations
+ */
+export function getDemoCourseRecommendations(): DemoCourseRecommendation[] {
+  return [...DEMO_COURSE_RECOMMENDATIONS];
 }
 
 // =====================================================

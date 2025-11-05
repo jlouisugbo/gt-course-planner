@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import { DemoBanner } from "@/components/demo/DemoBanner";
+import { WelcomeModal } from "@/components/demo/WelcomeModal";
 import { isDemoMode } from "@/lib/demo-mode";
 
 interface AppLayoutProps {
@@ -83,6 +84,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
             {/* Cookie Consent */}
             <CookieConsent />
+
+            {/* Welcome Modal - Demo Mode Only */}
+            {inDemoMode && <WelcomeModal />}
         </div>
     );
 }

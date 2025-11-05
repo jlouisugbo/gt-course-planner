@@ -103,14 +103,48 @@ const CourseRecommendationsAIComponent: React.FC<CourseRecommendationsAIProps> =
         setCoursesLoaded(true);
         return;
       }
-      
+
       setCoursesLoading(true);
       try {
+        // DEMO MODE: Use demo course recommendations
+        if (typeof window !== 'undefined') {
+          const { isDemoMode } = await import('@/lib/demo-mode');
+          if (isDemoMode()) {
+            const { DEMO_COURSE_RECOMMENDATIONS } = await import('@/lib/demo-data');
+
+            console.log('[Demo Mode] Using demo course recommendations');
+
+            // Convert demo recommendations to CourseRecommendation format
+            const demoRecs: CourseRecommendation[] = DEMO_COURSE_RECOMMENDATIONS.map((rec: any) => ({
+              course: {
+                id: rec.code.replace(/\s/g, '_'),
+                code: rec.code,
+                title: rec.title,
+                credits: rec.credits,
+                description: rec.reason,
+                prerequisites: rec.prerequisites_met ? {} : { and: ['CS 3510'] },
+                college: 'College of Computing',
+                offerings: { fall: true, spring: true, summer: false },
+                difficulty: rec.priority === 'high' ? 4 : 3,
+              },
+              score: rec.priority === 'high' ? 0.9 : rec.priority === 'medium' ? 0.7 : 0.5,
+              category: rec.prerequisites_met ? 'prerequisite-ready' : 'major-requirement',
+              reason: rec.reason,
+              priority: rec.priority
+            }));
+
+            setAllRecommendations(demoRecs);
+            setCoursesLoaded(true);
+            setCoursesLoading(false);
+            return;
+          }
+        }
+
         // Get completed and planned courses from planner store
         const completedCourses = plannerStore.getCoursesByStatus('completed');
         const plannedCourses = plannerStore.getCoursesByStatus('planned');
         const inProgressCourses = plannerStore.getCoursesByStatus('in-progress');
-        
+
         // Create recommendation engine with user's actual profile
         const engine = new CourseRecommendationEngine(
           completedCourses,
@@ -123,7 +157,7 @@ const CourseRecommendationsAIComponent: React.FC<CourseRecommendationsAIProps> =
         const recommendations = await engine.generateRecommendations({ maxCourses: 200 });
         setAllRecommendations(recommendations);
         setCoursesLoaded(true);
-        
+
         console.log('Loaded and cached course recommendations');
       } catch (error) {
         console.error('Error loading course recommendations:', error);

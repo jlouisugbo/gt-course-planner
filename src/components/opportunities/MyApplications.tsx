@@ -88,7 +88,7 @@ export function MyApplications() {
               <CardHeader className="p-2.5 sm:p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <CardTitle className="text-sm sm:text-base truncate">{opportunity.title}</CardTitle>
+                    <CardTitle className="text-sm sm:text-base line-clamp-2">{opportunity.title}</CardTitle>
                     <CardDescription className="mt-0.5 text-xs truncate">
                       {opportunity.company} - {opportunity.location}
                     </CardDescription>
@@ -138,7 +138,7 @@ export function MyApplications() {
                       size="sm"
                       onClick={() => handleDelete(application.id)}
                       disabled={deleteApplication.isPending}
-                      className="flex items-center gap-1 h-7 text-xs px-2"
+                      className="flex items-center gap-1 h-7 text-xs px-2 bg-red-600 hover:bg-red-700 text-white"
                     >
                       {deleteApplication.isPending ? (
                         <Loader2 className="h-3 w-3 animate-spin" />

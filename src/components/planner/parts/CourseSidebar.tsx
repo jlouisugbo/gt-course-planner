@@ -93,8 +93,28 @@ export const CourseSidebar: React.FC<CourseSidebarProps> = memo(({ courses: prop
   // Use demo courses if in demo mode, otherwise use prop courses
   const availableCourses = isDemoMode() ? getDemoAvailableCourses() : (propCourses || []);
 
-  // Filter courses based on search query
+  // Get all courses currently in semesters
+  const semesterCourses = React.useMemo(() => {
+    const courseCodes = new Set<string>();
+    if (plannerStore.semesters) {
+      Object.values(plannerStore.semesters).forEach((semester: any) => {
+        if (semester?.courses && Array.isArray(semester.courses)) {
+          semester.courses.forEach((course: any) => {
+            courseCodes.add(course.code);
+          });
+        }
+      });
+    }
+    return courseCodes;
+  }, [plannerStore.semesters]);
+
+  // Filter courses based on search query AND exclude courses already in semesters
   const filteredCourses = availableCourses.filter(course => {
+    // Don't show courses that are already in a semester
+    if (semesterCourses.has(course.code)) {
+      return false;
+    }
+
     const matchesSearch = searchQuery === '' ||
       course.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (course.title && course.title.toLowerCase().includes(searchQuery.toLowerCase()));

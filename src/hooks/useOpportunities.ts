@@ -119,12 +119,36 @@ export const useCreateApplication = () => {
 
   return useMutation({
     mutationFn: async (data: CreateApplicationData) => {
-      // DEMO MODE: No-op, NO API CALLS
+      // DEMO MODE: Create fake application and add to cache
       if (typeof window !== 'undefined') {
         const { isDemoMode } = await import('@/lib/demo-mode');
         if (isDemoMode()) {
-          console.log('[Demo Mode] useCreateApplication: No-op, NO API calls');
-          return {} as OpportunityApplication;
+          console.log('[Demo Mode] useCreateApplication: Adding to cache');
+
+          const { DEMO_OPPORTUNITIES } = await import('@/lib/demo-data');
+
+          // Create a new application object
+          const newApp: OpportunityApplication = {
+            id: Date.now(), // Use timestamp as fake ID
+            user_id: -1,
+            opportunity_id: data.opportunity_id,
+            status: data.status || 'draft',
+            cover_letter: data.cover_letter || null,
+            resume_url: data.resume_url || null,
+            application_answers: data.application_answers || null,
+            submitted_at: data.status === 'submitted' ? new Date().toISOString() : null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            opportunity: DEMO_OPPORTUNITIES.find((opp: any) => opp.id === data.opportunity_id)
+          };
+
+          // Add to cache
+          queryClient.setQueryData(['my-applications'], (old: OpportunityApplication[] | undefined) => {
+            if (!old) return [newApp];
+            return [...old, newApp];
+          });
+
+          return newApp;
         }
       }
 
@@ -143,8 +167,16 @@ export const useCreateApplication = () => {
       return result.data as OpportunityApplication;
     },
     onSuccess: () => {
-      // Invalidate applications list to refetch
-      queryClient.invalidateQueries({ queryKey: ['my-applications'] });
+      // Invalidate applications list to refetch (only in non-demo mode)
+      if (typeof window !== 'undefined') {
+        import('@/lib/demo-mode').then(({ isDemoMode }) => {
+          if (!isDemoMode()) {
+            queryClient.invalidateQueries({ queryKey: ['my-applications'] });
+          }
+        });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['my-applications'] });
+      }
     },
   });
 };
@@ -192,11 +224,18 @@ export const useDeleteApplication = () => {
 
   return useMutation({
     mutationFn: async (id: number) => {
-      // DEMO MODE: No-op, NO API CALLS
+      // DEMO MODE: Update cache to remove application
       if (typeof window !== 'undefined') {
         const { isDemoMode } = await import('@/lib/demo-mode');
         if (isDemoMode()) {
-          console.log('[Demo Mode] useDeleteApplication: No-op, NO API calls');
+          console.log('[Demo Mode] useDeleteApplication: Removing from cache');
+
+          // Update the cache by filtering out the deleted application
+          queryClient.setQueryData(['my-applications'], (old: OpportunityApplication[] | undefined) => {
+            if (!old) return [];
+            return old.filter((app: OpportunityApplication) => app.id !== id);
+          });
+
           return { success: true };
         }
       }
@@ -213,8 +252,16 @@ export const useDeleteApplication = () => {
       return { success: true };
     },
     onSuccess: () => {
-      // Invalidate applications list to refetch
-      queryClient.invalidateQueries({ queryKey: ['my-applications'] });
+      // Invalidate applications list to refetch (only in non-demo mode)
+      if (typeof window !== 'undefined') {
+        import('@/lib/demo-mode').then(({ isDemoMode }) => {
+          if (!isDemoMode()) {
+            queryClient.invalidateQueries({ queryKey: ['my-applications'] });
+          }
+        });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['my-applications'] });
+      }
     },
   });
 };
