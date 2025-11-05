@@ -1,6 +1,7 @@
 // components/landing/LandingPage.tsx
 import React, { useState } from "react";
 import { useAuth } from "@/providers/AuthProvider";
+import { useRouter } from "next/navigation";
 import {
     Calendar,
     Target,
@@ -10,12 +11,16 @@ import {
     Sparkles,
     TrendingUp,
     Clock,
+    Eye,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { enableDemoMode } from "@/lib/demo-mode";
 
 export function LandingPage() {
     const { signInWithGoogle, loading } = useAuth();
+    const router = useRouter();
     const [isAuthLoading, setIsAuthLoading] = useState(false);
+    const [isDemoLoading, setIsDemoLoading] = useState(false);
 
     const handleGetStarted = async () => {
         setIsAuthLoading(true);
@@ -24,6 +29,17 @@ export function LandingPage() {
         } catch (error) {
             console.error("Get Started error:", error);
             setIsAuthLoading(false);
+        }
+    };
+
+    const handleTryDemo = () => {
+        setIsDemoLoading(true);
+        try {
+            enableDemoMode();
+            router.push('/dashboard');
+        } catch (error) {
+            console.error("Demo mode error:", error);
+            setIsDemoLoading(false);
         }
     };
 
@@ -95,31 +111,56 @@ export function LandingPage() {
                             optimize your schedule, and graduate with confidence.
                         </motion.p>
 
-                        {/* CTA Button */}
-                        <motion.button
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.8, duration: 0.8 }}
-                            onClick={handleGetStarted}
-                            disabled={isLoading}
-                            className="group relative bg-gt-gradient text-white px-6 py-3 rounded-2xl font-bold text-base hover:shadow-2xl hover:shadow-gt-navy/25 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:transform-none mb-8"
-                        >
-                            <div className="flex items-center space-x-3">
-                                {isLoading ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        <span>Getting Started...</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Sparkles className="h-4 w-4" />
-                                        <span>Begin Your Journey</span>
-                                        <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                                    </>
-                                )}
-                            </div>
-                            <div className="absolute inset-0 bg-gradient-to-r from-gt-navy-700 to-gt-gold-600 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl -z-10" />
-                        </motion.button>
+                        {/* CTA Buttons */}
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+                            <motion.button
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.8, duration: 0.8 }}
+                                onClick={handleGetStarted}
+                                disabled={isLoading}
+                                className="group relative bg-gt-gradient text-white px-6 py-3 rounded-2xl font-bold text-base hover:shadow-2xl hover:shadow-gt-navy/25 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:transform-none w-full sm:w-auto"
+                            >
+                                <div className="flex items-center justify-center space-x-3">
+                                    {isLoading ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            <span>Getting Started...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles className="h-4 w-4" />
+                                            <span>Begin Your Journey</span>
+                                            <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                                        </>
+                                    )}
+                                </div>
+                                <div className="absolute inset-0 bg-gradient-to-r from-gt-navy-700 to-gt-gold-600 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl -z-10" />
+                            </motion.button>
+
+                            <motion.button
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.9, duration: 0.8 }}
+                                onClick={handleTryDemo}
+                                disabled={isDemoLoading}
+                                className="group relative bg-white/80 backdrop-blur-sm border-2 border-gray-300 text-gray-900 px-6 py-3 rounded-2xl font-semibold text-base hover:shadow-xl hover:shadow-gray-300/50 hover:border-gt-navy/50 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:transform-none w-full sm:w-auto"
+                            >
+                                <div className="flex items-center justify-center space-x-3">
+                                    {isDemoLoading ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            <span>Loading Demo...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Eye className="h-4 w-4" />
+                                            <span>Try Demo</span>
+                                        </>
+                                    )}
+                                </div>
+                            </motion.button>
+                        </div>
                     </motion.div>
 
                         {/* Feature Grid - Compact */}

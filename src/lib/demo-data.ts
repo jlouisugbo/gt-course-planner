@@ -21,11 +21,14 @@ export const DEMO_COMPLETED_COURSES: PlannedCourse[] = [
     status: 'completed',
     grade: 'A',
     semesterId: 202200,
+    year: 2022,
+    season: 'Fall',
     prerequisites: {},
     college: 'College of Computing',
     offerings: { fall: true, spring: true, summer: true },
     difficulty: 2,
-    type: 'regular'
+    course_type: 'CS Core',
+    department: 'CS'
   },
   {
     id: 1551,
@@ -434,22 +437,22 @@ export const DEMO_DEADLINES: Deadline[] = [
     title: 'Fall 2024 Drop/Swap Deadline',
     description: 'Last day to drop or swap courses without a W',
     date: '2024-09-15',
-    type: 'academic',
-    priority: 'high',
+    type: 'withdrawal',
+    urgent: true,
     is_active: true,
-    user_id: null,
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   {
     id: 2,
     title: 'Fall 2024 Withdrawal Deadline',
     description: 'Last day to withdraw from courses with a W',
     date: '2024-10-25',
-    type: 'academic',
-    priority: 'high',
+    type: 'withdrawal',
+    urgent: true,
     is_active: true,
-    user_id: null,
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   {
     id: 3,
@@ -457,32 +460,32 @@ export const DEMO_DEADLINES: Deadline[] = [
     description: 'Registration opens for Spring 2025 semester',
     date: '2024-11-01',
     type: 'registration',
-    priority: 'medium',
+    urgent: false,
     is_active: true,
-    user_id: null,
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   {
     id: 4,
     title: 'Fall 2024 Final Exams',
     description: 'Final exam period begins',
     date: '2024-12-09',
-    type: 'academic',
-    priority: 'high',
+    type: 'graduation',
+    urgent: true,
     is_active: true,
-    user_id: null,
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   {
     id: 5,
     title: 'Spring 2025 Classes Begin',
     description: 'First day of Spring 2025 semester',
     date: '2025-01-06',
-    type: 'academic',
-    priority: 'high',
+    type: 'registration',
+    urgent: true,
     is_active: true,
-    user_id: null,
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   {
     id: 6,
@@ -490,10 +493,10 @@ export const DEMO_DEADLINES: Deadline[] = [
     description: 'Last day to register for summer FASET',
     date: '2025-04-01',
     type: 'registration',
-    priority: 'medium',
+    urgent: false,
     is_active: true,
-    user_id: null,
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
 ];
 
@@ -506,7 +509,7 @@ export const DEMO_ACTIVITY: ActivityItem[] = [
     type: 'course_added',
     title: 'Added CS 4476 to Spring 2026',
     description: 'Added Introduction to Computer Vision',
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
     metadata: {
       courseCode: 'CS 4476',
       semester: 'Spring 2026'
@@ -514,10 +517,10 @@ export const DEMO_ACTIVITY: ActivityItem[] = [
   },
   {
     id: 2,
-    type: 'course_completed',
+    type: 'requirement_completed',
     title: 'Marked CS 2110 as complete',
     description: 'Completed with grade: A',
-    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
     metadata: {
       courseCode: 'CS 2110',
       grade: 'A'
@@ -525,10 +528,10 @@ export const DEMO_ACTIVITY: ActivityItem[] = [
   },
   {
     id: 3,
-    type: 'requirement_satisfied',
+    type: 'requirement_completed',
     title: 'Satisfied Calculus requirement',
     description: 'Completed MATH 1552 with grade B',
-    timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+    timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
     metadata: {
       requirement: 'Calculus II',
       courseCode: 'MATH 1552'
@@ -536,10 +539,10 @@ export const DEMO_ACTIVITY: ActivityItem[] = [
   },
   {
     id: 4,
-    type: 'course_moved',
+    type: 'course_added',
     title: 'Moved CS 3600 to Spring 2025',
     description: 'Rescheduled from Fall 2024',
-    timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
+    timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
     metadata: {
       courseCode: 'CS 3600',
       fromSemester: 'Fall 2024',
@@ -548,10 +551,10 @@ export const DEMO_ACTIVITY: ActivityItem[] = [
   },
   {
     id: 5,
-    type: 'profile_updated',
+    type: 'course_added',
     title: 'Updated academic profile',
     description: 'Added Mathematics minor',
-    timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
+    timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
     metadata: {
       field: 'minors',
       value: 'Mathematics'

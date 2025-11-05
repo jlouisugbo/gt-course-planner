@@ -477,7 +477,7 @@ export const usePlannerStore = create<PlannerState>()(
 
                 // Check for demo mode
                 if (typeof window !== 'undefined') {
-                    const { isDemoMode } = await import('@/lib/demo-mode');
+                    const { isDemoMode, getDemoUser } = await import('@/lib/demo-mode');
 
                     if (isDemoMode()) {
                         console.log('[Demo Mode] Initializing store with demo data');
@@ -488,6 +488,38 @@ export const usePlannerStore = create<PlannerState>()(
                             DEMO_DEADLINES,
                             DEMO_ACTIVITY
                         } = await import('@/lib/demo-data');
+
+                        // Get demo user data
+                        const demoUser = getDemoUser();
+
+                        // Set demo student info
+                        set({
+                            studentInfo: {
+                                id: demoUser.id,
+                                name: demoUser.full_name,
+                                email: demoUser.email,
+                                major: demoUser.major,
+                                threads: demoUser.selected_threads || [],
+                                minors: demoUser.minors || [],
+                                startYear: demoUser.plan_settings?.starting_year || 2022,
+                                expectedGraduation: demoUser.plan_settings?.expected_graduation || '2026-05-15',
+                                currentGPA: demoUser.current_gpa || 3.75,
+                                majorRequirements: [],
+                                minorRequirements: [],
+                                threadRequirements: [],
+                            },
+                            userProfile: {
+                                id: demoUser.id,
+                                auth_id: demoUser.auth_id,
+                                email: demoUser.email,
+                                full_name: demoUser.full_name,
+                                major: demoUser.major,
+                                minors: demoUser.minors || [],
+                                graduation_year: demoUser.graduation_year,
+                                created_at: demoUser.created_at,
+                                updated_at: demoUser.updated_at,
+                            }
+                        });
 
                         // Set demo semesters
                         const demoSemesters = generateDemoSemesters();

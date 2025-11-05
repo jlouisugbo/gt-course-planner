@@ -9,6 +9,7 @@ import { syncUserProfile } from "@/lib/profileSync";
 import { cn } from "@/lib/utils";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
+import { DemoBanner } from "@/components/demo/DemoBanner";
 
 interface AppLayoutProps {
     children: React.ReactNode;
@@ -65,6 +66,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 >
                     {/* Top Header (simplified - no nav items) */}
                     <Header />
+
+                    {/* Demo Mode Banner */}
+                    <DemoBanner />
 
                     {/* Page Content */}
                     <main className="flex-1 overflow-auto bg-gray-50">
