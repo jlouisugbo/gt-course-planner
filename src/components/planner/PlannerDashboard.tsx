@@ -30,7 +30,8 @@ import { isDemoMode } from '@/lib/demo-mode';
 
 export const PlannerDashboard: React.FC = () => {
   const [showProfileSetup, setShowProfileSetup] = useState(false);
-  
+  const inDemoMode = isDemoMode();
+
   // Use reliable planner store that combines data loading with planner functionality
   const {
     semesters,
@@ -43,7 +44,7 @@ export const PlannerDashboard: React.FC = () => {
     reloadData,
     ...plannerStore
   } = useReliablePlannerStore();
-  
+
   const activeUserProfile = userProfile;
 
   const safeSemesters = useMemo(() => {
@@ -72,9 +73,9 @@ export const PlannerDashboard: React.FC = () => {
 
   const completedSemesters = useMemo(() => {
     return Object.values(safeSemesters)
-      .filter(semester => 
-        semester && 
-        typeof semester === 'object' && 
+      .filter(semester =>
+        semester &&
+        typeof semester === 'object' &&
         semester.isCompleted === true
       ).length;
   }, [safeSemesters]);
@@ -94,13 +95,13 @@ export const PlannerDashboard: React.FC = () => {
           }
         }
       }, 10000); // 10 second timeout
-      
+
       return () => clearTimeout(timeout);
     }
   }, [dataLoading, isFullyInitialized, reloadData]);
 
-  // Show loading state while initializing
-  if (dataLoading || !isFullyInitialized) {
+  // Show loading state while initializing (SKIP IN DEMO MODE)
+  if (!inDemoMode && (dataLoading || !isFullyInitialized)) {
     return (
       <div className="flex items-center justify-center min-h-96">
         <motion.div

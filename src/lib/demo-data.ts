@@ -1567,7 +1567,7 @@ export const DEMO_NOTIFICATIONS: Notification[] = [
     type: 'deadline',
     title: 'Registration Opens Soon',
     message: 'Registration for Spring 2025 opens in 3 days (November 8)',
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
     read: false,
     actionUrl: '/planner'
   },
@@ -1576,7 +1576,7 @@ export const DEMO_NOTIFICATIONS: Notification[] = [
     type: 'success',
     title: 'Course Completed',
     message: 'You completed CS 2110 with an A! Great work!',
-    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
+    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
     read: false
   },
   {
@@ -1584,7 +1584,7 @@ export const DEMO_NOTIFICATIONS: Notification[] = [
     type: 'info',
     title: 'New Internship Opportunity',
     message: 'Google is now accepting applications for Summer 2025 ML Internships',
-    timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+    timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
     read: true,
     actionUrl: '/opportunities'
   },
@@ -1593,7 +1593,7 @@ export const DEMO_NOTIFICATIONS: Notification[] = [
     type: 'info',
     title: 'Advisor Appointment Scheduled',
     message: 'Your appointment with Dr. Mitchell is confirmed for November 5 at 2:00 PM',
-    timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
+    timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
     read: true,
     actionUrl: '/advisors'
   },
@@ -1602,7 +1602,7 @@ export const DEMO_NOTIFICATIONS: Notification[] = [
     type: 'success',
     title: 'GPA Improved',
     message: 'Your cumulative GPA increased to 3.75 after Spring 2024 grades posted',
-    timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
+    timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
     read: true,
     actionUrl: '/record'
   },
@@ -1611,7 +1611,7 @@ export const DEMO_NOTIFICATIONS: Notification[] = [
     type: 'warning',
     title: 'Requirement Alert',
     message: 'You still need 3 more credits for your Intelligence Thread requirement',
-    timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+    timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
     read: true,
     actionUrl: '/requirements'
   },
@@ -1620,7 +1620,7 @@ export const DEMO_NOTIFICATIONS: Notification[] = [
     type: 'info',
     title: 'Research Opportunity',
     message: 'GT ML Lab has openings for undergraduate researchers',
-    timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // 10 days ago
+    timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(), // 10 days ago
     read: true,
     actionUrl: '/opportunities'
   },
@@ -1629,7 +1629,7 @@ export const DEMO_NOTIFICATIONS: Notification[] = [
     type: 'deadline',
     title: 'Drop/Swap Deadline',
     message: 'Last day to drop or swap Fall 2024 courses is September 15',
-    timestamp: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 14 days ago
+    timestamp: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 days ago
     read: true
   }
 ];
