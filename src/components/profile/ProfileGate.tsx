@@ -10,25 +10,40 @@ import { useAuth } from '@/providers/AuthProvider';
 import { checkProfileStatus, loadUserProfile, ProfileStatus } from '@/lib/profileStatus';
 import ProfileSetup from './ProfileSetup';
 import { Loader2 } from 'lucide-react';
+import { isDemoMode } from '@/lib/demo-mode';
 
 interface ProfileGateProps {
   children: React.ReactNode;
   showSetupButton?: boolean;
 }
 
-export const ProfileGate: React.FC<ProfileGateProps> = ({ 
-  children, 
-  showSetupButton = false 
+export const ProfileGate: React.FC<ProfileGateProps> = ({
+  children,
+  showSetupButton = false
 }) => {
   const { user } = useAuth();
   const [profileStatus, setProfileStatus] = useState<ProfileStatus | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [forceShowSetup, setForceShowSetup] = useState(false);
+  const [inDemoMode, setInDemoMode] = useState(false);
+
+  // Check for demo mode on mount
+  useEffect(() => {
+    setInDemoMode(isDemoMode());
+  }, []);
 
   // Check profile status on mount
   useEffect(() => {
     const checkStatus = async () => {
+      // DEMO MODE: Skip all checks
+      if (inDemoMode) {
+        console.log('ProfileGate: Demo mode detected - bypassing all checks');
+        setIsLoading(false);
+        setProfileStatus({ isComplete: true, hasRequiredFields: true, completedAt: new Date().toISOString(), missingFields: [] });
+        return;
+      }
+
       if (!user) {
         setIsLoading(false);
         return;
@@ -69,7 +84,7 @@ export const ProfileGate: React.FC<ProfileGateProps> = ({
     };
 
     checkStatus();
-  }, [user]);
+  }, [user, inDemoMode]);
 
   // Show loading state
   if (isLoading) {

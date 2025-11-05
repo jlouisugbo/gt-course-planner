@@ -7,7 +7,7 @@ import ProfileSetup from '@/components/profile/ProfileSetup';
 import { UserProfile } from '@/types/user';
 import { Loader2, CheckCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { isDemoMode, DEMO_USER } from '@/lib/demo-mode';
+import { isDemoMode, getDemoUser } from '@/lib/demo-mode';
 
 export default function SetupPage() {
     const { user } = useAuth();
@@ -20,6 +20,8 @@ export default function SetupPage() {
             // Check if demo mode is active
             if (isDemoMode()) {
                 console.log('🎯 Demo mode detected - loading demo profile');
+
+                const DEMO_USER = getDemoUser();
 
                 // Convert DEMO_USER to UserProfile format
                 const demoProfile: Partial<UserProfile> = {

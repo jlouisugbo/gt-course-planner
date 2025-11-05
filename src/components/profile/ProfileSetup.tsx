@@ -53,10 +53,13 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card className="max-w-md">
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">Please sign in to set up your profile.</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center">
+        <Card className="max-w-md w-full mx-4">
+          <CardContent className="p-8">
+            <div className="text-center">
+              <p className="text-gray-700 text-lg">Please sign in to set up your profile.</p>
+              <p className="text-sm text-gray-500 mt-2">You need to be authenticated to continue.</p>
+            </div>
           </CardContent>
         </Card>
       </div>
