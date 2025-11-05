@@ -28,12 +28,20 @@ export const RequirementsCourseCard: React.FC<RequirementsCourseCardProps> = ({
   footnotes = []
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+  const [justChecked, setJustChecked] = useState(false);
+
   const handleToggleComplete = () => {
     if (course.type === 'or_group' || course.type === 'and_group') {
       // For group courses, we might want different behavior
       return;
     }
+
+    // Trigger animation when checking
+    if (!isCompleted) {
+      setJustChecked(true);
+      setTimeout(() => setJustChecked(false), 600);
+    }
+
     onToggleComplete(course.code);
   };
 
@@ -143,15 +151,16 @@ export const RequirementsCourseCard: React.FC<RequirementsCourseCardProps> = ({
   return (
     <>
       <Card className={cn(
-        "transition-all duration-200 hover:shadow-sm cursor-pointer group",
-        isCompleted && "border-green-400 bg-green-50/30 dark:bg-green-900/10",
+        "transition-all duration-300 hover:shadow-sm cursor-pointer group",
+        isCompleted && "border-green-500 bg-green-50 dark:bg-green-900/20 shadow-green-100 shadow-md",
+        justChecked && "scale-[1.02] ring-2 ring-green-400 ring-opacity-50",
         isPlanned && !isCompleted && "border-blue-400 bg-blue-50/30 dark:bg-blue-900/10",
         course.type === 'or_group' && "border-orange-200",
         (course.type === 'flexible' || course.type === 'selection') && "border-blue-200"
       )}>
         <CardContent className="p-2">
           {renderCourseContent()}
-          
+
         </CardContent>
       </Card>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Advisor, AdvisorConnection } from '@/types';
 import {
   Dialog,
@@ -22,6 +22,7 @@ import {
   Loader2,
   Calendar,
 } from 'lucide-react';
+import { isDemoMode } from '@/lib/demo-mode';
 
 interface AdvisorProfileProps {
   advisor: Advisor | null;
@@ -38,6 +39,15 @@ export function AdvisorProfile({
 }: AdvisorProfileProps) {
   const createConnection = useCreateConnection();
   const { data: connections } = useMyAdvisors();
+  const [demoPendingState, setDemoPendingState] = useState(false);
+  const inDemoMode = isDemoMode();
+
+  // Reset demo pending state when modal opens/closes or advisor changes
+  useEffect(() => {
+    if (!isOpen) {
+      setDemoPendingState(false);
+    }
+  }, [isOpen, advisor?.id]);
 
   if (!advisor) return null;
 
@@ -47,10 +57,16 @@ export function AdvisorProfile({
   );
 
   const isConnected = existingConnection?.status === 'active';
-  const isPending = existingConnection?.status === 'pending';
+  const isPending = inDemoMode ? demoPendingState : existingConnection?.status === 'pending';
 
   const handleRequestConnection = async () => {
     if (existingConnection) return;
+
+    // In demo mode, just set local pending state
+    if (inDemoMode) {
+      setDemoPendingState(true);
+      return;
+    }
 
     try {
       await createConnection.mutateAsync({
