@@ -14,40 +14,41 @@
    - .glass-gold: GT Gold-tinted glass for accents
    ========================================== */
 
-/* Base Glassmorphism Effect */
-.glass {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-}
+@layer utilities {
+  /* Base Glassmorphism Effect */
+  .glass {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  }
 
-/* Strong Glass - For Interactive Cards and Modals */
-.glass-strong {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
+  /* Strong Glass - For Interactive Cards and Modals */
+  .glass-strong {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  }
 
-/* Light Glass - For Background Elements */
-.glass-light {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.05);
-}
+  /* Light Glass - For Background Elements */
+  .glass-light {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.05);
+  }
 
-/* Dark Glass - GT Navy Tinted (Headers, Navigation) */
-.glass-dark {
-  background: rgba(0, 48, 87, 0.3);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(179, 163, 105, 0.2);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+  /* Dark Glass - GT Navy Tinted (Headers, Navigation) */
+  .glass-dark {
+    background: rgba(0, 48, 87, 0.3);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(179, 163, 105, 0.2);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
 }
 
 /* Gold Glass - GT Gold Accent Tint */
@@ -232,6 +233,8 @@
 .glass-shine:hover::after {
   left: 100%;
 }
+
+} /* End @layer utilities */
 
 /* Responsive Glass - Reduce blur on mobile for performance */
 @media (max-width: 640px) {
