@@ -143,13 +143,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user?.id, fetchUserRecord]);
 
+  // Validate OAuth configuration on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const callbackUrl = `${window.location.origin}/auth/callback`;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+    console.log('[Auth Config] OAuth callback URL:', callbackUrl);
+    console.log('[Auth Config] Supabase URL:', supabaseUrl);
+
+    // In production, warn if callback URL might not be configured in Supabase
+    if (process.env.NODE_ENV === 'production') {
+      const expectedCallback = process.env.NEXT_PUBLIC_OAUTH_CALLBACK_URL;
+      if (!expectedCallback) {
+        console.warn(
+          '[Auth Config] NEXT_PUBLIC_OAUTH_CALLBACK_URL not set in production!',
+          'Ensure', callbackUrl, 'is configured in Supabase Auth settings.'
+        );
+      } else if (expectedCallback !== callbackUrl) {
+        console.error(
+          '[Auth Config] OAuth callback URL mismatch!',
+          'Expected:', expectedCallback,
+          'Current:', callbackUrl
+        );
+      }
+    }
+  }, []);
+
   // Initialize auth state on mount - ultra-simplified
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Check for demo mode FIRST
+        // Check for demo mode FIRST (development only)
+        // SECURITY: isDemoMode() now enforces NODE_ENV === 'development' check
         if (isDemoMode()) {
-          console.log('[Demo Mode] Bypassing authentication - using demo user');
+          console.log('[Demo Mode] Bypassing authentication - using demo user (development only)');
           const demoUser = getDemoUser();
           const demoAuthUser = getDemoAuthUser();
 

@@ -31,12 +31,12 @@ function validateScriptPaths(): { isValid: boolean; missingPaths: string[] } {
 
 // Lazy initialization to avoid build-time environment variable issues
 function getSupabaseClient() {
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
-    throw new Error('Missing Supabase environment variables')
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables')
   }
   return createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_KEY
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
   )
 }
 

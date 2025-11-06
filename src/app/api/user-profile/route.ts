@@ -1,15 +1,27 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { createSecureRoute, SECURITY_CONFIGS } from '@/lib/security/middleware';
-import { UserProfileUpdateSchema } from '@/lib/validation/schemas';
+import { authenticateRequest } from '@/lib/auth-server';
 import { safeGetUserProfile } from '@/lib/security/database';
 import { createSecureErrorHandler } from '@/lib/security/errorHandler';
 
-// Secure GET handler using security middleware
-export const GET = createSecureRoute(async (request, context) => {
+/**
+ * GET /api/user-profile
+ * Fetch authenticated user's profile with GPA calculations
+ */
+export async function GET(request: NextRequest) {
     try {
-        const userRecord = await safeGetUserProfile(context.user!.id);
-        
+        // Authenticate request
+        const { user, error: authError } = await authenticateRequest(request);
+        if (authError || !user) {
+            return Response.json(
+                { error: 'Authentication required', code: 'UNAUTHORIZED' },
+                { status: 401 }
+            );
+        }
+
+        // Fetch user profile using auth ID
+        const userRecord = await safeGetUserProfile(user.id);
+
         if (!userRecord) {
             return NextResponse.json({ error: 'User profile not found' }, { status: 404 });
         }
@@ -25,20 +37,20 @@ export const GET = createSecureRoute(async (request, context) => {
         // Calculate GPA from normalized data
         let overallGPA = 0;
         let semesterGPAs: any[] = [];
-        
+
         if (completions && completions.length > 0) {
             // Group by semester for GPA calculation
             const semesterMap = new Map<string, any>();
-            
+
             completions.forEach((completion: any) => {
                 if (!completion.grade) return;
-                
+
                 const gradePoints: Record<string, number> = {
                     'A': 4.0, 'B': 3.0, 'C': 2.0, 'D': 1.0, 'F': 0.0
                 };
-                
+
                 if (!(completion.grade in gradePoints)) return;
-                
+
                 if (!semesterMap.has(completion.semester)) {
                     semesterMap.set(completion.semester, {
                         semester: completion.semester,
@@ -47,11 +59,11 @@ export const GET = createSecureRoute(async (request, context) => {
                         courses: []
                     });
                 }
-                
+
                 const sem = semesterMap.get(completion.semester);
                 const credits = completion.credits || 3;
                 const points = gradePoints[completion.grade as keyof typeof gradePoints] * credits;
-                
+
                 sem.totalPoints += points;
                 sem.totalCredits += credits;
                 sem.courses.push({
@@ -60,14 +72,14 @@ export const GET = createSecureRoute(async (request, context) => {
                     credits: credits
                 });
             });
-            
+
             // Calculate semester GPAs
             semesterGPAs = Array.from(semesterMap.values()).map(sem => ({
                 semester: sem.semester,
                 gpa: sem.totalCredits > 0 ? sem.totalPoints / sem.totalCredits : 0,
                 credits: sem.totalCredits
             }));
-            
+
             // Calculate overall GPA
             const totalPoints = Array.from(semesterMap.values()).reduce((sum, sem) => sum + sem.totalPoints, 0);
             const totalCredits = Array.from(semesterMap.values()).reduce((sum, sem) => sum + sem.totalCredits, 0);
@@ -99,30 +111,43 @@ export const GET = createSecureRoute(async (request, context) => {
             updatedAt: userRecord.updated_at
         });
     } catch (error) {
-        const errorHandler = createSecureErrorHandler('/api/user-profile', 'GET', context.user?.id);
+        const errorHandler = createSecureErrorHandler('/api/user-profile', 'GET');
         return errorHandler.handleError(error);
     }
-}, SECURITY_CONFIGS.MEDIUM_SECURITY);
+}
 
-// Secure PUT handler with comprehensive validation
-export const PUT = createSecureRoute(async (request, context) => {
+/**
+ * PUT /api/user-profile
+ * Update authenticated user's profile (upsert)
+ */
+export async function PUT(request: NextRequest) {
     try {
-        // Use the already validated data from security middleware
-        const validatedData = context.validatedData!.body;
+        // Authenticate request
+        const { user, error: authError } = await authenticateRequest(request);
+        if (authError || !user) {
+            return Response.json(
+                { error: 'Authentication required', code: 'UNAUTHORIZED' },
+                { status: 401 }
+            );
+        }
+
+        // Parse and validate request body
+        const body = await request.json();
+
         // Perform an upsert (create if missing, update otherwise) using admin client
-        const authId = context.user!.id;
+        const authId = user.id;
 
         const upsertPayload: any = {
             auth_id: authId,
-            email: validatedData.email ?? validatedData.email,
-            full_name: validatedData.fullName ?? validatedData.full_name,
-            major: validatedData.major ?? validatedData.major,
-            minors: validatedData.minors ?? validatedData.minors,
-            plan_settings: validatedData.planSettings ?? validatedData.plan_settings,
-            graduation_year: validatedData.graduationYear ?? validatedData.graduation_year,
-            degree_program_id: validatedData.degreeProgramId ?? validatedData.degree_program_id,
-            gt_username: validatedData.gtUsername ?? validatedData.gt_username,
-            has_detailed_gpa: validatedData.hasDetailedGPA ?? validatedData.has_detailed_gpa,
+            email: body.email ?? body.email,
+            full_name: body.fullName ?? body.full_name,
+            major: body.major ?? body.major,
+            minors: body.minors ?? body.minors,
+            plan_settings: body.planSettings ?? body.plan_settings,
+            graduation_year: body.graduationYear ?? body.graduation_year,
+            degree_program_id: body.degreeProgramId ?? body.degree_program_id,
+            gt_username: body.gtUsername ?? body.gt_username,
+            has_detailed_gpa: body.hasDetailedGPA ?? body.has_detailed_gpa,
         };
 
         const { data: upserted, error: upsertError } = await supabaseAdmin()
@@ -140,16 +165,11 @@ export const PUT = createSecureRoute(async (request, context) => {
             user: upserted
         });
     } catch (error: any) {
-        const errorHandler = createSecureErrorHandler('/api/user-profile', 'PUT', context.user?.id);
-        
+        const errorHandler = createSecureErrorHandler('/api/user-profile', 'PUT');
+
         // Log academic data update for FERPA compliance
         errorHandler.logAcademicAccess('update_attempt', 'user_profile');
-        
+
         return errorHandler.handleError(error);
     }
-}, {
-    ...SECURITY_CONFIGS.HIGH_SECURITY,
-    validationSchema: {
-        body: UserProfileUpdateSchema
-    }
-});
+}

@@ -61,9 +61,16 @@ export const DEMO_AUTH_USER: User = {
 
 /**
  * Check if demo mode is currently active
+ * SECURITY: Demo mode is ONLY available in development environment
  */
 export function isDemoMode(): boolean {
   if (typeof window === 'undefined') return false;
+
+  // SECURITY: Disable demo mode in production
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('[Demo Mode] Demo mode is disabled in production');
+    return false;
+  }
 
   try {
     // Check URL param first
@@ -83,9 +90,16 @@ export function isDemoMode(): boolean {
 
 /**
  * Enable demo mode
+ * SECURITY: Demo mode is ONLY available in development environment
  */
 export function enableDemoMode(): void {
   if (typeof window === 'undefined') return;
+
+  // SECURITY: Prevent enabling demo mode in production
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('[Demo Mode] Cannot enable demo mode in production');
+    return;
+  }
 
   try {
     localStorage.setItem(DEMO_MODE_KEY, 'true');
@@ -94,7 +108,7 @@ export function enableDemoMode(): void {
     const sessionId = `demo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     sessionStorage.setItem(DEMO_SESSION_KEY, sessionId);
 
-    console.log('[Demo Mode] Enabled');
+    console.log('[Demo Mode] Enabled (development only)');
   } catch (error) {
     console.error('[Demo Mode] Failed to enable:', error);
   }
