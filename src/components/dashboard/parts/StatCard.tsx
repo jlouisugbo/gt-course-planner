@@ -58,8 +58,8 @@ const StatCard = memo<StatCardProps>(({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay }}
         >
-            <Card 
-                className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-[#B3A369]/20 hover:border-l-[#B3A369] focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:outline-none"
+            <Card
+                className="glass-strong glass-hover border-l-4 border-l-[#B3A369]/30 hover:border-l-[#B3A369] focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:outline-none shadow-xl"
                 role="region"
                 aria-label={`${title} statistics card`}
             >

@@ -1,11 +1,12 @@
-// lib/auth-server.ts - Simplified server-side authentication for MVP
+// lib/auth-server.ts - Server-side authentication utilities for API routes
 import { createClient } from "@/lib/supabaseServer";
 import { NextRequest } from 'next/server';
 
 export interface AuthenticatedUser {
-  id: string;
+  id: string;  // Auth UUID
   email: string;
-  gtUserId?: string;
+  gtUserId?: string;  // Deprecated: use internalUserId instead
+  internalUserId?: number;  // Internal database ID (BIGINT) - USE THIS for FK queries
 }
 
 /**
@@ -48,9 +49,10 @@ export async function authenticateRequest(request: NextRequest): Promise<{
 
     return {
       user: {
-        id: user.id,
+        id: user.id,  // Auth UUID
         email: user.email || '',
-        gtUserId: userRecord.auth_id
+        gtUserId: userRecord.auth_id,  // Deprecated
+        internalUserId: userRecord.id  // Internal database ID for FK queries
       },
       error: null
     };
@@ -83,9 +85,66 @@ export function withAuth(handler: (request: NextRequest, user: AuthenticatedUser
 }
 
 /**
- * Get authenticated user ID from request
+ * Get authenticated user auth UUID from request
+ * @deprecated Use getInternalUserId() instead for database queries
  */
 export async function getAuthenticatedUserId(request: NextRequest): Promise<string | null> {
   const { user } = await authenticateRequest(request);
   return user?.id || null;
+}
+
+/**
+ * Get internal database user ID from request
+ * **USE THIS** for all database foreign key queries
+ *
+ * @param request - Next.js request object
+ * @returns Internal database user ID (BIGINT) or null
+ *
+ * @example
+ * ```typescript
+ * const userId = await getInternalUserId(request);
+ * if (!userId) {
+ *   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+ * }
+ *
+ * // Safe to use in FK queries:
+ * await supabase.from('user_courses').select('*').eq('user_id', userId);
+ * ```
+ */
+export async function getInternalUserId(request: NextRequest): Promise<number | null> {
+  const { user } = await authenticateRequest(request);
+  return user?.internalUserId || null;
+}
+
+/**
+ * Require authentication and return internal user ID
+ * Returns NextResponse error if not authenticated
+ *
+ * @example
+ * ```typescript
+ * export async function GET(request: NextRequest) {
+ *   const result = await requireAuth(request);
+ *   if ('error' in result) return result.error;
+ *
+ *   const { userId, user } = result;
+ *   // userId is guaranteed to be non-null here
+ * }
+ * ```
+ */
+export async function requireAuth(request: NextRequest): Promise<
+  | { userId: number; user: AuthenticatedUser; error?: never }
+  | { userId?: never; user?: never; error: Response }
+> {
+  const { user, error: authError } = await authenticateRequest(request);
+
+  if (authError || !user || !user.internalUserId) {
+    return {
+      error: Response.json(
+        { error: authError || 'Authentication required', code: 'UNAUTHORIZED' },
+        { status: 401 }
+      )
+    };
+  }
+
+  return { userId: user.internalUserId, user };
 }

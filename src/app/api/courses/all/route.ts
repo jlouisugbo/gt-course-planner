@@ -108,20 +108,8 @@ export const GET = async (request: Request) => {
             query = query.in('credits', creditsArray as any);
         }
 
-        // Apply search filter if provided (safe - already sanitized)
-        if (queryParams.search) {
-            query = query.ilike('code', `%${queryParams.search}%`);
-        }
-
-        // Apply subject filter if provided (safe - validated regex)
-        if (queryParams.subject) {
-            query = query.ilike('code', `${queryParams.subject}%`);
-        }
-
-        // Apply pagination (safe - validated numbers)
-        query = query.range(offset, offset + limit - 1);
-
-    const { data: courses, error } = await query.range(offset, offset + limit - 1);
+        // Apply pagination and execute query
+        const { data: courses, error } = await query.range(offset, offset + limit - 1);
 
         if (error) {
             console.error('Error fetching courses:', error);

@@ -21,7 +21,7 @@ export async function GET(
       );
     }
 
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // Query the course details with college join
     const { data: courseData, error: courseError } = await supabase

@@ -22,11 +22,11 @@ export default function Header() {
   };
 
   return (
-    <header className="h-16 border-b bg-white flex items-center justify-between px-6 flex-shrink-0">
+    <header className="h-16 glass-dark glass-dark-hover border-b border-white/20 flex items-center justify-between px-6 flex-shrink-0 sticky top-0 z-50 backdrop-blur-xl">
       {/* Left side - Page Title */}
       <div className="flex items-center space-x-3">
-        <BookOpen className="h-5 w-5 text-gt-gold hidden sm:block" />
-        <h1 className="text-xl font-semibold text-gray-900">{getPageTitle()}</h1>
+        <BookOpen className="h-5 w-5 text-gt-gold hidden sm:block drop-shadow-lg" />
+        <h1 className="text-xl font-semibold text-white glass-text-light">{getPageTitle()}</h1>
       </div>
 
       {/* Right side - Notifications and other actions */}

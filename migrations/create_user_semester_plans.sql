@@ -1,13 +1,13 @@
--- Migration: Create user_semester_plans table
+-- Migration: Create user_semesters table
 -- Purpose: Move semester data from localStorage to database for persistence and sync
 -- Author: Claude Code
 -- Date: 2025-01-04
 
 -- Drop table if exists (for clean migration)
-DROP TABLE IF EXISTS user_semester_plans_new CASCADE;
+DROP TABLE IF EXISTS user_semesters CASCADE;
 
--- Create user_semester_plans table
-CREATE TABLE user_semester_plans_new (
+-- Create user_semesters table
+CREATE TABLE user_semesters (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL,
 
@@ -41,13 +41,13 @@ CREATE TABLE user_semester_plans_new (
 );
 
 -- Create indexes for performance
-CREATE INDEX idx_user_semester_plans_user_id ON user_semester_plans_new(user_id);
-CREATE INDEX idx_user_semester_plans_semester_id ON user_semester_plans_new(semester_id);
-CREATE INDEX idx_user_semester_plans_year ON user_semester_plans_new(year);
-CREATE INDEX idx_user_semester_plans_is_active ON user_semester_plans_new(is_active);
+CREATE INDEX idx_user_semesters_user_id ON user_semesters(user_id);
+CREATE INDEX idx_user_semesters_semester_id ON user_semesters(semester_id);
+CREATE INDEX idx_user_semesters_year ON user_semesters(year);
+CREATE INDEX idx_user_semesters_is_active ON user_semesters(is_active);
 
 -- Create updated_at trigger
-CREATE OR REPLACE FUNCTION update_user_semester_plans_updated_at()
+CREATE OR REPLACE FUNCTION update_user_semesters_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
@@ -55,17 +55,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trigger_user_semester_plans_updated_at
-    BEFORE UPDATE ON user_semester_plans_new
+CREATE TRIGGER trigger_user_semesters_updated_at
+    BEFORE UPDATE ON user_semesters
     FOR EACH ROW
-    EXECUTE FUNCTION update_user_semester_plans_updated_at();
+    EXECUTE FUNCTION update_user_semesters_updated_at();
 
 -- Enable Row Level Security (RLS)
-ALTER TABLE user_semester_plans_new ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_semesters ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policy: Users can only access their own semester plans
-CREATE POLICY user_semester_plans_select_policy
-    ON user_semester_plans_new
+CREATE POLICY user_semesters_select_policy
+    ON user_semesters
     FOR SELECT
     USING (
         user_id IN (
@@ -73,8 +73,8 @@ CREATE POLICY user_semester_plans_select_policy
         )
     );
 
-CREATE POLICY user_semester_plans_insert_policy
-    ON user_semester_plans_new
+CREATE POLICY user_semesters_insert_policy
+    ON user_semesters
     FOR INSERT
     WITH CHECK (
         user_id IN (
@@ -82,8 +82,8 @@ CREATE POLICY user_semester_plans_insert_policy
         )
     );
 
-CREATE POLICY user_semester_plans_update_policy
-    ON user_semester_plans_new
+CREATE POLICY user_semesters_update_policy
+    ON user_semesters
     FOR UPDATE
     USING (
         user_id IN (
@@ -91,8 +91,8 @@ CREATE POLICY user_semester_plans_update_policy
         )
     );
 
-CREATE POLICY user_semester_plans_delete_policy
-    ON user_semester_plans_new
+CREATE POLICY user_semesters_delete_policy
+    ON user_semesters
     FOR DELETE
     USING (
         user_id IN (
@@ -101,12 +101,12 @@ CREATE POLICY user_semester_plans_delete_policy
     );
 
 -- Grant permissions
-GRANT SELECT, INSERT, UPDATE, DELETE ON user_semester_plans_new TO authenticated;
-GRANT USAGE, SELECT ON SEQUENCE user_semester_plans_new_id_seq TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON user_semesters TO authenticated;
+GRANT USAGE, SELECT ON SEQUENCE user_semesters_id_seq TO authenticated;
 
 -- Add comments for documentation
-COMMENT ON TABLE user_semester_plans_new IS 'Stores user semester planning data - replaces localStorage storage';
-COMMENT ON COLUMN user_semester_plans_new.semester_id IS 'Unique semester ID: year * 100 + season index (0=Fall, 1=Spring, 2=Summer)';
-COMMENT ON COLUMN user_semester_plans_new.courses IS 'JSONB array of planned courses with status, grades, credits';
-COMMENT ON COLUMN user_semester_plans_new.is_active IS 'Current semester flag - only one should be true per user';
-COMMENT ON COLUMN user_semester_plans_new.gpa IS 'Calculated GPA for completed semester';
+COMMENT ON TABLE user_semesters IS 'Stores user semester planning data - replaces localStorage storage';
+COMMENT ON COLUMN user_semesters.semester_id IS 'Unique semester ID: year * 100 + season index (0=Fall, 1=Spring, 2=Summer)';
+COMMENT ON COLUMN user_semesters.courses IS 'JSONB array of planned courses with status, grades, credits';
+COMMENT ON COLUMN user_semesters.is_active IS 'Current semester flag - only one should be true per user';
+COMMENT ON COLUMN user_semesters.gpa IS 'Calculated GPA for completed semester';

@@ -86,8 +86,8 @@ const Dashboard = memo(() => {
 
     return (
         <CriticalErrorBoundary>
-            <div className="min-h-screen bg-gray-50">
-                <div className="max-w-7xl mx-auto space-y-6">
+            <div className="min-h-screen relative z-10">
+                <div className="max-w-7xl mx-auto space-y-6 p-4 sm:p-6">
                     {/* Welcome Header */}
                     <motion.div 
                         initial={{ opacity: 0, y: 20 }}

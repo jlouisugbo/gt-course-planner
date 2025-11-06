@@ -53,7 +53,7 @@ const WelcomeHeader = memo<WelcomeHeaderProps>(({ data }) => {
             animate={{ opacity: 1, y: 0 }}
             className="relative overflow-hidden"
         >
-            <Card className="bg-gt-gradient text-white border-0 shadow-lg">
+            <Card className="glass-dark bg-gt-gradient text-white border-white/20 shadow-2xl backdrop-blur-2xl">
                 <CardContent className="p-8">
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                         <div className="space-y-3">

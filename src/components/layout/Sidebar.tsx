@@ -76,7 +76,7 @@ export default function Sidebar({
       {/* Mobile Backdrop */}
       {isMobileOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 glass-overlay z-40 lg:hidden"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
@@ -84,7 +84,7 @@ export default function Sidebar({
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 h-screen bg-gray-900 text-white flex flex-col z-50 transition-all duration-300 border-r border-gray-800",
+          "fixed top-0 left-0 h-screen glass-dark text-white flex flex-col z-50 transition-all duration-300 border-r border-white/20 backdrop-blur-xl",
           // Desktop: Always visible, collapsible width
           "hidden lg:flex",
           isCollapsed ? "lg:w-20" : "lg:w-[180px]",
@@ -94,21 +94,21 @@ export default function Sidebar({
         )}
       >
         {/* Header Section */}
-        <div className="p-3 border-b border-gray-800 flex items-center justify-between">
+        <div className="p-3 border-b border-white/10 flex items-center justify-between">
           {!isCollapsed && (
             <div className="flex items-center space-x-2">
-              <BookOpen className="h-6 w-6 text-gt-gold" />
-              <span className="font-semibold text-base">GT Planner</span>
+              <BookOpen className="h-6 w-6 text-gt-gold drop-shadow-lg" />
+              <span className="font-semibold text-base glass-text-light">GT Planner</span>
             </div>
           )}
           {isCollapsed && (
-            <BookOpen className="h-6 w-6 text-gt-gold mx-auto" />
+            <BookOpen className="h-6 w-6 text-gt-gold mx-auto drop-shadow-lg" />
           )}
 
           {/* Collapse button - Desktop only */}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="hidden lg:block p-1.5 hover:bg-gray-800 rounded-lg transition-colors"
+            className="hidden lg:block p-1.5 glass-light hover:glass rounded-lg transition-all duration-200"
           >
             {isCollapsed ? (
               <ChevronRight className="h-4 w-4" />
@@ -120,7 +120,7 @@ export default function Sidebar({
           {/* Close button - Mobile only */}
           <button
             onClick={() => setIsMobileOpen(false)}
-            className="lg:hidden p-1.5 hover:bg-gray-800 rounded-lg transition-colors"
+            className="lg:hidden p-1.5 glass-light hover:glass rounded-lg transition-all duration-200"
           >
             <X className="h-5 w-5" />
           </button>
@@ -142,8 +142,8 @@ export default function Sidebar({
                   className={cn(
                     "flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 relative group",
                     isActive
-                      ? "bg-gt-gold/20 text-white border-l-4 border-gt-gold"
-                      : "text-gray-300 hover:bg-gray-800 hover:text-white border-l-4 border-transparent",
+                      ? "glass-gold text-white border-l-4 border-gt-gold shadow-lg"
+                      : "text-gray-300 hover:glass-light hover:text-white border-l-4 border-transparent",
                     isCollapsed && "justify-center px-0"
                   )}
                   title={isCollapsed ? item.label : undefined}
@@ -166,7 +166,7 @@ export default function Sidebar({
         </nav>
 
         {/* Bottom Section - Compact Profile with Demo & Sign Out */}
-        <div className="border-t border-gray-800 p-3">
+        <div className="border-t border-white/10 p-3">
           {!isCollapsed ? (
             <>
               {/* Horizontal Profile Layout */}

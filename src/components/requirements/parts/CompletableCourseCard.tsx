@@ -160,9 +160,9 @@ export const CompletableCourseCard: React.FC<CompletableCourseCardProps> = ({
                 }}
                 transition={{ duration: 0.2 }}
             >
-                <div 
+                <div
                     className={cn(
-                        `px-2 py-0.5 rounded border ${getCardTheme()} transition-all duration-200 cursor-pointer group relative overflow-hidden hover:shadow-md`,
+                        `glass-light px-2 py-0.5 rounded border ${getCardTheme()} transition-all duration-200 cursor-pointer group relative overflow-hidden hover:shadow-md hover:glass`,
                         isCompleted && "ring-2 ring-green-200"
                     )}
                     onClick={handleCardClick}

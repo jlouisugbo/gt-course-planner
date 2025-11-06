@@ -113,11 +113,11 @@ const DraggableCourseCard: React.FC<{
         >
             <div
                 className={cn(
-                    "p-1.5 rounded border transition-all duration-200 hover:shadow-sm",
+                    "glass-light p-1.5 rounded border transition-all duration-200 hover:shadow-sm hover:glass",
                     isDragging && "opacity-50",
-                    isCompleted && "bg-green-50 border-green-200",
-                    isCurrent && "bg-yellow-50 border-yellow-200",
-                    !isCompleted && !isCurrent && "bg-white border-gray-200 hover:border-[#B3A369]/30"
+                    isCompleted && "glass-success border-green-200",
+                    isCurrent && "glass-warning border-yellow-200",
+                    !isCompleted && !isCurrent && "border-white/30 hover:border-[#B3A369]/50"
                 )}
             >
                 <div className="space-y-0">
@@ -272,13 +272,13 @@ export const PlannerGrid: React.FC<PlannerGridProps> = memo(({
 
         return (
             <div className="h-full">
-                <Card 
+                <Card
                     ref={attachConnectorRef<HTMLDivElement>(dropRef as any)}
                     className={cn(
-                        "h-full transition-all duration-200 relative focus-within:ring-2 focus-within:ring-blue-500/20",
-                        isOver && "ring-2 ring-[#B3A369] ring-opacity-50",
-                        isCurrent && "border-[#B3A369] shadow-lg",
-                        isCompleted && "border-green-300 bg-green-50/30"
+                        "h-full glass-strong transition-all duration-200 relative focus-within:ring-2 focus-within:ring-blue-500/20 shadow-xl",
+                        isOver && "ring-2 ring-[#B3A369] ring-opacity-50 glass-gold",
+                        isCurrent && "border-[#B3A369] shadow-2xl glass-gold",
+                        isCompleted && "border-green-300 glass-success"
                     )}
                     role="region"
                     aria-label={`${semester.season} ${semester.year} semester with ${courses.length} courses, ${totalCredits} credits${isCurrent ? ' (current)' : ''}${isCompleted ? ' (completed)' : ''}`}
@@ -362,8 +362,8 @@ export const PlannerGrid: React.FC<PlannerGridProps> = memo(({
                             {courses.length === 0 && (
                                 <div
                                     className={cn(
-                                        "flex flex-col items-center justify-center py-3 border-2 border-dashed rounded-lg transition-colors min-h-[80px]",
-                                        isOver ? "border-[#B3A369] bg-[#B3A369]/5" : "border-gray-300"
+                                        "flex flex-col items-center justify-center py-3 border-2 border-dashed rounded-lg transition-colors min-h-[80px] glass-light",
+                                        isOver ? "border-[#B3A369] glass-gold" : "border-white/30"
                                     )}
                                 >
                                     <Plus
@@ -392,11 +392,11 @@ export const PlannerGrid: React.FC<PlannerGridProps> = memo(({
     // Show loading state
     if (isLoading || !isInitialized) {
         return (
-            <Card className="h-full">
+            <Card className="h-full glass-strong shadow-xl">
                 <CardContent className="flex flex-col items-center justify-center py-16">
-                    <Calendar className="h-16 w-16 text-muted-foreground mb-4 animate-pulse" />
-                    <h3 className="text-lg font-semibold text-muted-foreground mb-2">Loading Your Academic Plan</h3>
-                    <p className="text-sm text-muted-foreground text-center">
+                    <Calendar className="h-16 w-16 text-white/70 mb-4 animate-pulse drop-shadow-lg" />
+                    <h3 className="text-lg font-semibold text-white glass-text-light mb-2">Loading Your Academic Plan</h3>
+                    <p className="text-sm text-white/80 text-center">
                         Setting up your personalized course schedule...
                     </p>
                 </CardContent>
@@ -406,11 +406,11 @@ export const PlannerGrid: React.FC<PlannerGridProps> = memo(({
 
     if (academicYears.length === 0) {
         return (
-            <Card className="h-full">
+            <Card className="h-full glass-strong shadow-xl">
                 <CardContent className="flex flex-col items-center justify-center py-16">
-                    <Calendar className="h-16 w-16 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold text-muted-foreground mb-2">No Semesters Planned</h3>
-                    <p className="text-sm text-muted-foreground text-center">
+                    <Calendar className="h-16 w-16 text-white/70 mb-4 drop-shadow-lg" />
+                    <h3 className="text-lg font-semibold text-white glass-text-light mb-2">No Semesters Planned</h3>
+                    <p className="text-sm text-white/80 text-center">
                         Set up your academic profile to generate your semester plan
                     </p>
                 </CardContent>
@@ -425,7 +425,7 @@ export const PlannerGrid: React.FC<PlannerGridProps> = memo(({
                 <div className="space-y-5">
                     {academicYears.map((yearGroup) => (
                         <div key={yearGroup.academicYear} className="space-y-2">
-                            <h3 className="text-lg font-semibold text-gt-navy border-b pb-0.5">
+                            <h3 className="text-lg font-semibold text-white glass-text-light border-b border-white/20 pb-2 drop-shadow-lg">
                                 Academic Year {yearGroup.academicYear}-{yearGroup.academicYear + 1}
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
@@ -444,12 +444,12 @@ export const PlannerGrid: React.FC<PlannerGridProps> = memo(({
             <div className="flex justify-center">
                 <Button
                     variant="outline"
-                    className="border-dashed border-2 border-[#B3A369] text-[#B3A369] hover:bg-[#B3A369]/5 min-h-[80px] sm:min-h-[100px] md:min-h-[120px] w-full max-w-sm flex flex-col items-center justify-center gap-2 focus:ring-2 focus:ring-blue-500/20"
+                    className="glass-gold glass-gold-hover border-dashed border-2 border-[#B3A369] text-white min-h-[80px] sm:min-h-[100px] md:min-h-[120px] w-full max-w-sm flex flex-col items-center justify-center gap-2 focus:ring-2 focus:ring-blue-500/20 shadow-lg"
                     aria-label="Add new semester for course planning"
                 >
-                    <Plus className="h-6 w-6 sm:h-8 sm:w-8" aria-hidden="true" />
-                    <span className="text-sm sm:text-base font-medium">Add New Semester</span>
-                    <span className="text-xs text-muted-foreground hidden sm:inline">Plan your next semester</span>
+                    <Plus className="h-6 w-6 sm:h-8 sm:w-8 drop-shadow-lg" aria-hidden="true" />
+                    <span className="text-sm sm:text-base font-medium glass-text-light">Add New Semester</span>
+                    <span className="text-xs text-white/80 hidden sm:inline">Plan your next semester</span>
                 </Button>
             </div>
             </div>

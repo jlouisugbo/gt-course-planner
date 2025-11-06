@@ -1,0 +1,298 @@
+/* ==========================================
+   GT Course Planner - Glassmorphism Design System
+   ==========================================
+
+   Premium glassmorphism utilities for beta launch.
+   Provides translucent, frosted glass effects with
+   GT branding (Navy Blue #003057, Tech Gold #B3A369).
+
+   Usage:
+   - .glass: Standard glass effect for primary content
+   - .glass-strong: Enhanced glass for interactive elements
+   - .glass-light: Subtle glass for background layers
+   - .glass-dark: Navy-tinted glass for headers/navs
+   - .glass-gold: GT Gold-tinted glass for accents
+   ========================================== */
+
+/* Base Glassmorphism Effect */
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* Strong Glass - For Interactive Cards and Modals */
+.glass-strong {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+/* Light Glass - For Background Elements */
+.glass-light {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.05);
+}
+
+/* Dark Glass - GT Navy Tinted (Headers, Navigation) */
+.glass-dark {
+  background: rgba(0, 48, 87, 0.3);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(179, 163, 105, 0.2);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Gold Glass - GT Gold Accent Tint */
+.glass-gold {
+  background: rgba(179, 163, 105, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(179, 163, 105, 0.3);
+  box-shadow: 0 4px 24px rgba(179, 163, 105, 0.08);
+}
+
+/* Hover Effects for Interactive Glass Elements */
+.glass-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-hover:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+/* Gold Hover - For GT Gold Accent Elements */
+.glass-gold-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-gold-hover:hover {
+  background: rgba(179, 163, 105, 0.15);
+  border-color: rgba(179, 163, 105, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(179, 163, 105, 0.15);
+}
+
+/* Dark Glass Hover - For Navigation Elements */
+.glass-dark-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-dark-hover:hover {
+  background: rgba(0, 48, 87, 0.4);
+  border-color: rgba(179, 163, 105, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+/* Glassmorphism Card Base */
+.glass-card {
+  @apply glass rounded-xl;
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+}
+
+/* Glass Badge */
+.glass-badge {
+  @apply glass-light;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Glass Button */
+.glass-button {
+  @apply glass-strong glass-hover;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* Glass Input Fields */
+.glass-input {
+  @apply glass-light;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(179, 163, 105, 0.5);
+  box-shadow: 0 0 0 3px rgba(179, 163, 105, 0.1);
+}
+
+/* Status-Specific Glass Variants */
+.glass-success {
+  background: rgba(16, 185, 129, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.glass-warning {
+  background: rgba(251, 191, 36, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.glass-error {
+  background: rgba(239, 68, 68, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.glass-info {
+  background: rgba(59, 130, 246, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+/* Frosted Overlay - For Modals and Dropdowns */
+.glass-overlay {
+  background: rgba(0, 48, 87, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Glass Panel - Full height/width glass sections */
+.glass-panel {
+  @apply glass-strong;
+  min-height: 100%;
+}
+
+/* Text on Glass - Ensures Readability */
+.glass-text-light {
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.glass-text-dark {
+  color: rgba(0, 0, 0, 0.9);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
+}
+
+/* Shine Effect - Subtle animated shine on hover */
+.glass-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-shine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 50%,
+    transparent 100%
+  );
+  transition: left 0.5s ease;
+}
+
+.glass-shine:hover::after {
+  left: 100%;
+}
+
+/* Responsive Glass - Reduce blur on mobile for performance */
+@media (max-width: 640px) {
+  .glass,
+  .glass-card {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .glass-strong {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .glass-light {
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+}
+
+/* Accessibility - Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .glass-hover,
+  .glass-gold-hover,
+  .glass-dark-hover,
+  .glass-shine::after {
+    transition: none;
+    animation: none;
+  }
+
+  .glass-hover:hover,
+  .glass-gold-hover:hover,
+  .glass-dark-hover:hover {
+    transform: none;
+  }
+}
+
+/* High Contrast Mode - Increase borders for better visibility */
+@media (prefers-contrast: high) {
+  .glass,
+  .glass-strong,
+  .glass-light,
+  .glass-dark,
+  .glass-gold {
+    border-width: 2px;
+    border-color: currentColor;
+  }
+}
+
+/* Print Styles - Remove glass effects for printing */
+@media print {
+  .glass,
+  .glass-strong,
+  .glass-light,
+  .glass-dark,
+  .glass-gold,
+  .glass-card {
+    background: white !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid #000 !important;
+    box-shadow: none !important;
+  }
+}

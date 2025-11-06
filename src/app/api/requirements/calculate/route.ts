@@ -102,9 +102,23 @@ function calculateRequirementProgress(
     requirements: any,
     completedCourses: Set<string>
 ): any[] {
-    if (!requirements || !Array.isArray(requirements)) return [];
+    if (!requirements) return [];
 
-    return requirements.map((category: any) => {
+    // Convert object to array if necessary (DB stores as JSONB object)
+    const reqArray = Array.isArray(requirements)
+        ? requirements
+        : Object.entries(requirements).map(([name, data]: [string, any]) => ({
+            name,
+            id: data.id || name,
+            type: data.type || 'category',
+            creditsRequired: data.creditsRequired || 0,
+            coursesRequired: data.coursesRequired || 0,
+            subcategories: data.subcategories || []
+        }));
+
+    if (reqArray.length === 0) return [];
+
+    return reqArray.map((category: any) => {
         const categoryProgress = {
             id: category.id,
             name: category.name,

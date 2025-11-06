@@ -125,8 +125,8 @@ export const CourseCard: React.FC<CourseCardProps> = ({
                 }}
                 transition={{ duration: 0.3 }}
             >
-                <Card 
-                    className={`${getCardTheme()} py-2 transition-all duration-300 cursor-pointer group relative overflow-hidden border-2 hover:shadow-xl`}
+                <Card
+                    className={`${getCardTheme()} glass-strong glass-hover py-2 cursor-pointer group relative overflow-hidden border-2 shadow-lg`}
                     onClick={handleCardClick}
                 >
                     {/* Hover overlay */}
