@@ -1,5 +1,4 @@
 import { Course } from '@/types';
-import { authService } from './auth';
 
 export interface CourseRecommendation {
   course: Course;
@@ -43,22 +42,14 @@ export class CourseRecommendationEngine {
    */
   async loadCourses(): Promise<void> {
     try {
-      const { data: sessionData } = await authService.getSession();
-      if (!sessionData.session?.access_token) {
-        throw new Error('No authentication token available');
-      }
-
       // Load courses with pagination to get all courses
       const allCourses: Course[] = [];
       let page = 1;
       const limit = 100;
 
       while (true) {
-        const response = await fetch(`/api/courses/all?page=${page}&limit=${limit}`, {
-          headers: {
-            'Authorization': `Bearer ${sessionData.session.access_token}`,
-          }
-        });
+        // API route handles authentication via cookies
+        const response = await fetch(`/api/courses/all?page=${page}&limit=${limit}`);
 
         if (!response.ok) {
           break;

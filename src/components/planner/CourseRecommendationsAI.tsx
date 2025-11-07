@@ -30,7 +30,6 @@ import { DragTypes, VisualMinorProgram } from '@/types';
 import { useUserAwarePlannerStore } from '@/hooks/useUserAwarePlannerStore';
 import { attachConnectorRef } from '@/components/dnd/dnd-compat';
 import { useAuth } from '@/providers/AuthProvider';
-import { authService } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { CourseRecommendationEngine, AIRecommendationEnhancer, CourseRecommendation } from '@/lib/courseRecommendations';
 
@@ -165,17 +164,14 @@ const CourseRecommendationsAIComponent: React.FC<CourseRecommendationsAIProps> =
       console.log('Loading minor programs (filtered):', actualMinors);
       
       try {
-        const { data: sessionData } = await authService.getSession();
-        if (!sessionData.session?.access_token) return;
-
         const programs: VisualMinorProgram[] = [];
         for (const minorName of actualMinors) {
           try {
             console.log(`🔍 Attempting to fetch minor program: ${minorName}`);
-            
+
+            // API route handles authentication via cookies
             const response = await fetch(`/api/degree-programs?major=${encodeURIComponent(minorName)}&degree_type=Minor`, {
               headers: {
-                'Authorization': `Bearer ${sessionData.session.access_token}`,
                 'Content-Type': 'application/json'
               }
             });
