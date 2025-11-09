@@ -84,15 +84,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         };
 
-        const createResp = await api.users.updateProfile(createPayload as any);
-        const newUser = createResp;
-        userRecord = {
-          id: newUser?.id,
-          auth_id: newUser?.auth_id,
-          email: newUser?.email,
-          full_name: (newUser as any)?.full_name || (newUser as any)?.fullName,
-          plan_settings: (newUser as any)?.plan_settings || createPayload.plan_settings,
-        } as UserData;
+        try {
+          const createResp = await api.users.updateProfile(createPayload as any);
+          const newUser = createResp;
+          userRecord = {
+            id: newUser?.id,
+            auth_id: newUser?.auth_id,
+            email: newUser?.email,
+            full_name: (newUser as any)?.full_name || (newUser as any)?.fullName,
+            plan_settings: (newUser as any)?.plan_settings || createPayload.plan_settings,
+          } as UserData;
+        } catch (createError: any) {
+          // If we get 401 when trying to create profile, session is invalid
+          if (createError?.status === 401) {
+            console.warn('[AuthProvider] Invalid session detected, signing out...');
+            await supabase.auth.signOut();
+            return null;
+          }
+          throw createError;
+        }
       }
 
       if (userRecord) setUserRecord(userRecord);
@@ -109,8 +119,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       return userRecord;
     } catch (error: any) {
-      // Silently handle authentication errors - don't spam console
+      // If we get 401, session is invalid - sign out immediately
       if (error?.status === 401) {
+        console.warn('[AuthProvider] Invalid session detected, signing out...');
+        await supabase.auth.signOut();
         return null;
       }
       console.error('Error in ensureUserExists:', error);

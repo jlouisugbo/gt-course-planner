@@ -4,8 +4,8 @@ import { NextResponse, type NextRequest } from 'next/server'
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   
-  // Allow debug page during development
-  if (pathname.startsWith('/debug-auth')) {
+  // Allow debug pages during development
+  if (pathname.startsWith('/debug-auth') || pathname.startsWith('/clear-auth')) {
     return NextResponse.next()
   }
 
