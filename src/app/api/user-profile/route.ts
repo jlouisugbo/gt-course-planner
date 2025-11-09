@@ -112,10 +112,20 @@ export const GET = createSecureRoute(async (request, context) => {
 // Secure PUT handler with comprehensive validation
 export const PUT = createSecureRoute(async (request, context) => {
     try {
+        // Check if user is authenticated
+        if (!context.user || !context.user.id) {
+            return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+        }
+
+        // Check if validation data exists
+        if (!context.validatedData || !context.validatedData.body) {
+            return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
+        }
+
         // Use the already validated data from security middleware
-        const validatedData = context.validatedData!.body;
+        const validatedData = context.validatedData.body;
         // Perform an upsert (create if missing, update otherwise) using admin client
-        const authId = context.user!.id;
+        const authId = context.user.id;
 
         const upsertPayload: any = {
             auth_id: authId,
