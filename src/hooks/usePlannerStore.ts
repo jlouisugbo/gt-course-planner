@@ -89,7 +89,7 @@ const ensureSemesterIntegrity = (semester: any): semester is SemesterData => {
 
 // SECURITY FIX: REMOVED VULNERABLE getUserId() FUNCTION
 // This function has been replaced with secure server-side alternatives
-// All components should now use useUserAwarePlannerStore for secure user identification
+// All components should now use usePlannerStore for secure user identification
 
 // Secure fallback for anonymous sessions
 const getAnonymousSessionId = (): string => {

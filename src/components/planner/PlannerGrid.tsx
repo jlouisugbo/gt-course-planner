@@ -19,7 +19,6 @@ import { useSemesters } from "@/hooks/useSemesters";
 import { useAddCourse, useRemoveCourse } from "@/hooks/useSemesterMutations";
 import { usePlannerUIStore } from "@/hooks/usePlannerUIStore";
 import { useDrag, useDrop } from 'react-dnd';
-import { attachConnectorRef } from '@/components/dnd/dnd-compat';
 import { DragTypes } from '@/types';
 import { cn } from '@/lib/utils';
 import { CriticalErrorBoundary } from "@/components/error/GlobalErrorBoundary";
@@ -109,7 +108,7 @@ const DraggableCourseCard: React.FC<{
 
     return (
         <div
-            ref={attachConnectorRef<HTMLDivElement>(dragRef as any)}
+            ref={dragRef}
             className={cn(
                 "group cursor-move transition-opacity duration-150",
                 isDragging && "opacity-50"
@@ -285,8 +284,8 @@ export const PlannerGrid: React.FC<PlannerGridProps> = memo(({
 
         return (
             <div className="h-full">
-                <Card 
-                    ref={attachConnectorRef<HTMLDivElement>(dropRef as any)}
+                <Card
+                    ref={dropRef}
                     className={cn(
                         "h-full transition-all duration-200 relative focus-within:ring-2 focus-within:ring-blue-500/20",
                         isOver && "ring-2 ring-[#B3A369] ring-opacity-50",

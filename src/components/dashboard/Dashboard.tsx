@@ -11,7 +11,7 @@ import {
   Clock,
   Target
 } from "lucide-react";
-import { useUserAwarePlannerStore } from "@/hooks/useUserAwarePlannerStore";
+import { usePlannerStore } from "@/hooks/usePlannerStore";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { CriticalErrorBoundary } from "@/components/error/GlobalErrorBoundary";
 
@@ -24,7 +24,7 @@ import TimelineOverview from "./parts/TimelineOverview";
 const Dashboard = memo(() => {
     const { 
         semesters,
-    } = useUserAwarePlannerStore();
+    } = usePlannerStore();
 
     // Get real user data for enhanced experience
     const dashboardData = useDashboardData();

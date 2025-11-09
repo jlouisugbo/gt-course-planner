@@ -13,11 +13,11 @@ import {
   AlertCircle,
   Trophy
 } from 'lucide-react';
-import { useUserAwarePlannerStore } from '@/hooks/useUserAwarePlannerStore';
+import { usePlannerStore } from '@/hooks/usePlannerStore';
 import { cn } from '@/lib/utils';
 
 export const AcademicTimeline: React.FC = () => {
-  const plannerStore = useUserAwarePlannerStore();
+  const plannerStore = usePlannerStore();
   const { semesters } = plannerStore as any;
   const userProfile = (plannerStore as any).userProfile;
 

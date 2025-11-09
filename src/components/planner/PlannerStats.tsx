@@ -16,11 +16,11 @@ import {
   Clock,
   Award
 } from 'lucide-react';
-import { useUserAwarePlannerStore } from '@/hooks/useUserAwarePlannerStore';
+import { usePlannerStore } from '@/hooks/usePlannerStore';
 import { cn } from '@/lib/utils';
 
 export const PlannerStats: React.FC = () => {
-  const plannerStore = useUserAwarePlannerStore();
+  const plannerStore = usePlannerStore();
   const { semesters } = plannerStore as any;
 
   const safeSemesters = useMemo(() => {

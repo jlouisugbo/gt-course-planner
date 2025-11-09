@@ -10,7 +10,7 @@
  * This hook replaces the combination of:
  * - useDashboardData
  * - useRequirements
- * - useUserAwarePlannerStore
+ * - usePlannerStore
  *
  * All data is loaded in one coordinated effect and returned as stable memoized values.
  */

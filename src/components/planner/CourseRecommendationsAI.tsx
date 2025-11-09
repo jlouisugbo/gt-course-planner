@@ -29,7 +29,7 @@ import { useDrag, useDrop } from 'react-dnd';
 import { DragTypes, VisualMinorProgram } from '@/types';
 import { useSemesters } from '@/hooks/useSemesters';
 import { useRemoveCourse } from '@/hooks/useSemesterMutations';
-import { attachConnectorRef } from '@/components/dnd/dnd-compat';
+
 import { useAuth } from '@/providers/AuthProvider';
 import { authService } from '@/lib/auth';
 import { cn } from '@/lib/utils';
@@ -475,7 +475,7 @@ const CourseRecommendationsAIComponent: React.FC<CourseRecommendationsAIProps> =
   }), [removeCourseMutation]);
 
   return (
-    <Card ref={attachConnectorRef<HTMLDivElement>(dropRef as any)} className={cn("h-full transition-all", isDropZoneOver && "ring-2 ring-red-400 bg-red-50")}>
+    <Card ref={dropRef} className={cn("h-full transition-all", isDropZoneOver && "ring-2 ring-red-400 bg-red-50")}>
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Lightbulb className="h-5 w-5 text-[#B3A369]" />

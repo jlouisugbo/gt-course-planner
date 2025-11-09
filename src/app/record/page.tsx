@@ -18,7 +18,7 @@ import {
   Plus,
   Target
 } from 'lucide-react';
-import { useUserAwarePlannerStore } from '@/hooks/useUserAwarePlannerStore';
+import { usePlannerStore } from '@/hooks/usePlannerStore';
 
 interface SemesterGPA {
   semester: string;
@@ -29,7 +29,7 @@ interface SemesterGPA {
 }
 
 export default function AcademicRecordPage() {
-  const plannerStore = useUserAwarePlannerStore();
+  const plannerStore = usePlannerStore();
   
   const [editingGPA, setEditingGPA] = useState<string | null>(null);
   const [tempGPA, setTempGPA] = useState<string>('');

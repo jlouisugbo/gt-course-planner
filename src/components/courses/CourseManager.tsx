@@ -29,7 +29,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Search, Filter, BookOpen, Star, Lock, AlertTriangle } from "lucide-react";
 import { Course, PlannedCourse } from "@/types/courses";
-import { useUserAwarePlannerStore } from "@/hooks/useUserAwarePlannerStore";
+import { usePlannerStore } from "@/hooks/usePlannerStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAllCourses } from '@/hooks/useAllCourses';
 import { useAuth } from '@/providers/AuthProvider';
@@ -54,7 +54,7 @@ const CourseManager: React.FC<CourseManagerProps> = ({
     semesterId,
     onClose,
 }) => {
-    const { addCourseToSemester, semesters } = useUserAwarePlannerStore();
+    const { addCourseToSemester, semesters } = usePlannerStore();
     const { user } = useAuth();
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
