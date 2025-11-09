@@ -1,4 +1,7 @@
-// Minimal middleware stub for compatibility
+// Security middleware for API routes with proper Supabase authentication
+
+import { createClient } from '@/lib/supabaseServer';
+import { NextResponse } from 'next/server';
 
 export const SECURITY_CONFIGS = {
   COURSES_ALL: {
@@ -15,14 +18,61 @@ export const SECURITY_CONFIGS = {
   },
 };
 
+export interface SecureRouteContext {
+  user: {
+    id: string;
+    email?: string;
+    [key: string]: any;
+  } | null;
+  validatedData?: {
+    body?: any;
+    query?: any;
+  } | null;
+}
+
 export function createSecureRoute(
-  handler: (request: Request, context?: any) => Promise<Response>,
+  handler: (request: Request, context: SecureRouteContext) => Promise<Response>,
   config?: any
 ) {
-  // Simple wrapper that just calls the handler
-  // In a real implementation, this would add auth checks, rate limiting, etc.
   return async (request: Request) => {
-    const context = { user: null, validatedData: null };
-    return handler(request, context);
+    try {
+      // Create Supabase server client to check authentication
+      const supabase = createClient();
+
+      // Get the authenticated user from the session
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+      // Validate request body if schema provided
+      let validatedData: any = null;
+      if (config?.validationSchema?.body && request.method !== 'GET') {
+        try {
+          const body = await request.json();
+          validatedData = {
+            body: config.validationSchema.body.parse(body)
+          };
+        } catch (validationError) {
+          return NextResponse.json(
+            { error: 'Validation failed', details: validationError },
+            { status: 400 }
+          );
+        }
+      }
+
+      // Create context with authenticated user and validated data
+      const context: SecureRouteContext = {
+        user: user || null,
+        validatedData
+      };
+
+      // Call the actual handler with the context
+      return await handler(request, context);
+
+    } catch (error) {
+      console.error('Security middleware error:', error);
+      return NextResponse.json(
+        { error: 'Internal server error' },
+        { status: 500 }
+      );
+    }
   };
 }
