@@ -37,7 +37,7 @@ export function createSecureRoute(
   return async (request: Request) => {
     try {
       // Create Supabase server client to check authentication
-      const supabase = createClient();
+      const supabase = await createClient(); // ← AWAIT THIS!
 
       // Get the authenticated user from the session
       const { data: { user }, error: authError } = await supabase.auth.getUser();
