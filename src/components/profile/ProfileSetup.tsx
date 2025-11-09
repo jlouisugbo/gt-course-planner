@@ -155,30 +155,34 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
   return (
     <div className={pageMode
       ? "min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 py-8"
-      : "fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+      : "fixed inset-0 bg-black/50 backdrop-blur-sm z-50 overflow-y-auto"
     }>
-      {/* Main Container */}
+      {/* Modal Centering Wrapper */}
       <div className={pageMode
-        ? "container mx-auto max-w-5xl"
-        : "w-full max-w-5xl max-h-[95vh] overflow-hidden"
+        ? ""
+        : "min-h-full flex items-center justify-center p-4"
       }>
-        {/* Card Wrapper */}
-        <Card className="shadow-2xl border-0">
-          {/* Close button for modal mode */}
-          {!pageMode && onClose && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="absolute top-4 right-4 z-10 hover:bg-gray-100"
-              aria-label="Close setup"
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          )}
+        {/* Main Container */}
+        <div className={pageMode
+          ? "container mx-auto max-w-5xl"
+          : "w-full max-w-5xl my-8"
+        }>
+          {/* Card Wrapper */}
+          <Card className="shadow-2xl border-0 relative">
+            {/* Close button for modal mode */}
+            {!pageMode && onClose && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onClose}
+                className="absolute top-4 right-4 z-10 hover:bg-gray-100"
+                aria-label="Close setup"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            )}
 
-          {/* Scrollable Content */}
-          <div className={pageMode ? "" : "max-h-[95vh] overflow-y-auto"}>
+            {/* Content */}
             <div className="p-6 lg:p-8 space-y-6">
               {/* Header Section */}
               <motion.div
@@ -406,8 +410,8 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
                 )}
               </motion.div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        </div>
       </div>
     </div>
   );

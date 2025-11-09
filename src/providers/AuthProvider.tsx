@@ -56,7 +56,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
 
       return normalized as UserData;
-    } catch (error) {
+    } catch (error: any) {
+      // Silently handle authentication errors - user not authenticated on server
+      if (error?.status === 401) {
+        return null;
+      }
       // API route may return 404 if profile not created yet - return null so caller can create
       console.debug('api.users.getProfile() returned no profile or error', error);
       return null;
@@ -92,7 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (userRecord) setUserRecord(userRecord);
-      
+
       // After ensuring user exists, run semesters migration (idempotent)
       try {
         const { migrateSemestersToDB } = await import('@/lib/utils/semestersMigration');
@@ -104,7 +108,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.warn('[AuthProvider] Semesters migration skipped/failed:', e);
       }
       return userRecord;
-    } catch (error) {
+    } catch (error: any) {
+      // Silently handle authentication errors - don't spam console
+      if (error?.status === 401) {
+        return null;
+      }
       console.error('Error in ensureUserExists:', error);
       return null;
     }
