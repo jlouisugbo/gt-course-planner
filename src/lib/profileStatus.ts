@@ -42,7 +42,17 @@ export async function checkProfileStatus(): Promise<ProfileStatus> {
   const completedAt = isComplete ? (userRecord.updatedAt || null) : null;
 
     return { isComplete, hasRequiredFields, completedAt, missingFields };
-  } catch (error) {
+  } catch (error: any) {
+    // Silently handle authentication errors (user not logged in)
+    if (error?.status === 401) {
+      return {
+        isComplete: false,
+        hasRequiredFields: false,
+        completedAt: null,
+        missingFields: ['not_authenticated']
+      };
+    }
+
     console.error('Error in checkProfileStatus:', error);
     return {
       isComplete: false,
@@ -60,7 +70,12 @@ export async function loadUserProfile() {
   try {
     const userRecord = await api.users.getProfile();
     return userRecord || null;
-  } catch (error) {
+  } catch (error: any) {
+    // Silently handle authentication errors (user not logged in)
+    if (error?.status === 401) {
+      return null;
+    }
+
     console.error('Error in loadUserProfile:', error);
     return null;
   }

@@ -30,12 +30,19 @@ export const ProfileGate: React.FC<ProfileGateProps> = ({
   useEffect(() => {
     const checkStatus = async () => {
       if (!user) {
+        // No user - skip profile checks and show children directly
         setIsLoading(false);
+        setProfileStatus({
+          isComplete: true, // Treat as complete so we don't show setup
+          hasRequiredFields: false,
+          completedAt: null,
+          missingFields: ['not_authenticated']
+        });
         return;
       }
 
       console.log('ProfileGate: Checking profile status for user:', user.id);
-      
+
       try {
         const [status, profile] = await Promise.all([
           checkProfileStatus(),
@@ -54,15 +61,25 @@ export const ProfileGate: React.FC<ProfileGateProps> = ({
         } else {
           console.log('ProfileGate: Profile incomplete - missing:', status.missingFields);
         }
-      } catch (error) {
-        console.error('ProfileGate: Error checking profile status:', error);
-        // On error, assume profile is incomplete to be safe
-        setProfileStatus({
-          isComplete: false,
-          hasRequiredFields: false,
-          completedAt: null,
-          missingFields: ['error']
-        });
+      } catch (error: any) {
+        // Silently handle authentication errors
+        if (error?.status === 401) {
+          setProfileStatus({
+            isComplete: true, // Treat as complete so we don't show setup
+            hasRequiredFields: false,
+            completedAt: null,
+            missingFields: ['not_authenticated']
+          });
+        } else {
+          console.error('ProfileGate: Error checking profile status:', error);
+          // On other errors, assume profile is incomplete to be safe
+          setProfileStatus({
+            isComplete: false,
+            hasRequiredFields: false,
+            completedAt: null,
+            missingFields: ['error']
+          });
+        }
       } finally {
         setIsLoading(false);
       }

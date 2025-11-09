@@ -105,7 +105,12 @@ export async function syncUserProfile(): Promise<ProfileSyncResult> {
     await plannerStore.initializeStore();
 
     return { success: true, profile };
-  } catch (error) {
+  } catch (error: any) {
+    // Silently handle authentication errors (user not logged in)
+    if (error?.status === 401) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
     console.error('Error syncing profile:', error);
     return {
       success: false,
