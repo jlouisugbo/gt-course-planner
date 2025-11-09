@@ -9,7 +9,7 @@ interface SearchResult {
   searchType: string;
 }
 
-interface UseCoursePaginatedSearchReturn {
+interface UseCourseSearchReturn {
   courses: Course[];
   isLoading: boolean;
   error: string | null;
@@ -23,7 +23,7 @@ interface UseCoursePaginatedSearchReturn {
   clearSearch: () => void;
 }
 
-export const useCoursePaginatedSearch = (): UseCoursePaginatedSearchReturn => {
+export const useCourseSearch = (): UseCourseSearchReturn => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

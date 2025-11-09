@@ -12,7 +12,7 @@ import {
   Target
 } from "lucide-react";
 import { usePlannerStore } from "@/hooks/usePlannerStore";
-import { useDashboardData } from "@/hooks/useDashboardData";
+import { useDashboard } from "@/hooks/useDashboard";
 import { CriticalErrorBoundary } from "@/components/error/GlobalErrorBoundary";
 
 import WelcomeHeader from "./parts/WelcomeHeader";
@@ -27,7 +27,7 @@ const Dashboard = memo(() => {
     } = usePlannerStore();
 
     // Get real user data for enhanced experience
-    const dashboardData = useDashboardData();
+    const dashboardData = useDashboard();
 
     // Memoize expensive computations with shallow comparison
     const allCourses = useMemo(() => {
