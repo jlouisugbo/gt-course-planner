@@ -1,11 +1,11 @@
 "use client";
 
-import React, { memo, useMemo, useCallback, useState } from "react";
+import React, { memo, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { 
+import {
   Calendar,
   Plus,
   CheckCircle2,
@@ -14,11 +14,10 @@ import {
   Trash2,
   Info,
   BookOpen,
-  Clock,
-  Users
 } from "lucide-react";
-import { useUserAwarePlannerStore } from "@/hooks/useUserAwarePlannerStore";
-// Removed framer-motion to prevent re-renders during drag
+import { useSemesters } from "@/hooks/useSemesters";
+import { useAddCourse, useRemoveCourse } from "@/hooks/useSemesterMutations";
+import { usePlannerUIStore } from "@/hooks/usePlannerUIStore";
 import { useDrag, useDrop } from 'react-dnd';
 import { attachConnectorRef } from '@/components/dnd/dnd-compat';
 import { DragTypes } from '@/types';
@@ -90,6 +89,8 @@ const DraggableCourseCard: React.FC<{
     isCurrent: boolean;
     onRemove: (semesterId: number, courseId: number) => void;
 }> = memo(({ course, semesterId, isCompleted, isCurrent, onRemove }) => {
+    const { setDraggedCourse } = usePlannerUIStore();
+
     const [{ isDragging }, dragRef] = useDrag(() => ({
         type: DragTypes.PLANNED_COURSE,
         item: {
@@ -101,7 +102,10 @@ const DraggableCourseCard: React.FC<{
         collect: (monitor) => ({
             isDragging: monitor.isDragging(),
         }),
-    }));
+        end: () => {
+            setDraggedCourse(null);
+        }
+    }), [course, semesterId]);
 
     return (
         <div
@@ -166,36 +170,38 @@ interface PlannerGridProps {
     isInitialized?: boolean;
 }
 
-export const PlannerGrid: React.FC<PlannerGridProps> = memo(({ 
-    semesters: propSemesters, 
-    userProfile, 
-    isLoading, 
-    isInitialized 
+export const PlannerGrid: React.FC<PlannerGridProps> = memo(({
+    semesters: propSemesters,
+    userProfile,
+    isLoading: propIsLoading,
+    isInitialized
 }) => {
-    const plannerStore = useUserAwarePlannerStore();
-    const { semesters: storeSemesters, removeCourseFromSemester } = plannerStore;
-    
-    // Use prop semesters if provided, otherwise fall back to store
-    const semesters = propSemesters || storeSemesters;
+    // Fetch semesters from API if not provided via props
+    const { data: apiSemesters, isLoading: isLoadingSemesters } = useSemesters();
+    const addCourseMutation = useAddCourse();
+    const removeCourseMutation = useRemoveCourse();
+
+    // Use prop semesters if provided, otherwise use API data
+    const semesters = propSemesters || apiSemesters || {};
+    const isLoading = propIsLoading !== undefined ? propIsLoading : isLoadingSemesters;
 
     const safeSemesters = useMemo(() => {
         return semesters && typeof semesters === 'object' ? semesters : {};
     }, [semesters]);
 
-
     // Group semesters by academic year (Fall 20XX, Spring 20XX+1, Summer 20XX+1)
     const academicYears = useMemo(() => {
-        const semesters = Object.values(safeSemesters)
-            .filter(semester => 
-                semester && 
+        const semestersArray = Object.values(safeSemesters)
+            .filter(semester =>
+                semester &&
                 typeof semester === 'object' &&
                 typeof semester.year === 'number' &&
                 typeof semester.season === 'string'
             );
 
         const yearGroups: Record<number, any[]> = {};
-        
-        semesters.forEach(semester => {
+
+        semestersArray.forEach(semester => {
             const academicYear = semester.season === 'Fall' ? semester.year : semester.year - 1;
             if (!yearGroups[academicYear]) {
                 yearGroups[academicYear] = [];
@@ -220,14 +226,12 @@ export const PlannerGrid: React.FC<PlannerGridProps> = memo(({
             }));
     }, [safeSemesters]);
 
-    // Memoized remove course handler
+    // Memoized remove course handler using mutation
     const handleRemoveCourse = useCallback(
         (semesterId: number, courseId: number) => {
-            if (removeCourseFromSemester) {
-                removeCourseFromSemester(courseId, semesterId);
-            }
+            removeCourseMutation.mutate({ semesterId, courseId });
         },
-        [removeCourseFromSemester]
+        [removeCourseMutation]
     );
 
     // Modern semester card component - memoized to prevent re-renders during drag
@@ -235,24 +239,33 @@ export const PlannerGrid: React.FC<PlannerGridProps> = memo(({
         const [{ isOver }, dropRef] = useDrop(() => ({
             accept: [DragTypes.COURSE, DragTypes.PLANNED_COURSE],
             drop: (item: any) => {
-                // Handle course drop
+                // Handle course drop using mutation
                 if (item.course) {
-                    plannerStore.addCourseToSemester({
+                    const courseToAdd = {
                         ...item.course,
                         semesterId: semester.id,
-                        status: 'planned'
+                        status: 'planned' as const
+                    };
+
+                    // Add to new semester
+                    addCourseMutation.mutate({
+                        semesterId: semester.id,
+                        course: courseToAdd
                     });
-                    
+
                     // If moving from another semester, remove from old location
                     if (item.semesterId && item.semesterId !== semester.id) {
-                        plannerStore.removeCourseFromSemester(item.semesterId, item.id);
+                        removeCourseMutation.mutate({
+                            semesterId: item.semesterId,
+                            courseId: item.course.id
+                        });
                     }
                 }
             },
             collect: (monitor) => ({
                 isOver: monitor.isOver(),
             }),
-        }), [semester.id, plannerStore]);
+        }), [semester.id, addCourseMutation, removeCourseMutation]);
 
         // Memoize semester calculations
         const semesterData = useMemo(() => {
@@ -317,8 +330,8 @@ export const PlannerGrid: React.FC<PlannerGridProps> = memo(({
                                             Complete
                                         </Badge>
                                     )}
-                                    <Badge 
-                                        variant="outline" 
+                                    <Badge
+                                        variant="outline"
                                         className={cn(
                                             "text-xs",
                                             isOverloaded && "border-red-300 text-red-700",
@@ -332,8 +345,8 @@ export const PlannerGrid: React.FC<PlannerGridProps> = memo(({
                                 </div>
                             </div>
                             {isOverloaded && (
-                                <AlertTriangle 
-                                    className="h-4 w-4 text-orange-500 flex-shrink-0" 
+                                <AlertTriangle
+                                    className="h-4 w-4 text-orange-500 flex-shrink-0"
                                     aria-label="Credit overload warning"
                                     role="img"
                                 />

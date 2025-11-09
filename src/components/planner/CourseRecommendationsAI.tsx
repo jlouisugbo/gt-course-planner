@@ -27,12 +27,14 @@ import {
 } from 'lucide-react';
 import { useDrag, useDrop } from 'react-dnd';
 import { DragTypes, VisualMinorProgram } from '@/types';
-import { useUserAwarePlannerStore } from '@/hooks/useUserAwarePlannerStore';
+import { useSemesters } from '@/hooks/useSemesters';
+import { useRemoveCourse } from '@/hooks/useSemesterMutations';
 import { attachConnectorRef } from '@/components/dnd/dnd-compat';
 import { useAuth } from '@/providers/AuthProvider';
 import { authService } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { CourseRecommendationEngine, AIRecommendationEnhancer, CourseRecommendation } from '@/lib/courseRecommendations';
+import { PlannedCourse } from '@/types/courses';
 
 interface CourseRecommendationsAIProps {
   showAllTabs?: boolean;
@@ -44,8 +46,9 @@ const CourseRecommendationsAIComponent: React.FC<CourseRecommendationsAIProps> =
   userProfile: propUserProfile
 }) => {
   const { user } = useAuth();
-  const plannerStore = useUserAwarePlannerStore();
-  
+  const { data: semesters } = useSemesters();
+  const removeCourseMutation = useRemoveCourse();
+
   // Use prop profile if provided. Planner store no longer holds userProfile.
   const userProfile = propUserProfile;
   const [searchQuery, setSearchQuery] = useState('');
@@ -57,9 +60,18 @@ const CourseRecommendationsAIComponent: React.FC<CourseRecommendationsAIProps> =
   const [coursesLoading, setCoursesLoading] = useState(false);
   const [coursesLoaded, setCoursesLoaded] = useState(false);
 
+  // Helper function to get courses by status from semesters data
+  const getCoursesByStatus = useCallback((status: 'planned' | 'in-progress' | 'completed'): PlannedCourse[] => {
+    if (!semesters) return [];
+    return Object.values(semesters)
+      .filter(semester => semester && Array.isArray(semester.courses))
+      .flatMap(semester => semester.courses)
+      .filter(course => course && course.status === status);
+  }, [semesters]);
+
   // Memoize threads to prevent infinite re-renders
   const threadsKey = userProfile?.threads?.join(',') || '';
-  
+
   // Memoize categorized recommendations to prevent re-computation during drag
   const { readyToTake, foundationCourses, threadCourses, aiRecommendations } = useMemo(() => {
     if (!coursesLoaded || allRecommendations.length === 0) {
@@ -107,11 +119,11 @@ const CourseRecommendationsAIComponent: React.FC<CourseRecommendationsAIProps> =
       
       setCoursesLoading(true);
       try {
-        // Get completed and planned courses from planner store
-        const completedCourses = plannerStore.getCoursesByStatus('completed');
-        const plannedCourses = plannerStore.getCoursesByStatus('planned');
-        const inProgressCourses = plannerStore.getCoursesByStatus('in-progress');
-        
+        // Get completed and planned courses from semesters data
+        const completedCourses = getCoursesByStatus('completed');
+        const plannedCourses = getCoursesByStatus('planned');
+        const inProgressCourses = getCoursesByStatus('in-progress');
+
         // Create recommendation engine with user's actual profile
         const engine = new CourseRecommendationEngine(
           completedCourses,
@@ -136,7 +148,7 @@ const CourseRecommendationsAIComponent: React.FC<CourseRecommendationsAIProps> =
     };
 
     loadRecommendations();
-  }, [user, userProfile?.major, coursesLoaded, plannerStore]); // Minimal dependencies to prevent re-runs
+  }, [user, userProfile?.major, coursesLoaded, getCoursesByStatus]); // Minimal dependencies to prevent re-runs
 
 
   // Load minor programs
@@ -241,7 +253,7 @@ const CourseRecommendationsAIComponent: React.FC<CourseRecommendationsAIProps> =
   const DraggableCourseCardComponent: React.FC<{ recommendation: CourseRecommendation; index: number }> = ({ recommendation, index }) => {
     const { course } = recommendation;
     const dragRef = useRef<HTMLDivElement>(null);
-    const completedCourses = plannerStore.getCoursesByStatus('completed');
+    const completedCourses = getCoursesByStatus('completed');
     const prerequisiteCheck = checkPrerequisites(course, completedCourses);
     
     const [{ isDragging }, drag] = useDrag({
@@ -453,14 +465,14 @@ const CourseRecommendationsAIComponent: React.FC<CourseRecommendationsAIProps> =
     accept: DragTypes.PLANNED_COURSE,
     drop: (item: any) => {
       // Remove course from semester when dropped back to recommendations
-      if (item.semesterId && plannerStore.removeCourseFromSemester) {
-        plannerStore.removeCourseFromSemester(item.semesterId, item.id);
+      if (item.semesterId && item.id) {
+        removeCourseMutation.mutate({ semesterId: item.semesterId, courseId: item.id });
       }
     },
     collect: (monitor) => ({
       isOver: monitor.isOver(),
     }),
-  }), [plannerStore]);
+  }), [removeCourseMutation]);
 
   return (
     <Card ref={attachConnectorRef<HTMLDivElement>(dropRef as any)} className={cn("h-full transition-all", isDropZoneOver && "ring-2 ring-red-400 bg-red-50")}>

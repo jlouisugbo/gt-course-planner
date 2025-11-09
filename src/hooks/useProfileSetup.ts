@@ -10,7 +10,8 @@ import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { userDataService } from '@/lib/database/userDataService';
-import { usePlannerStore } from '@/hooks/usePlannerStore';
+import { useBulkCreateSemesters } from '@/hooks/useSemesterMutations';
+import { generateSemestersData } from '@/lib/utils/generateSemesters';
 import { supabase } from '@/lib/supabaseClient';
 import { UserProfile } from '@/types';
 import { ProfileData } from '@/types/user';
@@ -103,7 +104,7 @@ export interface ExtendedProfileData extends ProfileData {
 export const useProfileSetup = (existingProfile?: Partial<UserProfile>, onSuccess?: () => void) => {
   const { user } = useAuth();
   const router = useRouter();
-  const plannerStore = usePlannerStore();
+  const bulkCreateSemestersMutation = useBulkCreateSemesters();
   
   // Initialize profile with smart defaults or existing data
   const [profile, setProfile] = useState<Partial<ExtendedProfileData>>(() => {
@@ -387,41 +388,51 @@ export const useProfileSetup = (existingProfile?: Partial<UserProfile>, onSucces
 
       console.log('✅ Database save successful');
 
-      // Step 2: Update Zustand store with complete data
-      plannerStore.updateStudentInfo({
-        id: 0, // Will be updated by store
-        name: profile.full_name || profile.name || '',
-        email: profile.email,
-        major: profile.major,
-        threads: profile.threads || [],
-        minors: profile.minors || [],
-        startYear: parseInt(profile.startDate?.match(/\d{4}/)?.[0] || '') || new Date().getFullYear(),
-        expectedGraduation: profile.expectedGraduation || '',
-        currentGPA: profile.currentGPA || 0,
-        majorRequirements: [],
-        minorRequirements: [],
-        threadRequirements: [],
-      });
-
-      console.log('✅ Zustand store updated');
-
-      // Step 3: Generate semesters if we have dates
+      // Step 2: Generate and save semesters if we have dates
       if (profile.startDate && profile.expectedGraduation) {
-        plannerStore.generateSemesters(profile.startDate, profile.expectedGraduation);
-        console.log('✅ Semesters generated');
+        try {
+          console.log('🗓️ Generating semesters...');
+          const semestersData = generateSemestersData({
+            startDate: profile.startDate,
+            graduationDate: profile.expectedGraduation,
+          });
+
+          console.log(`📅 Generated ${semestersData.length} semesters, saving to database...`);
+
+          // Use the mutation to save semesters
+          await new Promise((resolve, reject) => {
+            bulkCreateSemestersMutation.mutate(semestersData, {
+              onSuccess: () => {
+                console.log('✅ Semesters saved successfully');
+                resolve(true);
+              },
+              onError: (error) => {
+                console.error('❌ Failed to save semesters:', error);
+                // Don't fail the entire profile save if semesters fail
+                // User can regenerate them later
+                console.warn('⚠️ Continuing with profile save despite semester save failure');
+                resolve(false);
+              }
+            });
+          });
+        } catch (error) {
+          console.error('Error generating/saving semesters:', error);
+          // Don't fail the entire profile save
+          console.warn('⚠️ Continuing with profile save despite semester generation failure');
+        }
       }
 
-      // Step 4: Initialize user tables for tracking
+      // Step 3: Initialize user tables for tracking
       await userDataService.getDashboardData(); // This will initialize if needed
       console.log('✅ User tracking tables initialized');
 
-      // Step 5: Initialize GPA tracking if transfer student
+      // Step 4: Initialize GPA tracking if transfer student
       if (profile.isTransferStudent && profile.transferCredits && profile.currentGPA) {
         // This would add initial transfer credits to tracking
         console.log('✅ Transfer student data initialized');
       }
 
-      // Step 6: Update auth context to refresh user data everywhere
+      // Step 5: Update auth context to refresh user data everywhere
       try {
         // Refresh the auth context so all components get new data
         window.location.reload(); // Force reload to ensure all components get fresh data
@@ -443,7 +454,7 @@ export const useProfileSetup = (existingProfile?: Partial<UserProfile>, onSucces
     } finally {
       setIsSaving(false);
     }
-  }, [user, profile, plannerStore]);
+  }, [user, profile, bulkCreateSemestersMutation]);
 
   const handleSave = useCallback(async () => {
     if (!validateStep(4)) return;

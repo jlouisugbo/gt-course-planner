@@ -18,7 +18,7 @@ import {
   ShieldAlert
 } from 'lucide-react';
 import { Course } from '@/types/courses';
-import { usePlannerStore } from '@/hooks/usePlannerStore';
+import { useSemesters } from '@/hooks/useSemesters';
 import { usePrerequisiteValidation } from '@/hooks/usePrereqValidation';
 import { cn } from '@/lib/utils';
 
@@ -36,7 +36,7 @@ const CourseDetailsModal: React.FC<CourseDetailsModalProps> = ({
   onAddCourse
 }) => {
   // Hooks must be called before any conditional returns
-  const { semesters } = usePlannerStore();
+  const { data: semesters } = useSemesters();
   const { validatePrerequisites } = usePrerequisiteValidation();
   // Focus management - hooks must be called before any conditional returns
   const addButtonRef = useRef<HTMLButtonElement>(null);

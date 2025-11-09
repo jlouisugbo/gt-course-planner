@@ -18,7 +18,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import CourseCompletionModal from './CourseCompletionModal';
-import { usePlannerStore } from '@/hooks/usePlannerStore';
+import { useUpdateCourseStatus } from '@/hooks/useSemesterMutations';
 import { DragItem } from '@/types';
 import { useEnhancedToast } from '@/hooks/useEnhancedToast';
 
@@ -38,7 +38,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
   compact = false
 }) => {
   // Hooks must be called before any conditional returns
-  const { updateCourseStatus } = usePlannerStore();
+  const updateCourseStatusMutation = useUpdateCourseStatus();
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [_isUpdating, _setIsUpdating] = useState(false);
   const [_pendingStatusUpdate, _setPendingStatusUpdate] = useState<{
@@ -109,8 +109,8 @@ const CourseCard: React.FC<CourseCardProps> = ({
   };
 
   const handleUpdateStatus = (courseId: number, semesterId: number, status: PlannedCourse['status'], grade?: string) => {
-    if (updateCourseStatus && typeof courseId === 'number' && typeof semesterId === 'number') {
-      updateCourseStatus(courseId, semesterId, status, grade);
+    if (typeof courseId === 'number' && typeof semesterId === 'number') {
+      updateCourseStatusMutation.mutate({ semesterId, courseId, status, grade });
     }
     setShowCompletionModal(false);
   };
