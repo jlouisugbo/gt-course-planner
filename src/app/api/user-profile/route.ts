@@ -8,8 +8,13 @@ import { createSecureErrorHandler } from '@/lib/security/errorHandler';
 // Secure GET handler using security middleware
 export const GET = createSecureRoute(async (request, context) => {
     try {
-        const userRecord = await safeGetUserProfile(context.user!.id);
-        
+        // Check if user is authenticated
+        if (!context.user || !context.user.id) {
+            return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+        }
+
+        const userRecord = await safeGetUserProfile(context.user.id);
+
         if (!userRecord) {
             return NextResponse.json({ error: 'User profile not found' }, { status: 404 });
         }

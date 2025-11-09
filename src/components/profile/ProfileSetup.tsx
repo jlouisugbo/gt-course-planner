@@ -97,12 +97,12 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
   const currentStepData = steps[step - 1];
   const StepComponent = currentStepData.component;
 
-  const containerClass = pageMode 
-    ? "min-h-screen bg-gradient-to-br from-blue-50 to-white" 
+  const containerClass = pageMode
+    ? "min-h-screen bg-gradient-to-br from-blue-50 to-white"
     : "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-40";
 
-  const cardClass = pageMode 
-    ? "container mx-auto px-4 py-6 max-w-4xl relative z-10" 
+  const cardClass = pageMode
+    ? "container mx-auto px-4 py-6 max-w-4xl relative z-10 bg-white rounded-lg shadow-xl"
     : "bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto relative z-10";
 
   return (
