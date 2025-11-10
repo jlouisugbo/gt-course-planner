@@ -127,9 +127,23 @@ export const PUT = createSecureRoute(async (request, context) => {
         // Perform an upsert (create if missing, update otherwise) using admin client
         const authId = context.user.id;
 
+        // Email MUST come from authenticated session (not from request body for security)
+        // The UserProfileUpdateSchema doesn't include email, so it's not in validatedData
+        const userEmail = context.user.email;
+
+        if (!userEmail) {
+            console.error('[/api/user-profile] PUT error: No email found in authenticated user session', {
+                userId: authId,
+                userKeys: Object.keys(context.user)
+            });
+            return NextResponse.json({
+                error: 'Email not available from authentication session'
+            }, { status: 400 });
+        }
+
         const upsertPayload: any = {
             auth_id: authId,
-            email: validatedData.email ?? validatedData.email,
+            email: userEmail, // Always use email from authenticated session
             full_name: validatedData.fullName ?? validatedData.full_name,
             major: validatedData.major ?? validatedData.major,
             minors: validatedData.minors ?? validatedData.minors,

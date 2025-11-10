@@ -42,6 +42,18 @@ export function createSecureRoute(
       // Get the authenticated user from the session
       const { data: { user }, error: authError } = await supabase.auth.getUser();
 
+      // Debug logging to see what's in the user object
+      if (user) {
+        console.log('[Security Middleware] Authenticated user:', {
+          id: user.id,
+          email: user.email,
+          hasEmail: !!user.email,
+          userKeys: Object.keys(user)
+        });
+      } else if (authError) {
+        console.log('[Security Middleware] Auth error:', authError);
+      }
+
       // Validate request body if schema provided
       let validatedData: any = null;
       if (config?.validationSchema?.body && request.method !== 'GET') {
