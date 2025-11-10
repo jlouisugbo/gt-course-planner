@@ -1,11 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/providers/AuthProvider";
 import { CookieConsent } from "@/components/legal/CookieConsent";
-import { ProfileGate } from "@/components/profile/ProfileGate";
-import { syncUserProfile } from "@/lib/profileSync";
 import { cn } from "@/lib/utils";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
@@ -14,24 +12,17 @@ interface AppLayoutProps {
     children: React.ReactNode;
 }
 
+/**
+ * Simplified AppLayout
+ * - No ProfileGate wrapper
+ * - No profile syncing
+ * - Just navigation and content
+ */
 export default function AppLayout({ children }: AppLayoutProps) {
     const pathname = usePathname();
     const { user } = useAuth();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-
-    useEffect(() => {
-        // Sync profile data on mount if user is authenticated
-        if (user) {
-            syncUserProfile().then(result => {
-                if (result.success) {
-                    console.log('Profile synced successfully on app mount');
-                } else {
-                    console.log('Profile sync skipped:', result.error);
-                }
-            });
-        }
-    }, [user]);
 
     // Don't render navigation on landing page or when not authenticated
     const shouldShowNavigation = user && pathname !== '/' && pathname !== '/landing';
@@ -47,33 +38,31 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
     return (
         <div className="flex h-screen overflow-hidden bg-gray-50">
-            <ProfileGate showSetupButton={true}>
-                {/* Left Sidebar */}
-                <Sidebar
-                    isMobileOpen={isMobileMenuOpen}
-                    setIsMobileOpen={setIsMobileMenuOpen}
-                    isCollapsed={isSidebarCollapsed}
-                    setIsCollapsed={setIsSidebarCollapsed}
-                />
+            {/* Left Sidebar */}
+            <Sidebar
+                isMobileOpen={isMobileMenuOpen}
+                setIsMobileOpen={setIsMobileMenuOpen}
+                isCollapsed={isSidebarCollapsed}
+                setIsCollapsed={setIsSidebarCollapsed}
+            />
 
-                {/* Main Content Area */}
-                <div
-                    className={cn(
-                        "flex-1 flex flex-col overflow-hidden transition-all duration-300",
-                        isSidebarCollapsed ? "lg:ml-20" : "lg:ml-[180px]"
-                    )}
-                >
-                    {/* Top Header (simplified - no nav items) */}
-                    <Header />
+            {/* Main Content Area */}
+            <div
+                className={cn(
+                    "flex-1 flex flex-col overflow-hidden transition-all duration-300",
+                    isSidebarCollapsed ? "lg:ml-20" : "lg:ml-[180px]"
+                )}
+            >
+                {/* Top Header */}
+                <Header />
 
-                    {/* Page Content */}
-                    <main className="flex-1 overflow-auto bg-gray-50">
-                        <div className="container mx-auto px-4 py-6 max-w-7xl">
-                            {children}
-                        </div>
-                    </main>
-                </div>
-            </ProfileGate>
+                {/* Page Content */}
+                <main className="flex-1 overflow-auto bg-gray-50">
+                    <div className="container mx-auto px-4 py-6 max-w-7xl">
+                        {children}
+                    </div>
+                </main>
+            </div>
 
             {/* Cookie Consent */}
             <CookieConsent />
